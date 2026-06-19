@@ -1,0 +1,64 @@
+document:
+  dsl: '1.0.0'
+  namespace: examples
+  name: order-typed-bad
+  version: '0.1.0'
+do:
+  - createOrder:
+      call: http
+      with: { method: post, endpoint: https://example.org/orders/create }
+      output:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              amount: { type: number }
+              items: { type: array }
+  - reserveInventory:
+      call: http
+      with: { method: post, endpoint: https://example.org/inventory/reserve }
+      input:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              amount: { type: number }
+              items: { type: array }
+      output:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              amount: { type: number }
+              reservationId: { type: string }
+  - shipOrder:
+      call: http
+      with: { method: post, endpoint: https://example.org/shipping/ship }
+      input:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              paymentId: { type: string }
+      output:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              trackingId: { type: string }
+  - chargeCard:
+      call: http
+      with: { method: post, endpoint: https://example.org/payments/charge }
+      input:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              amount: { type: number }
+              reservationId: { type: string }
+      output:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              paymentId: { type: string }

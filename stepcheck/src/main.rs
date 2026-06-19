@@ -4,6 +4,7 @@
 
 mod annot;
 mod asl;
+mod cncf;
 mod diag;
 mod dsl;
 mod ir;
@@ -114,10 +115,23 @@ fn main() {
     }
 }
 
+/// Whether a file is a workflow definition we can load (ASL JSON or CNCF YAML).
+fn is_workflow_file(p: &Path) -> bool {
+    matches!(
+        p.extension().and_then(|e| e.to_str()),
+        Some("json") | Some("yaml") | Some("yml")
+    )
+}
+
+/// Load a workflow, choosing the frontend by file extension: `.yaml`/`.yml` use
+/// the CNCF Serverless Workflow frontend, everything else uses the ASL frontend.
 fn load(path: &Path) -> Result<ir::Workflow> {
     let src = std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("workflow");
-    asl::parse_str(&src, name)
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("yaml") | Some("yml") => cncf::parse_str(&src, name),
+        _ => asl::parse_str(&src, name),
+    }
 }
 
 fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<ir::Workflow> {
@@ -193,7 +207,7 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() || p.extension().and_then(|e| e.to_str()) != Some("json") {
+        if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
         let mut wf = match load(p) {
@@ -280,7 +294,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() || p.extension().and_then(|e| e.to_str()) != Some("json") {
+        if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
         let base = match load(p) {
@@ -389,7 +403,7 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
     let mut st = Stats::default();
     for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() || p.extension().and_then(|e| e.to_str()) != Some("json") {
+        if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
         st.files += 1;

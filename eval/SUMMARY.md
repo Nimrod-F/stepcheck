@@ -65,14 +65,27 @@ flagged persistent) — motivating explicit annotation overrides.
 - Note: the round-trip surfaced a real emitter bug (AWS rejects `End` on
   `Succeed`/`Fail`), which was fixed — demonstrating the value of round-trip validation.
 
-## Implementation size — 2,359 lines of Rust
+## E8 — Cross-format generalization (CNCF Serverless Workflow), `corpus/cncf/`
+- A third frontend for the **CNCF Serverless Workflow DSL** was added with **no change to
+  the IR or any analysis pass** (`stepcheck eval corpus/cncf --infer`).
+- Parses **66/66** real spec examples; the structural/typestate/retry/compensation
+  analyses apply unchanged; the ASL-specific data-binding checks (SC1001–SC1003) correctly
+  stay silent (CNCF uses jq expressions, not JSONPath).
+- Mutation study where a class has an injection site: **retry 4/4, structural 9/9 (100%)**;
+  contract/compensation have no sites in these single-task feature demos.
+- **Native typed contract:** the CNCF DSL declares JSON Schemas, so the typed contract
+  check (SC1010) runs with **no inference**. `corpus/cncf-typed/order-bad.yaml` (ship
+  before charge) → **3 SC1010 errors** derived directly from the declared schemas.
+- Verification: mean **3.9 µs**/workflow.
+
+## Implementation size — 2,631 lines of Rust
 | Component | Module(s) | LOC |
 |---|---|---|
 | Workflow IR | ir.rs | 277 |
-| Frontends (ASL parse+emit, typed DSL) | asl.rs, dsl.rs | 412 |
-| Annotations + inference | annot.rs | 245 |
+| Frontends (ASL parse+emit, typed DSL, CNCF Serverless Workflow) | asl.rs, dsl.rs, cncf.rs | 664 |
+| Annotations + inference | annot.rs | 251 |
 | Analysis passes (structural, contract, typestate, retry, compensation, manager) | passes/* | 650 |
 | Diagnostics | diag.rs | 115 |
 | Mutation engine | mutate.rs | 184 |
-| CLI + stats + eval harness | main.rs | 476 |
-| **Total** | | **2359** |
+| CLI + stats + eval harness | main.rs | 490 |
+| **Total** | | **2631** |

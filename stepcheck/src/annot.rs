@@ -125,8 +125,14 @@ fn resolve_task(st: &mut State, sidecar: Option<&Sidecar>, infer: bool) {
         st.anno.output_schema = a.output_schema.clone().or(st.anno.output_schema.take());
         st.anno.effect = a.effect.clone().or(st.anno.effect.take());
     }
-    st.anno.input_fields = schema_fields(sidecar, &st.anno.input_schema);
-    st.anno.output_fields = schema_fields(sidecar, &st.anno.output_schema);
+    // Resolve schema names to field sets, but do not clobber fields a frontend
+    // already supplied directly (e.g. the CNCF frontend reads inline JSON Schema).
+    if let Some(f) = schema_fields(sidecar, &st.anno.input_schema) {
+        st.anno.input_fields = Some(f);
+    }
+    if let Some(f) = schema_fields(sidecar, &st.anno.output_schema) {
+        st.anno.output_fields = Some(f);
+    }
 
     // 2. inference fills the gaps left by explicit annotations
     let need_idem = st.anno.idempotent.is_none();
