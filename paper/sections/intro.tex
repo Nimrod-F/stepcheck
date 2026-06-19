@@ -4,7 +4,7 @@
 Cloud-native applications increasingly decompose business logic into independently
 deployable functions that are coordinated by managed \emph{workflow orchestration}
 services. Among these, AWS Step Functions has become one of the most widely
-adopted platforms in industry~\cite{garciaLopez2018faas,wen2021empirical,kulkarni2025characterizing}.
+adopted platforms in industry~\cite{wen2021empirical,kulkarni2025characterizing}.
 A Step Functions workflow is a state machine written in the \emph{Amazon States
 Language} (\asl), a JSON configuration format that describes task invocations,
 branching, parallelism, retries, and error handling, and that executes on top of
@@ -17,18 +17,13 @@ its JSON schema and the existence of transitions, but not whether the data produ
 by one task matches what the next consumes, whether tasks are invoked in a valid
 business order, whether an automatically retried task is safe to repeat, or whether
 a long-running transaction can roll back the effects it has already committed. As a
-consequence, four recurring classes of defect surface only at run time:
-
-\begin{description}
-  \item[Contract mismatches.] A task reads a field its predecessor never produces
-    (e.g.\ \texttt{ChargeCard} expects \texttt{total} but receives \texttt{amount}).
-  \item[Protocol (typestate) violations.] An edit reorders the machine so a task runs
-    out of business order (shipping before payment)---valid JSON, invalid protocol.
-  \item[Unsafe retries.] A retry policy re-invokes a non-idempotent operation after a
-    partial success, duplicating its effect~\cite{mohammad2025resilient}.
-  \item[Missing compensation.] A persistent operation reserves a resource the workflow
-    cannot release when a later step fails---an incomplete Saga~\cite{garciaMolina1987sagas}.
-\end{description}
+consequence, four recurring classes of defect surface only at run time (detailed in
+Section~\ref{sec:bg:defects}): \emph{contract mismatches} (a task reads a field its
+predecessor never produces); \emph{protocol/typestate violations} (a task runs out of
+business order---shipping before payment); \emph{unsafe retries} (a retry re-invokes a
+non-idempotent operation, duplicating its effect~\cite{mohammad2025resilient}); and
+\emph{missing compensation} (a persistent operation cannot be rolled back when a later
+step fails---an incomplete Saga~\cite{garciaMolina1987sagas}).
 
 A central obstacle to checking these properties is that \asl{} \emph{omits the very
 information the checks require}. \asl{} has no notion of a task's input or output
@@ -57,21 +52,20 @@ with full static guarantees and the same compilation target.
 \paragraph{Contributions.}
 \begin{itemize}
   \item A practical model and four static analyses ---contract/data-flow, typestate,
-        retry safety, compensation completeness--- for serverless workflows, framed
-        operationally rather than through heavy formalism
+        retry safety, compensation completeness--- plus a native structural pass (five
+        in all), framed operationally rather than through heavy formalism
         (Sections~\ref{sec:approach}--\ref{sec:analyses}).
   \item A two-layer design that verifies \emph{existing} \asl{} workflows by pairing
         sound native checks with an annotation layer whose defaults are inferred
         from naming/resource conventions (Section~\ref{sec:approach}).
-  \item \tool, an open, modular implementation in Rust (2.6k LOC) with pluggable
-        frontends (raw \asl, a typed DSL, and the CNCF Serverless Workflow DSL) and
-        analysis passes, a diagnostics engine, an \asl{} emitter, and a mutation-based
-        error-injection tool (Section~\ref{sec:impl}).
-  \item An evaluation on \textbf{193 real} Step Functions workflows mined from public
-        AWS repositories: in-the-wild findings, a 429-mutant detection study (100\%
-        recall), inference accuracy against a hand-labelled gold set (83--91\%),
-        sub-millisecond verification cost, and a real AWS round-trip
-        (Section~\ref{sec:eval}).
+  \item \tool, an open, modular Rust implementation (2.6k LOC) with pluggable frontends
+        (raw \asl, a typed DSL, the CNCF Serverless Workflow DSL), a diagnostics engine,
+        an \asl{} emitter, and a mutation-based error-injection tool
+        (Section~\ref{sec:impl}).
+  \item An evaluation on \textbf{193 real} workflows: in-the-wild findings, a 429-mutant
+        study (100\% recall) contrasted with the \texttt{statelint} validator,
+        inference accuracy and warning precision against an agreement-checked gold set,
+        sub-millisecond cost, and a real AWS round-trip (Section~\ref{sec:eval}).
 \end{itemize}
 
 \paragraph{Research questions.}

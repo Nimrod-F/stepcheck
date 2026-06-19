@@ -32,15 +32,40 @@ All numbers produced by the committed tool over the committed corpus. Reproduce:
 Each mutant injects exactly one defect; "detected" means the expected diagnostic
 count strictly increased vs the unmutated baseline.
 
-## E4 — Inference accuracy vs hand-labeled gold (10 workflows, 44 tasks)
-| Property | Labeled | Predicted | Abstained | Correct | Wrong | Accuracy (of predicted) | Coverage |
-|---|---|---|---|---|---|---|---|
-| Idempotency | 44 | 35 | 9 | 29 | 6 | **82.9%** | 79.5% |
-| Persistence | 44 | 35 | 9 | 32 | 3 | **91.4%** | 79.5% |
+## E4 — Inference accuracy vs agreement-checked gold (23 workflows, 147 tasks)
+Gold set expanded from 10→23 workflows; new workflows labelled in **two independent
+passes** (Cohen's kappa **1.00** idempotency, **0.745** persistence) reconciled by
+adjudication. `node eval/inference_accuracy.js` (gold in `corpus/gold-labels.json`).
+| Property | Labeled | Predicted | Abstained | Correct | Accuracy (of predicted) | Coverage |
+|---|---|---|---|---|---|---|
+| Idempotency | 147 | 118 | 29 | 73  | **61.9%** | 80.3% |
+| Persistence | 147 | 118 | 29 | 101 | **85.6%** | 80.3% |
 
-Heuristic abstains on unknown verbs (confirm/move/audit/copy/aggregate/…); errs on
-e.g. `cancel` (idempotent but flagged non-idempotent) and `refund` (a compensator
-flagged persistent) — motivating explicit annotation overrides.
+The larger, more diverse set reveals idempotency inference is genuinely weak (62%): the
+write-verb heuristic misreads stable-key DynamoDB writes and cancel/release/refund
+compensators (idempotent in effect) as non-idempotent. Persistence (which drives the
+compensation check) holds up at 86%. High annotator agreement + low heuristic accuracy =
+the truth is clear but names don't carry it → findings are warnings.
+
+## E4b — In-the-wild warning precision (vs gold)
+Of the 39 SC3001/SC4001 warnings landing on a gold-labelled task, **28/39 (72%)** are
+true positives — **26/32 (81%)** for SC4001 (compensation), **2/7** for SC3001 (retry).
+Every false positive is a compensator (RefundPayment/Cancel*) or an idempotent
+keyed/metadata write. (A broader judge+adversarial-verify triage of all 153 findings is
+in `eval/triage-verdicts.json`.)
+
+## E9 — Baseline: statelint (AWS Labs reference linter, v0.8.0)
+`node eval/statelint_baseline.js` → `eval/baseline-statelint.json`. On the 429 mutants:
+| Defect class | Applicable | StepCheck | statelint |
+|---|---|---|---|
+| Dangling transition (SC0002) | 166 | 166 (100%) | 166 (100%) |
+| Broken binding (SC1003) | 141 | 141 (100%) | 140 (99%) |
+| Unsafe retry (SC3001) | 103 | 103 (100%) | **0 (0%)** |
+| Missing compensation (SC4001) | 19 | 19 (100%) | **0 (0%)** |
+
+statelint catches schema/structural defects but is blind to retry-safety and
+compensation. In the wild it flags 113/193 files with 499 problems, **410** of them
+schema-shape nits (BackoffRate/IntervalSeconds typing), none semantic.
 
 ## E5 — Verification cost
 - Mean **18.7 µs**/workflow, median 14.9 µs, max 111.8 µs.

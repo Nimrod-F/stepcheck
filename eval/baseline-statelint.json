@@ -1,0 +1,63 @@
+{
+  "tool": "statelint 0.8.0 (j2119 0.4.0)",
+  "corpus": 193,
+  "in_the_wild": {
+    "statelint_flagged_files": 113,
+    "statelint_total_problems": 499,
+    "category_totals": {
+      "other": 35,
+      "jsonpath/path": 53,
+      "schema-type/shape": 410,
+      "transition/reachability": 1
+    },
+    "note": "statelint checks JSON-schema conformance + structural/semantic rules expressible without task semantics; it has no notion of idempotency, persistence, business typestate, or data contracts beyond JSONPath syntax."
+  },
+  "mutation_detection": {
+    "contract": {
+      "applicable": 141,
+      "statelint_detected": 140,
+      "statelint_recall": 0.993,
+      "statelint_any_new_problem": 140,
+      "examples": [
+        {
+          "file": "sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
+          "problem": "Field \"Name.$\" of Parameters at \"State Machine.Create New Organizational Unit\" is not a JSONPath or intrinsic function expression"
+        },
+        {
+          "file": "sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
+          "problem": "Field \"#lockownerid.$\" of Parameters at \"State Machine.Get Current Lock Item.ExpressionAttributeNames\" is not a JSONPath or intrinsic function expression"
+        }
+      ]
+    },
+    "retry": {
+      "applicable": 103,
+      "statelint_detected": 0,
+      "statelint_recall": 0,
+      "statelint_any_new_problem": 103,
+      "examples": []
+    },
+    "compensation": {
+      "applicable": 19,
+      "statelint_detected": 0,
+      "statelint_recall": 0,
+      "statelint_any_new_problem": 18,
+      "examples": []
+    },
+    "structural": {
+      "applicable": 166,
+      "statelint_detected": 166,
+      "statelint_recall": 1,
+      "statelint_any_new_problem": 166,
+      "examples": [
+        {
+          "file": "sfn-collection___workflow_model__statemachine__statemachine.asl.json",
+          "problem": "No state found named \"__StepCheckMissingState__\", referenced at State Machine.States.Submit Batch Job.Next"
+        },
+        {
+          "file": "sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
+          "problem": "No state found named \"__StepCheckMissingState__\", referenced at State Machine.States.Get Organization Root.Next"
+        }
+      ]
+    }
+  }
+}

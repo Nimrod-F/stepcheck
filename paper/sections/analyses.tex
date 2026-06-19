@@ -1,18 +1,19 @@
 \section{Static Analyses}
 \label{sec:analyses}
 
-\tool{} runs five passes over the IR. Each pass is independent and emits diagnostics
-with a stable code (Table~\ref{tab:codes}), a severity, the offending state, and a
-remediation note. We describe each pass operationally; all are linear in the number
-of states and run over nested \texttt{Map}/\texttt{Parallel} sub-machines.
+\tool{} runs five independent passes over the IR, each emitting diagnostics with a
+stable code (Table~\ref{tab:codes}), a severity, the offending state, and a remediation
+note. All are linear in the number of states and recurse into nested
+\texttt{Map}/\texttt{Parallel} sub-machines.
 
 \begin{table}[t]
 \centering
 \caption{Diagnostic codes emitted by \tool{}. Severity~$\dagger$ is \emph{error} when
 derived from declared facts and \emph{warning} when derived from inference.}
 \label{tab:codes}
+\small
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}llp{7.4cm}@{}}
+\begin{tabular}{@{}llp{7.2cm}@{}}
 \toprule
 Code & Pass & Meaning \\
 \midrule
@@ -40,15 +41,13 @@ every non-terminal offers a continuation, that a terminal is reachable, that
 states are well-formed---sound checks that catch defects AWS reports only at run time.
 
 \paragraph{Contract / data-flow (\code{SC1xxx}).}
-Natively, the pass mines every JSONPath reference (\texttt{.\$} payloads and
-\texttt{Choice} variables) and checks \asl{}-semantic bindings: a
-\texttt{waitForTaskToken} task must pass \texttt{\$\$.Task.Token} or its callback can
-never be delivered (\code{SC1001}); the \texttt{\$\$.Map} context is valid only inside a
-\texttt{Map} (\code{SC1002}); and every payload must be a valid path or \texttt{States.*}
-intrinsic (\code{SC1003}). With declared schemas it also performs typed checking
-(\code{SC1010}): following control flow through transparent states, each successor's
-required fields must be a subset of the producer's output---the \texttt{amount}/%
-\texttt{total} defect of Section~\ref{sec:bg:defects}.
+Natively, the pass mines every JSONPath reference and checks \asl{}-semantic bindings: a
+\texttt{waitForTaskToken} task must pass \texttt{\$\$.Task.Token} (\code{SC1001}); the
+\texttt{\$\$.Map} context is valid only inside a \texttt{Map} (\code{SC1002}); and every
+payload must be a valid path or \texttt{States.*} intrinsic (\code{SC1003}). With declared
+schemas it adds typed checking (\code{SC1010}): following control flow through transparent
+states, each successor's required fields must be a subset of the producer's
+output---the \texttt{amount}/\texttt{total} defect of Section~\ref{sec:bg:defects}.
 
 \paragraph{Typestate (\code{SC2xxx}).}
 Using \texttt{state\_in}/\texttt{state\_out} labels, the pass checks that adjacent tasks
@@ -68,12 +67,10 @@ one with neither leaves its effect uncompensated (\code{SC4001}), and a compensa
 naming a non-existent state is \code{SC4002}.
 
 \paragraph{Worked example.}
-Running \tool{} on the well-formed order workflow reports no findings. Reordering it
-to ship before charging (Section~\ref{sec:bg:defects}) yields five errors with no
-false positives: two \code{SC2001} typestate mismatches (\texttt{ShipOrder} consumes
-\emph{OrderPaid} after \texttt{ReserveInventory} produced \emph{OrderReserved}; and
-\texttt{ChargeCard} consumes \emph{OrderReserved} after \texttt{ShipOrder} produced
-\emph{OrderShipped}) and three \code{SC1010} contract mismatches
-(\texttt{paymentId}, \texttt{amount}, and \texttt{reservationId} are required but not
-produced upstream). The two checks are complementary: typestate explains the ordering
-fault, the contract check pinpoints the data that breaks.
+\tool{} reports no findings on the well-formed order workflow. Reordering it to ship
+before charging (Section~\ref{sec:bg:defects}) yields five errors and no false
+positives: two \code{SC2001} typestate mismatches (e.g.\ \texttt{ShipOrder} consumes
+\emph{OrderPaid} but its new predecessor produced \emph{OrderReserved}) and three
+\code{SC1010} contract mismatches (\texttt{paymentId}, \texttt{amount},
+\texttt{reservationId} required but not produced upstream)---complementary checks:
+typestate explains the ordering fault, the contract check pinpoints the broken data.

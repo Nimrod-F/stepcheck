@@ -1,0 +1,1058 @@
+[
+  {
+    "state": "Submit Batch Job",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "batch:submitJob.sync (SubmitJob) enqueues a new Batch job run each call with no idempotency token, so retrying on the broad States.ALL class can duplicate the job execution."
+  },
+  {
+    "state": "Create New Account",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "organizations:createAccount provisions a brand-new durable AWS account that a later failure would need to compensate, and it has no Catch/compensation."
+  },
+  {
+    "state": "New Account Status",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "organizations:describeCreateAccountStatus is a read/poll of account-creation status and acquires no durable resource, so flagging it as persistent is a misclassification."
+  },
+  {
+    "state": "Create Stack",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "cloudformation:createStack provisions durable infrastructure in the new account that a later failure should roll back, and it has no compensation/Catch."
+  },
+  {
+    "state": "Clean Up Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:updateItem lock-release guarded by ConditionExpression attribute_exists(#lockownerid) plus REMOVE of that attribute, with ConditionalCheckFailedException not retried (MaxAttempts 0) and caught to Success, so the decrement converges to the same end state and cannot duplicate on retry \u2014 idempotent, not non-idempotent."
+  },
+  {
+    "state": "Get Current Lock Item",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:getItem is a pure read (ProjectionExpression lookup) that acquires no durable resource, so it is not persistent and needs no compensation."
+  },
+  {
+    "state": "Get Lock[Branch0]/Acquire Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The updateItem's ConditionExpression attribute_not_exists(#lockownerid) makes the increment self-guarding per execution, so a retry fails with ConditionalCheckFailedException instead of double-incrementing the counter \u2014 operationally idempotent, not a genuine duplicate-effect risk."
+  },
+  {
+    "state": "Release Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a lock-release that converges to the same end state (REMOVE #lockownerid guarded by attribute_exists, with a Catch on ConditionalCheckFailedException to Success), so re-running causes no additional external effect \u2014 it is an idempotent release/compensator, not a non-idempotent task."
+  },
+  {
+    "state": "Get Lock[Branch0]/Get Current Lock Record",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a dynamodb:getItem pure read that acquires no durable resource, so classifying it as persistent (needing compensation) is wrong."
+  },
+  {
+    "state": "Get Lock[Branch0]/Acquire Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The counter-increment updateItem is guarded by ConditionExpression attribute_not_exists(#lockownerid) keyed to the execution id, so a retry cannot double-increment (it would fail the condition), making the operation idempotent per execution."
+  },
+  {
+    "state": "Release Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The decrement updateItem is guarded by ConditionExpression attribute_exists(#lockownerid) (caught to Success), so a retry after the owner attr is removed fails the condition rather than double-decrementing; it converges to a released end state and is idempotent."
+  },
+  {
+    "state": "Get Lock[Branch0]/Get Current Lock Record",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a dynamodb:getItem read that merely loads the current lock record to make a routing decision; a read acquires no durable resource and is not persistent, so SC4001 is misclassified."
+  },
+  {
+    "state": "Get Lock[Branch0]/Acquire Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The increment is guarded by ConditionExpression attribute_not_exists(#lockownerid) keyed on this execution id, so a retry after a lost response fails the condition rather than double-incrementing \u2014 the duplicate-effect risk is not genuine."
+  },
+  {
+    "state": "Release Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "A lock-release decrement guarded by attribute_exists(#lockownerid) (and catching ConditionalCheckFailedException to Success) converges to the same released end state on retry, so it is idempotent, not duplicating an effect."
+  },
+  {
+    "state": "Get Lock[Branch0]/Get Current Lock Record",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a dynamodb:getItem pure read that loads lock info to make a decision \u2014 it acquires no durable resource, so it is not persistent."
+  },
+  {
+    "state": "SimulatedProcessing[Map]/SendFinalResult",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "A dynamodb:putItem that writes the terminal 'simulated result' notification row keyed by ExecutionArn+timestamp to feed the realtime client stream (per the workflow comment); it is fire-and-forget result/notification emission, not a durable business resource that a later failure must compensate."
+  },
+  {
+    "state": "SimulatedProcessing[Map]/SendResult",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Same dynamodb:putItem result-notification write (keyed by ExecutionArn+timestamp) emitting a simulated result to the client stream; it is fire-and-forget notification output with nothing downstream to undo it, not a persistent resource acquisition requiring compensation."
+  },
+  {
+    "state": "Iterate list[Map]/Write to database",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable catalog record (CelebID/Name/location) to a DynamoDB table with no Catch/compensation, a genuine persistent write rather than a read, notification, or compensator."
+  },
+  {
+    "state": "Iterate list[Map]/Write to database",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable celebrity-detection record to the persistent ${Table} with no Catch/compensation, so it genuinely acquires/commits a durable external resource."
+  },
+  {
+    "state": "Set Order, Payment and Shipping Status",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable order record (the 'create order' step) with no Catch/compensation, so a downstream payment/shipping failure leaves an uncompensated committed order."
+  },
+  {
+    "state": "Third Party Payment Service HTTPS Endpoint",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "apigateway POST /checkout/payment charges via a third-party payment service, acquiring a durable external resource that a later failure must refund, yet has no compensation."
+  },
+  {
+    "state": "Set Payment Status: Unsuccessful",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:updateItem performs an idempotent in-place status-field SET keyed by cart_id on an existing record, not a new durable acquisition needing compensation."
+  },
+  {
+    "state": "Set Payment Status: Successful",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:updateItem is an idempotent in-place status SET on the existing order keyed by cart_id, a bookkeeping transition that converges and requires no compensation."
+  },
+  {
+    "state": "Third Party Shipping Service HTTPS Endpoint",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "apigateway POST /checkout/shipping books shipping with a third-party service, committing a durable external resource a later failure must cancel, with no compensation."
+  },
+  {
+    "state": "Set Shipping Status: Successful",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:updateItem is an idempotent in-place shipping_status SET keyed by cart_id on an existing record, not a new persistent resource acquisition."
+  },
+  {
+    "state": "Set Shipping Status: Unsuccessful",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:updateItem is an idempotent in-place shipping_status SET keyed by cart_id on an existing record, a status transition that needs no compensation."
+  },
+  {
+    "state": "Put Order to DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable order record (keyed by orderid) in the CQRS command path with no Catch/compensation, a genuinely persistent write a later failure would need to undo."
+  },
+  {
+    "state": "Iterate Containers[Map]/Extract Data",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "This task is a startExecution.sync:2 invocation of a child data-extraction/aggregation state machine (child1) \u2014 an orchestration/read-style step, not an acquisition of a durable external resource that a later failure would need to compensate or undo."
+  },
+  {
+    "state": "Create idempotency settings (key and ttl)",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This Lambda task only computes/derives idempotency settings (a key and a TTL value) for downstream use and acquires no durable external resource; the actual durable write is the separate next state, so there is nothing for a later failure to compensate."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch0]/Create Data Source",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrockagent:createDataSource provisions a new durable Bedrock data source (unique $uuid() name) with no Catch/compensation, a genuine persistent acquisition a later failure must undo."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch0]/Create Evaluation Job",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrock:createEvaluationJob launches a new durable, billable evaluation job (assigns JobArn) with no compensation, a genuine persistent resource acquisition."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch0]/CreateKnowledgeBase",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrockagent:createKnowledgeBase provisions a new durable vector knowledge base (unique name) with no Catch, a real persistent resource a later failure should delete."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch1]/Create Data Source 2",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrockagent:createDataSource provisions a new durable Bedrock data source (unique $uuid() name) with no compensation, a genuine persistent acquisition."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch1]/Create Evaluation Job 2",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrock:createEvaluationJob launches a new durable, billable evaluation job with no compensation, a genuine persistent resource acquisition."
+  },
+  {
+    "state": "Create Evaluation Pipelines[Branch1]/Create Knowledge Base 2",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrockagent:createKnowledgeBase provisions a new durable vector knowledge base with no Catch, a real persistent resource a later failure should undo."
+  },
+  {
+    "state": "Iterate Containers[Map]/Extract Data",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "This task is a startExecution.sync invocation of a child 'Extract Data' workflow (a read/extract-style sub-computation feeding later Glue file combination), not an acquisition or commit of a durable external resource that a later failure would need to compensate or undo."
+  },
+  {
+    "state": "Iterate Containers[Map]/Extract Data",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "This task is a synchronous states:startExecution.sync child-workflow invocation (an orchestration/dispatch primitive), not the acquisition or commit of a durable external resource that a parent failure would need to compensate, so the persistent classification is wrong for its operational semantics."
+  },
+  {
+    "state": "Map[Map]/Add Item",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem writes a durable record into a persistent DynamoDB table (not a read/notification/compensator) with no Catch, so the persistent classification and the missing-compensation flag are genuine."
+  },
+  {
+    "state": "Add Item",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable record to MetadataTable (not a read/notification/compensator) and has no Catch/compensation, so the persistent flag is operationally correct."
+  },
+  {
+    "state": "Map[Map]/Start Child Step Function",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution launches a new durable child execution per CSV row (not a read/notification/compensator) with no Catch, so a later failure would leave the started executions to be undone \u2014 a genuine persistent acquisition."
+  },
+  {
+    "state": "DynamoDB Get Item Task",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:getItem is a pure read that acquires/commits no durable resource, so it is not persistent and needs no compensation."
+  },
+  {
+    "state": "DynamoDB Put Item Task",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable Book record (book_id/Author) to the Books table with no Catch/compensation, a genuine persistent acquisition."
+  },
+  {
+    "state": "DynamoDB Delete Item Tasktem",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:deleteItem removes/releases a Book item and converges to the same end state, so it is not a new durable acquisition requiring compensation."
+  },
+  {
+    "state": "Process Messages[Map]/Write message to DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable record (the message row) with no Catch/compensation, a genuine persistent acquisition that a later failure (SQS delete or SNS publish) would leave uncompensated."
+  },
+  {
+    "state": "IterateS3Objects[Map]/DynamoDB PutItem",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "The task is a dynamodb:putItem that commits a durable image-metadata record (id keyed by S3 object key) to the persistent images-data-workflow table with no Catch/compensation, so it genuinely acquires durable external state."
+  },
+  {
+    "state": "Process Messages[Map]/Write message to DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem durably writes a message record to ${DDBTableName} with no Catch/compensation in the Map iterator, a genuine persistent durable-resource acquisition (not a read, notification, or compensator)."
+  },
+  {
+    "state": "Iterate through items[Map]/Update record",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Opaque transform Lambda (${TransferFunctionArn}) named 'Update record' that merely produces the payload for the next step; it is not a clear durable acquisition needing compensation, so persistent is spurious here."
+  },
+  {
+    "state": "Iterate through items[Map]/Add record to target DDB table",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable record into the target table during migration with no Catch/compensation, a genuine persistent write."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch0]/Create Forensic Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:runInstances launches a new EC2 instance, a durable billed resource a later failure must terminate, with no Catch/compensation."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create Snapshot from Isolated Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createSnapshot creates a new durable EBS snapshot needing deletion on cleanup, and has no compensation/Catch."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create EBS Volume from Snapshot",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createVolume provisions a new durable, billed EBS volume that a later failure must delete, with no compensation/Catch."
+  },
+  {
+    "state": "Tag Instance as Quarantine",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "ec2:createTags is an idempotent metadata write on an existing instance, not acquisition of a new durable resource, so persistent classification is wrong."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch0]/Create Forensic Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:runInstances launches a new billable EC2 instance, a durable resource a later failure must terminate, with no Catch/compensation."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create Snapshot from Isolated Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createSnapshot creates a new durable EBS snapshot that would need deletion on rollback, and has no compensation."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create EBS Volume from Snapshot",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createVolume provisions a new billable EBS volume, a durable acquired resource with no Catch/cleanup."
+  },
+  {
+    "state": "Tag Instance as Quarantine",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "ec2:createTags is an idempotent metadata write that converges to the same state and acquires no durable compensatable resource, so it is not genuinely persistent."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch0]/Create Forensic Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:runInstances launches a new billable EC2 instance, a durable resource a later failure must terminate, with no Catch/compensation."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create Snapshot from Isolated Instance",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createSnapshot creates a new durable, billable EBS snapshot that a failure would need to delete; genuinely persistent with no compensation."
+  },
+  {
+    "state": "Create Forensic Instance, Snapshots, Volume[Branch1]/Create EBS Volume from Snapshot",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "ec2:createVolume provisions a new durable, billable EBS volume that a failure must clean up; genuinely persistent acquisition with no compensation."
+  },
+  {
+    "state": "Tag Instance as Quarantine",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "ec2:createTags only writes idempotent metadata onto an existing instance, acquiring no new durable resource and needing no undo, so the persistent classification is wrong."
+  },
+  {
+    "state": "Store Event and Product Entity state changes in the Event Store",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB PutItem commits the event/product-state change into the durable event-store table with no Catch, a genuine persistent durable write central to the event-sourcing pattern."
+  },
+  {
+    "state": "Process Product Shipped",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is an opaque 'Process'-named Lambda that computes the shipped event and feeds the downstream Store state; it acquires no durable external resource itself, so flagging it as persistent is spurious."
+  },
+  {
+    "state": "for Rule in Rules[Map]/CreateSchedule",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "scheduler:createSchedule durably provisions a new named EventBridge Schedule (a committed external resource a later failure would need to delete/undo), and the task has no Catch/compensation, so the persistent classification is operationally correct."
+  },
+  {
+    "state": "for Rule in Rules[Map]/CreateSchedule",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "scheduler:createSchedule acquires a durable EventBridge schedule (a committed external resource that a later failure would need to delete), and it is not a read/notification/compensator and has no Catch."
+  },
+  {
+    "state": "Create idempotency settings (key and ttl)",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Despite 'Create' in the name, this Lambda merely computes/derives the idempotency key and TTL config (ResultPath '$') that downstream states use; it acquires no durable external resource (the actual DynamoDB lock record is created in the next state), so there is nothing a later failure would need to compensate."
+  },
+  {
+    "state": "Create idempotency settings (key and ttl)",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The IdempotencyConfigFunction merely computes the idempotency key and TTL config values; it acquires no durable external resource (the actual durable lock record is committed by the separate next state 'Create and lock idempotency record'), so there is nothing for a later failure to compensate."
+  },
+  {
+    "state": "Create idempotency settings (key and ttl)",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "The Lambda only computes the idempotency key and TTL config payload consumed by the next state; it acquires no durable external resource (the actual durable lock/write happens later in 'Create and lock idempotency record'), so it is not persistent."
+  },
+  {
+    "state": "Log execution in DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem creates the durable execution-tracking record (the workflow's central coordination item) with no Catch/compensation, so a later failure leaves an orphaned committed record \u2014 a genuine persistent acquisition."
+  },
+  {
+    "state": "Log execution in DynamoDB",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem keyed by the stable $$.Execution.Id is an idempotent self-keyed write of an internal execution-tracking/log record (no business resource acquired); a later failure has nothing to compensate, so it is not a persistent acquisition requiring a Catch."
+  },
+  {
+    "state": "for Rule in Rules[Map]/CreateSchedule",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "scheduler:createSchedule durably provisions a named EventBridge schedule (an acquired external resource a later map-iteration failure would need to delete) yet the task has no Catch/compensation, so the persistent classification is operationally correct."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment (FunctionName refundPaymentFunction) is the saga compensator for ProcessPayment whose refund converges to the same 'money returned' end state, so retrying it on States.ALL duplicates no external effect."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation (cancelCarRentalFunction) is a cancel/compensation operation that converges to the same cancelled end state, hence idempotent under retry, so the non-idempotent flag is wrong."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation (cancelFlightFunction) is a cancel/compensation operation converging to the cancelled end state, idempotent on retry, so flagging it as duplicable is spurious."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the compensator (undo for ProcessPayment) and acquires no new durable resource, so it is not a persistent task requiring its own compensation/Catch."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "RefundPayment is a saga compensator (the undo of a charge) whose effect converges the payment back to a refunded state, not a fresh non-idempotent acquisition, so flagging its broad-error retry as duplicating an external effect is spurious."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation is a compensator; cancelling an already-cancelled rental converges to the same end state, so it is idempotent and the SC3001 duplicate-effect flag is wrong."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation is a compensator; cancelling an already-cancelled flight converges to the same end state, so it is idempotent and the SC3001 duplicate-effect flag is wrong."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment (cancelCarRental path's refund Lambda) is itself the saga compensator for ProcessPayment, i.e. the undo action, not a new durable resource acquisition needing its own compensation, so the persistent classification is wrong."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is the saga compensator (invoked from ProcessPayment/ConfirmFlight/ConfirmCarRental Catch) that undoes a charge and converges to the same end state, so re-running it duplicates no external effect \u2014 it is idempotent, not the non-idempotent task SC3001 assumes."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation (cancelCarRentalFunction) is a cancel/release compensator that converges to the same released end state on repeat, so it is idempotent and re-running it on a broad error class duplicates no effect."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation (cancelFlightFunction) is a cancel/release compensator that converges to the same cancelled end state on repeat, so it is idempotent and the non-idempotent-retry flag is spurious."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the saga's compensating/undo action for ProcessPayment, not a new durable acquisition that a later failure must compensate, so it is not persistent and needs no Catch of its own."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is a saga compensator that refunds a specific payment/transaction and converges to the same refunded end state, so re-running it duplicates no external effect (idempotent)."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation is a compensator that cancels the rental booking and converges to the same cancelled state, so a retry causes no additional external effect (idempotent)."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation is a compensator that cancels the flight booking and converges to the same cancelled state, so a retry causes no additional external effect (idempotent)."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the saga's undo/compensation action, not a new durable resource acquisition, so flagging it as a persistent task lacking compensation is spurious."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "refundPaymentFunction is a compensator whose refund (keyed to the original payment) converges to the same refunded end state, so re-running it duplicates no external effect \u2014 it is idempotent, not non-idempotent."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "cancelCarRentalFunction is a cancel/compensate operation that converges to the same cancelled end state, so retrying it is idempotent rather than effect-duplicating."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "cancelFlightFunction is a cancel/compensate operation converging to the same cancelled end state, so it is idempotent on retry, not non-idempotent."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the compensator (the undo action for ProcessPayment), not a new durable-resource acquisition, so it does not need its own compensation/Catch."
+  },
+  {
+    "state": "Save quotes to DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem writes a durable aggregated-quotes record to the persistent Quotes table with no Catch/compensation, so it genuinely commits a durable resource a later failure would need to undo."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment (refundPaymentFunction) is the saga compensator for ProcessPayment; a refund is a cancel/release operation that converges to the same 'payment refunded' end state, so re-running it is idempotent and does not duplicate an external effect."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation (cancelCarRentalFunction) is a compensator whose cancel operation converges to the same 'reservation cancelled' end state, making it idempotent on retry."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation (cancelFlightFunction) is a compensator whose cancel operation converges to the same 'flight cancelled' end state, making it idempotent on retry."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the compensating/undo action in the saga, not a task that acquires or commits a new durable resource needing later compensation, so it should not be classified as persistent."
+  },
+  {
+    "state": "Submit Batch Job",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "batch:submitJob.sync launches a new AWS Batch job execution on each call (not keyed by a stable id), so retrying on States.ALL can duplicate the job submission \u2014 a genuine non-idempotent retry risk."
+  },
+  {
+    "state": "Workflow to Update Backend Systems",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "Synchronously starts a child Express workflow (states:startExecution.sync) whose explicit purpose is committing durable backend/database updates, a persistent acquisition with no Catch/compensation that a later failure (Ship the Package) would need to undo."
+  },
+  {
+    "state": "Workflow to Update Backend Systems",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "This task synchronously (startExecution.sync:2) runs a child workflow that commits durable backend-system changes (its own comment states the database is updated), a genuine persistent acquisition with no Catch/compensation before shipping."
+  },
+  {
+    "state": "Workflow to Update Backend Systems",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "Synchronously starts a child Express workflow that durably updates backend systems/database (per its comment), acquiring committed external state a later failure would need to undo, yet it has no Catch/compensation."
+  },
+  {
+    "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB putItem.waitForTaskToken durably commits a job-tracking record (taskToken, status 'processing') into rekognition-job-tracker with no Catch/compensation, so a later failure leaves a stale durable row that should be undone."
+  },
+  {
+    "state": "Create/Update VideoContentCatalog",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "glue:startCrawler merely triggers a re-runnable, convergent catalog crawl, not the acquisition of a durable external resource that a later failure would need to compensate."
+  },
+  {
+    "state": "Label Detection Map[Map]/Wait for LabelDetection Callback",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB putItem.waitForTaskToken durably writes a job-tracking record into rekognition-job-tracker with no compensation, a genuine persistent write that a downstream failure leaves behind."
+  },
+  {
+    "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB putItem.waitForTaskToken durably commits a tracking record into rekognition-job-tracker with no Catch/compensation, a real persistent durable write."
+  },
+  {
+    "state": "CreateStackInstances",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "cloudformation:createStackInstances provisions durable CFN stack instances across the org's accounts/regions (a persistent acquisition a later failure must clean up), yet this state has no Catch/compensation."
+  },
+  {
+    "state": "CreateStackInstances",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "cloudformation:createStackInstances provisions durable CFN stack instances (IAM roles) into accounts/OUs with no Catch/compensation, a genuine persistent acquisition a later failure must undo via deleteStackInstances."
+  },
+  {
+    "state": "CreateCustomCohereCommandLightModel",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "bedrock:createModelCustomizationJob commits a durable, billable custom fine-tuned model artifact that a later failure must clean up (delete), with no Catch/compensation present."
+  },
+  {
+    "state": "CreateProvisionedModelThroughput",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "createProvisionedModelThroughput acquires durable, ongoing-billed dedicated throughput that persists until explicitly deleted, a genuine persistent resource with no compensation/Catch."
+  },
+  {
+    "state": "Workflow to Update Backend Systems",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "Synchronously starts (startExecution.sync) a child workflow whose stated purpose is to durably update backend systems/databases (confirmed by the downstream 'database is updated' message), a committed durable change with no Catch/compensation."
+  },
+  {
+    "state": "Seed the DynamoDB Table",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "A seeding Lambda that durably writes/populates records into the DynamoDB table, committing a durable resource with no Catch/compensation."
+  },
+  {
+    "state": "Read Next Message from DynamoDB",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Resource is dynamodb:getItem, a read that acquires no durable resource, so flagging it as persistent is a wrong classification."
+  },
+  {
+    "state": "Send Message to SQS",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "sqs:sendMessage is fire-and-forget messaging, not acquisition of a durable resource needing compensation."
+  },
+  {
+    "state": "Seed the DynamoDB Table",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "A SeedingFunction Lambda that populates/writes durable records into the DynamoDB table genuinely commits external state a later failure would need to undo, so the persistent classification and missing-compensation flag are correct."
+  },
+  {
+    "state": "Read Next Message from DynamoDB",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Resource arn:aws:states:::dynamodb:getItem is a pure read that acquires/commits no durable resource, so classifying it as persistent and demanding compensation is wrong."
+  },
+  {
+    "state": "Send Message to SQS",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "arn:aws:states:::sqs:sendMessage is a fire-and-forget message dispatch (notification/publish), not acquisition of a durable resource requiring compensation, so the persistent flag is spurious."
+  },
+  {
+    "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem.waitForTaskToken writes a job-tracker row keyed by stable jobid/video-name (idempotent status record), not a durable resource acquisition requiring compensation."
+  },
+  {
+    "state": "Create/Update VideoContentCatalog",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "glue:startCrawler triggers a catalog refresh that converges to the current data state; it acquires no durable resource a later failure would need to undo."
+  },
+  {
+    "state": "Label Detection Map[Map]/Wait for LabelDetection Callback",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem.waitForTaskToken writes an idempotent job-tracker row keyed by jobid/video-name, not a durable persistent acquisition needing compensation."
+  },
+  {
+    "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem.waitForTaskToken writes an idempotent job-tracker row keyed by jobid/video-name, not a durable persistent acquisition needing compensation."
+  },
+  {
+    "state": "Wait for Textract Callback Token",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB PutItem.waitForTaskToken commits a durable checkpoint record (keyed by Textract JobId, holding the task token/STATUS) to DYNAMODB_CHECKPOINT_TABLE with no Catch/compensation, so a later failure would leave an orphaned persistent record that should be undone."
+  },
+  {
+    "state": "parallel update ddb, and pub sns[Branch0]/DDBPutItem",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem commits a durable video-catalog record (keyed on invocation_id) with no Catch/compensation, so it genuinely acquires a persistent resource a later failure would need to undo."
+  },
+  {
+    "state": "Submit Batch Job",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "batch:submitJob.sync submits a new AWS Batch job with no idempotency token, so retrying on States.ALL can duplicate the compute job \u2014 genuinely non-idempotent."
+  },
+  {
+    "state": "Queue webhook call",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "sqs:sendMessage.waitForTaskToken enqueues a new message that triggers an external webhook POST to the customer URL; retrying on States.ALL re-sends the message and duplicates the webhook delivery, so the task is genuinely non-idempotent."
+  },
+  {
+    "state": "Create Vocabulary Filter",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "transcribe:createVocabularyFilter commits a durable named AWS Transcribe resource (wordFilter) with no Catch/compensation, so a later failure leaves an orphaned filter needing deletion."
+  },
+  {
+    "state": "parallel update ddb, and pub sns[Branch0]/DDBPutItem",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "dynamodb:putItem writes a durable VideoTable catalog record keyed by video_id with no Catch/compensation, a genuine persistent acquisition a later parallel-branch failure would need to undo."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "RefundPayment is the saga compensator that undoes ProcessPayment; a refund converges to a refunded end state and is idempotent, not a non-idempotent effect that retrying duplicates."
+  },
+  {
+    "state": "CancelRentalReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelRentalReservation is a cancel/compensation action that converges to the same cancelled end state, hence idempotent rather than a duplicable non-idempotent effect."
+  },
+  {
+    "state": "CancelFlightReservation",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "CancelFlightReservation is a cancel/compensation action converging to a cancelled end state, so it is idempotent and re-running it does not duplicate an external effect."
+  },
+  {
+    "state": "RefundPayment",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "RefundPayment is itself the compensator (undo of ProcessPayment), not a new durable resource acquisition, so it should not be classified persistent or require its own compensation."
+  },
+  {
+    "state": "Start new workflow and continue",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution launches a new durable nested Step Functions execution each call (a persistent resource acquisition) with no Catch/compensation, and it is neither a read, notification, nor compensator."
+  },
+  {
+    "state": "Start in parallel[Branch0]/Start new workflow and wait for completion",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution.sync:2 synchronously starts and runs a new durable nested execution (persistent acquisition) with no compensation/Catch on failure."
+  },
+  {
+    "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution.waitForTaskToken starts a new durable nested execution awaiting callback (persistent acquisition) with no compensation/Catch."
+  },
+  {
+    "state": "Start new workflow and continue",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution launches a durable child workflow execution (a committed external resource with downstream effects) with no Catch/compensation, so the persistent classification is operationally correct."
+  },
+  {
+    "state": "Start in parallel[Branch0]/Start new workflow and wait for completion",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution.sync:2 synchronously starts and commits a durable child execution whose effects persist, with no Catch/compensation, so it is genuinely persistent."
+  },
+  {
+    "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "states:startExecution.waitForTaskToken commits a durable running child workflow execution with no Catch/compensation, a genuine persistent acquisition rather than a read/notification/compensator."
+  },
+  {
+    "state": "Clean Up Lock",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a lock-release/cleanup updateItem whose decrement is guarded by ConditionExpression attribute_exists(#lockownerid) and REMOVEs that owner id, so any States.ALL retry converges to the same released state (ConditionalCheckFailed is caught) rather than duplicating an effect; it is an idempotent converging cleanup, not a genuine non-idempotent task."
+  },
+  {
+    "state": "Get Current Lock Item",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a dynamodb:getItem read (with ProjectionExpression) that acquires no durable resource and needs no compensation, so flagging it as a persistent task is wrong."
+  },
+  {
+    "state": "HandleInput",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Lambda GetTestResultsFromSfnStatus derives/reads test results from an execution's status, a read with no external effect, so retrying it is safe and the non-idempotent classification is wrong."
+  },
+  {
+    "state": "RecordTestRun-DynamoDB",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem keyed by a stable primary key (TestId/TestRunId) is idempotent since re-running overwrites the same item with no additional effect, so the non-idempotent flag is spurious."
+  },
+  {
+    "state": "RecordTestRun-DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "This is a durable PutItem committing a test-result record with a Retry but no Catch/compensation, so it genuinely persists external state a later failure should undo."
+  },
+  {
+    "state": "StartInParallel[Map]/RunChildStateMachine",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "startExecution.sync launches a new child execution per call with no deterministic Name (only keyed by parent execution id), so it is non-idempotent, yet it is retried on the broad States.ALL class (MaxAttempts 12), which can genuinely duplicate the child execution effect."
+  },
+  {
+    "state": "ProcessPayload",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "FunctionSplitIfRequired is a deterministic payload-splitting transform that produces test-batches; re-running it duplicates no external effect, so it is idempotent."
+  },
+  {
+    "state": "RecurseToMoreDistributors[Map]/Recurse",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "startExecution.sync uses a deterministic Name (Execution.Name + batch_id) so a retry is deduplicated via ExecutionAlreadyExistsException (explicitly retry-handled), making it idempotent by stable id."
+  },
+  {
+    "state": "RunTests[Map]/RunTestStateMachine",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "startExecution.sync uses a deterministic Name (Execution.Name + test-number) keying the child execution, so retries dedup by stable id rather than launching a duplicate run."
+  },
+  {
+    "state": "RunTests[Map]/RecordResults",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "startExecution.sync to the result-recorder uses a deterministic Name, so retried invocations are deduplicated by stable id and record the same result once."
+  },
+  {
+    "state": "ProcessPayload",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "A payload-splitting transform acquires no durable external resource that a later failure would need to undo, so it is not persistent."
+  },
+  {
+    "state": "RecurseToMoreDistributors[Map]/Recurse",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Synchronously fanning out to a child distributor workflow is orchestration, not acquisition of a durable external resource requiring compensation."
+  },
+  {
+    "state": "RunTests[Map]/RecordResults",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Recording test results via a name-keyed child execution is an idempotent terminal log write, not a durable resource acquisition that a failure must compensate."
+  },
+  {
+    "state": "RecordTestRunStart",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "DynamoDB PutItem keyed by the stable primary key $$.Execution.Id overwrites the same item on every retry, so it is idempotent and re-running duplicates no external effect."
+  },
+  {
+    "state": "RunTests[Map]/RunDistributorStateMachine",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "startExecution.sync uses a deterministic execution Name and an explicit Retry on ExecutionAlreadyExistsException, so a broad-error retry hits the same name and cannot duplicate the child execution's effects."
+  },
+  {
+    "state": "RecordTestRunComplete",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "DynamoDB PutItem keyed by the stable primary key $$.Execution.Id overwrites the same item on every retry, so it is idempotent and re-running duplicates no external effect."
+  },
+  {
+    "state": "RecordTestRunStart",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is an idempotent status/bookkeeping write keyed by execution id (later overwritten by RecordTestRunComplete), not the acquisition of a durable external resource that a failure would need to compensate."
+  },
+  {
+    "state": "RecordTestRunComplete",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is the terminal idempotent status-marking write keyed by execution id, a log/bookkeeping update rather than acquisition of a durable resource requiring compensation."
+  },
+  {
+    "state": "HandleInput",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "Lambda 'GetTestResultsFromSfnStatus' reads/derives test results from execution status into $.processedtestresults with no external mutation, so it is idempotent and safe to retry."
+  },
+  {
+    "state": "RecordTestRun-DynamoDB",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "dynamodb:putItem keyed by stable primary key TestId/TestRunId is an idempotent write that simply overwrites the same item on retry, causing no duplicate effect."
+  },
+  {
+    "state": "RecordTestRun-DynamoDB",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "It commits a durable test-result record to the DynamoDB results table with only Retry and no Catch/compensation, a genuine persistent acquisition."
+  },
+  {
+    "state": "Add to FollowUp",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "DynamoDB PutItem commits a durable follow-up record (keyed by customer email) into ${FollowUpTableName}, a genuine persistent acquisition with no Catch/compensation, and it is neither a read, notification, nor compensator."
+  },
+  {
+    "state": "Notify Invalid Input",
+    "code": "SC3001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "events:putEvents publishes an EventBridge notification event; retrying on States.ALL can emit duplicate events, so it is genuinely non-idempotent."
+  },
+  {
+    "state": "Reserve Products[Map]/Reserve Product",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "LambdaReserveProduct acquires a durable inventory reservation that a later shipping failure would need to release, and it has only a transient-error Retry with no Catch/compensation."
+  },
+  {
+    "state": "Create Default Folders[Map]/Ensure Folder Exists",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "An \"Ensure Folder Exists\" Lambda that creates an S3 folder at a fixed deterministic key is an idempotent, convergent write (not a durable resource acquisition needing compensation), so the persistent flag is spurious."
+  },
+  {
+    "state": "CreateDatabase",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "glue:createDatabase durably creates a new Glue Data Catalog database with no Catch/compensation, a genuine persistent resource acquisition."
+  },
+  {
+    "state": "CreateNewPartition",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "glue:createPartition durably commits a new catalog partition with no Catch/compensation, a genuine persistent acquisition."
+  },
+  {
+    "state": "CreateMainPartition",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "glue:createPartition durably commits a new catalog partition with no Catch/compensation, a genuine persistent acquisition."
+  },
+  {
+    "state": "CreateTable",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "glue:createTable durably creates a new Glue Data Catalog table with no Catch/compensation, a genuine persistent resource acquisition."
+  },
+  {
+    "state": "RecordTestRunStart",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "DynamoDB PutItem keyed by the stable primary key $$.Execution.Id overwrites the same record on retry, so it is idempotent and re-running duplicates no effect."
+  },
+  {
+    "state": "RunTests[Map]/RunDistributorStateMachine",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "startExecution.sync uses a deterministic Name and an explicit ExecutionAlreadyExistsException retry, so a broad retry returns the existing run rather than launching a duplicate child execution."
+  },
+  {
+    "state": "RecordTestRunComplete",
+    "code": "SC3001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "DynamoDB PutItem keyed by the stable primary key $$.Execution.Id is an idempotent status overwrite, so retries do not duplicate any external effect."
+  },
+  {
+    "state": "RecordTestRunStart",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is an idempotent bookkeeping/status marker (status=Started) keyed by the stable execution id, not an acquisition of a durable external resource that a later failure would need to compensate/undo."
+  },
+  {
+    "state": "RecordTestRunComplete",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "This is a terminal status-log overwrite (status=Complete) keyed by the stable execution id, a bookkeeping record rather than a durable resource acquisition requiring compensation."
+  },
+  {
+    "state": "Create Default Folders[Map]/Ensure Folder Exists",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "\"Ensure Folder Exists\" creates an S3 folder/prefix at a fixed, predefined path \u2014 an idempotent, convergent setup operation that needs no compensation, not a durable resource acquisition a later failure must undo."
+  },
+  {
+    "state": "EC2CPUStressExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate provisions a new durable FIS experiment template resource (persistent acquisition) with no Catch/compensation, so the unprotected-persistent flag is genuine."
+  },
+  {
+    "state": "EC2StopExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate creates a new durable FIS experiment template (stop-instances action) that a later failure would need to delete, and the state has no compensation/Catch."
+  },
+  {
+    "state": "EC2TerminateExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate creates a new durable FIS experiment template (terminate-instances action), a genuine persistent resource acquisition lacking any compensation/Catch."
+  },
+  {
+    "state": "EC2CPUStressExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate provisions a durable AWS FIS experiment template (a persistent account resource that a later failure would need to delete), with no Catch/compensation, so it genuinely acquires a persistent resource."
+  },
+  {
+    "state": "EC2StopExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate creates another durable FIS experiment template resource that persists in the account and is uncompensated, a genuine persistent acquisition."
+  },
+  {
+    "state": "EC2TerminateExperimentTemplate",
+    "code": "SC4001",
+    "verdict": "TRUE_POSITIVE",
+    "reason": "fis:createExperimentTemplate creates a durable FIS experiment template resource with no Catch/compensation, so the persistent-task flag is correct."
+  },
+  {
+    "state": "Create Default Folders[Map]/Ensure Folder Exists",
+    "code": "SC4001",
+    "verdict": "FALSE_POSITIVE",
+    "reason": "\"Ensure Folder Exists\" invokes CreateS3Folder for a fixed predefined folder path (idempotent S3 PutObject-to-fixed-key that converges to the same end state); it is account-init scaffolding, not a durable acquisition a later failure would need to compensate/undo."
+  }
+]

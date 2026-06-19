@@ -87,6 +87,9 @@ Final count: **44 references** (40 citable works + 4 official web resources).
 ### Official web resources (cited as @misc with accessed date 2026-06-17)
 awsStepFunctions, cncfServerlessWorkflow, temporal, cadence — standard,
 stable documentation/spec URLs. Included per task requirement.
+awsStatelint — AWS Labs `statelint` GitHub repo (Apache-2.0), the reference
+ASL validator used as the evaluation baseline (Section 6); v0.8.0 installed
+from RubyGems and run over the corpus + mutants. Added 2026-06-19.
 
 ---
 
