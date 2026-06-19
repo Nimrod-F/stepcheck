@@ -15,6 +15,9 @@
 \hypersetup{hidelinks}
 \usepackage{microtype}
 
+% last-resort glue so long monospace identifiers never push into the margin
+\setlength{\emergencystretch}{3em}
+
 % ---- colours -----------------------------------------------------------
 \definecolor{kw}{RGB}{0,86,179}
 \definecolor{str}{RGB}{163,21,21}
@@ -33,7 +36,7 @@
   backgroundcolor=\color{bg},
   frame=single, framesep=4pt, rulecolor=\color{rule!40},
   breaklines=true, columns=fullflexible, keepspaces=true,
-  showstringspaces=false, xleftmargin=4pt, xrightmargin=2pt, aboveskip=4pt, belowskip=2pt,
+  showstringspaces=false, xleftmargin=4pt, xrightmargin=7pt, aboveskip=4pt, belowskip=2pt,
   commentstyle=\color{cmt}, stringstyle=\color{str}, keywordstyle=\color{kw}\bfseries,
 }
 \lstdefinelanguage{json}{

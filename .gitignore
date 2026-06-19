@@ -27,3 +27,7 @@ infra/.last_sm_arn
 # OS
 .DS_Store
 Thumbs.db
+
+# draw.io backup / temp files
+*.bkp
+.$*

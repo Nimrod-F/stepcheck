@@ -60,7 +60,8 @@ through a typed builder DSL that emits both the \asl{} and its annotations
 so the analyses are agnostic to how a workflow was authored.
 
 \begin{lstlisting}[style=base,caption={A sidecar annotation (TOML), excerpt.},label={lst:sidecar}]
-[schemas.OrderReserved]  fields = ["orderId", "amount", "reservationId"]
+[schemas.OrderReserved]
+fields = ["orderId", "amount", "reservationId"]
 [tasks.ChargeCard]
 idempotent = false
 persistent = true

@@ -63,6 +63,7 @@ executable AWS Step Functions.
 runtime-only, -- absent.}
 \label{tab:cmp}
 \setlength{\tabcolsep}{5pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
 Approach & Contract & Typestate & Retry & Compensation & Static & AWS target \\
@@ -75,5 +76,5 @@ Petri-net / BPEL verification~\cite{blondin2022soundness,bianculli2007bpel} & --
 Session / typestate types~\cite{honda2008multiparty,stromYemini1986typestate} & $\circ$ & \checkmark & -- & -- & \checkmark & -- \\
 \textbf{\tool{}} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
