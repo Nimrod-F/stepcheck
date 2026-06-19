@@ -10,6 +10,8 @@ mod dsl;
 mod ir;
 mod mutate;
 mod passes;
+#[cfg(test)]
+mod tests;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -377,7 +379,12 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
 }
 
 fn cmd_demo(which: &str, sidecar: bool) -> Result<i32> {
-    let (wf, sc) = dsl::order_example(which.ends_with("bad"));
+    let bad = which.ends_with("bad");
+    let (wf, sc) = if which.starts_with("travel") {
+        dsl::travel_example(bad)
+    } else {
+        dsl::order_example(bad)
+    };
     if sidecar {
         print!("{}", toml::to_string(&sc)?);
     } else {
