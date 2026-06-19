@@ -15,49 +15,44 @@ order: explicit annotations (authored by hand or produced by the typed DSL
 frontend), and \emph{inference} that supplies defaults from naming and resource
 conventions. Findings derived from inferred facts are reported at \emph{warning}
 severity, while findings derived from declared facts are \emph{errors}; this single
-rule keeps confidence visible throughout the tool's output.
+rule keeps confidence visible throughout the tool's output. We are deliberate about
+what ``verification'' means at each layer: the native checks are \emph{sound} and need
+no input, whereas the semantic checks are only as strong as the semantics they are
+given---with declared annotations they are precise errors, and in the zero-annotation
+default they degrade gracefully to best-effort, inference-driven \emph{warnings}
+(typestate, having no labels to act on, simply stays silent). \tool{} is thus a sound
+linter that becomes a precise verifier as annotations are added.
 
 \subsection{Workflow model}
 \label{sec:approach:model}
 
-We model a workflow as a graph of states with a designated start. A \emph{task} is
-characterised, beyond its control-flow successors, by four pieces of semantic
-information used by the checks:
-
-\begin{description}
-  \item[Contract.] A task consumes an input record and produces an output record. We
-        write a task as $T : A \rightarrow B$, where $A$ and $B$ name record types
-        (sets of fields). Two adjacent tasks $T_1 : A \rightarrow B$ and
-        $T_2 : C \rightarrow D$ \emph{compose} only if $B$ provides every field $C$
-        requires. Natively (without declared types) the contract layer instead checks
-        that JSONPath references resolve to data the workflow actually binds.
-  \item[Typestate.] Each task also advances a \emph{business state}: $T$ moves the
-        workflow from state $s_{\mathrm{in}}$ to $s_{\mathrm{out}}$. A workflow is
-        well-ordered when each task consumes the state its predecessor produced. An
-        optional \emph{protocol} lists the permitted state transitions
-        (e.g.\ \emph{created\,$\to$\,reserved\,$\to$\,paid\,$\to$\,shipped}), so that
-        a task performing an undeclared transition is rejected.
-  \item[Idempotency.] A task is \emph{idempotent} if repeating it causes no additional
-        external effect. Idempotent tasks may be retried freely; non-idempotent tasks
-        may not be retried on broad error classes.
-  \item[Persistence and compensation.] A task is \emph{persistent} if it commits a
-        durable resource (a reservation, a charge, a created record) that a later
-        failure should undo. A persistent task needs a \emph{compensation}: an
-        explicit handler or a \texttt{Catch} path to a compensating state.
-\end{description}
-
-This vocabulary is deliberately lightweight---there is no separate formal calculus to
-maintain---yet it is exactly what the four checks of Section~\ref{sec:analyses}
-consume. We illustrate it with the order workflow throughout.
+We model a workflow as a graph of states with a designated start. Beyond its
+control-flow successors, a \emph{task} carries four pieces of semantic information.
+\textbf{Contract:} a task $T:A\rightarrow B$ consumes/produces record types (field
+sets); adjacent $T_1:A\rightarrow B$, $T_2:C\rightarrow D$ \emph{compose} only if $B$
+provides every field $C$ requires (natively, without declared types, the layer instead
+checks that JSONPath references resolve to data the workflow binds).
+\textbf{Typestate:} $T$ advances a \emph{business state} $s_{\mathrm{in}}\rightarrow
+s_{\mathrm{out}}$; a workflow is well-ordered when each task consumes the state its
+predecessor produced, and an optional \emph{protocol} (e.g.\
+\emph{created\,$\to$\,reserved\,$\to$\,paid\,$\to$\,shipped}) lists permitted
+transitions. \textbf{Idempotency:} repeating an idempotent task causes no extra external
+effect, so it may be retried freely; a non-idempotent one may not be retried on broad
+error classes. \textbf{Persistence/compensation:} a \emph{persistent} task commits a
+durable resource (reservation, charge, created record) that a later failure should undo,
+so it needs a \emph{compensation}---an explicit handler or a \texttt{Catch} to a
+compensating state. This vocabulary is deliberately lightweight---no separate formal
+calculus---yet exactly what the four checks of Section~\ref{sec:analyses} consume.
 
 \subsection{The annotation layer}
 \label{sec:approach:annot}
 
 Explicit semantics are supplied either through a \emph{sidecar} file attached to an
 existing \asl{} workflow (Listing~\ref{lst:sidecar}) or, for greenfield workflows,
-through a typed builder DSL that emits both the \asl{} and its annotations
-(Listing~\ref{lst:dsl}). The two routes resolve to the same internal representation,
-so the analyses are agnostic to how a workflow was authored.
+through a typed builder DSL that emits both the \asl{} and its annotations (one
+\texttt{.task(\dots)} call per state carries its schema, protocol edge, idempotency,
+persistence, and compensation). The two routes resolve to the same internal
+representation, so the analyses are agnostic to how a workflow was authored.
 
 \begin{lstlisting}[style=base,caption={A sidecar annotation (TOML), excerpt.},label={lst:sidecar}]
 [schemas.OrderReserved]
@@ -68,16 +63,6 @@ persistent = true
 compensation = "RefundPayment"
 state_in = "OrderReserved"
 state_out = "OrderPaid"
-\end{lstlisting}
-
-\begin{lstlisting}[style=dsl,caption={The order workflow in the typed DSL (excerpt).},label={lst:dsl}]
-Builder::new("order-processing", "CreateOrder")
-  .schema("OrderReserved", &["orderId","amount","reservationId"])
-  .protocol("OrderReserved", "OrderPaid")
-  .task("ChargeCard", "OrderReserved", "OrderPaid",
-        /*idempotent*/ false, /*persistent*/ true,
-        /*compensation*/ Some("RefundPayment"),
-        /*next*/ Some("ShipOrder"), /*catch*/ Some("RefundPayment"))
 \end{lstlisting}
 
 \subsection{Inference of default annotations}
@@ -101,18 +86,9 @@ yields a zero-effort default whose mistakes (Section~\ref{sec:eval}) are visible
 
 \subsection{Architecture}
 
-Figure~\ref{fig:arch} shows the pipeline. A \emph{frontend} lowers a surface syntax
-to a format-agnostic intermediate representation (IR); annotation resolution
-attaches declared and inferred semantics to the IR; a \emph{pass} pipeline runs the
-five analyses, each emitting coded diagnostics; and an \emph{emitter} lowers verified
-workflows back to \asl{}. The design is modular along two axes: a new input format is
-a new \texttt{Frontend}, and a new check is a new \texttt{Pass}
-(Section~\ref{sec:impl}).
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{figures/architecture.pdf}
-\caption{\tool{} architecture: frontends lower to a common IR; annotation resolution
-recovers semantics; a pipeline of passes verifies; an emitter targets Step Functions.}
-\label{fig:arch}
-\end{figure}
+The pipeline is a straight line: a \emph{frontend} lowers a surface syntax to a
+format-agnostic intermediate representation (IR); annotation resolution attaches
+declared and inferred semantics to the IR; a \emph{pass} pipeline runs the five
+analyses, each emitting coded diagnostics; and an \emph{emitter} lowers verified
+workflows back to \asl{}. The design is modular along two axes: a new input format is a
+new \texttt{Frontend}, and a new check is a new \texttt{Pass} (Section~\ref{sec:impl}).

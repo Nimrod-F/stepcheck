@@ -13,10 +13,10 @@ van~der Aalst, W.M.P.: The application of {P}etri nets to workflow management.
   language). \url{https://docs.aws.amazon.com/step-functions/} (2026), accessed
   2026-06-17
 
-\bibitem{arjona2021triggerflow}
-Arjona, A., Garc{\'\i}a~L{\'o}pez, P., Samp{\'e}, J., Slominski, A., Villard,
-  L.: Triggerflow: Trigger-based orchestration of serverless workflows. Future
-  Generation Computer Systems  (2021), arXiv:2106.00583
+\bibitem{awsStatelint}
+{Amazon Web Services Labs}: statelint: A validator for {Amazon} states language
+  documents. \url{https://github.com/awslabs/statelint} (2024), apache-2.0;
+  v0.8.0. Accessed 2026-06-18
 
 \bibitem{bianculli2007bpel}
 Bianculli, D., Ghezzi, C., Spoletini, P.: A model checking approach to verify
@@ -34,15 +34,6 @@ Burckhardt, S., Gillum, C., Justo, D., Kallas, K., McMahon, C., Meiklejohn,
   C.S.: Durable functions: Semantics for stateful serverless. Proc. ACM
   Program. Lang.  \textbf{5}(OOPSLA) (2021). \doi{10.1145/3485510}
 
-\bibitem{burnay2020restscript}
-Burnay, N., Lopes, A., Vasconcelos, V.T.: {SafeRESTScript}: Statically checking
-  {REST} {API} consumers. arXiv preprint  (2020), arXiv:2007.08048
-
-\bibitem{chang2025sagallm}
-Chang, E.Y., Geng, L.: {SagaLLM}: Context management, validation, and
-  transaction guarantees for multi-agent {LLM} planning. arXiv preprint
-  (2025), arXiv:2503.11951
-
 \bibitem{cncfServerlessWorkflow}
 {Cloud Native Computing Foundation}: Serverless workflow specification.
   \url{https://serverlessworkflow.io/} (2026), accessed 2026-06-17
@@ -55,16 +46,6 @@ Colombo, C., Pace, G.J.: Comprehensive monitor-oriented compensation
 DeLine, R., F{\"a}hndrich, M.: Typestates for objects. In: European Conf. on
   Object-Oriented Programming (ECOOP). pp. 465--490 (2004).
   \doi{10.1007/978-3-540-24851-4_21}
-
-\bibitem{denielou2012pmpst}
-Deni{\'e}lou, P.M., Yoshida, N., Bejleri, A., Hu, R.: Parameterised multiparty
-  session types. Logical Methods in Computer Science  (2012), arXiv:1208.6483
-
-\bibitem{garciaLopez2018faas}
-Garc{\'\i}a~L{\'o}pez, P., S{\'a}nchez-Artigas, M., Par{\'\i}s, G.,
-  Barcelona~Pons, D., Ruiz~Ollobarren, {\'A}., Arroyo~Pinto, D.: Comparison of
-  {FaaS} orchestration systems. In: IEEE/ACM Int. Conf. on Utility and Cloud
-  Computing Companion (UCC) (2018), arXiv:1807.11248
 
 \bibitem{garciaMolina1987sagas}
 Garcia-Molina, H., Salem, K.: Sagas. In: ACM SIGMOD Int. Conf. on Management of
@@ -79,12 +60,6 @@ Honda, K., Yoshida, N., Carbone, M.: Multiparty asynchronous session types. In:
 Kulkarni, V., Reddy, N., Khare, T., Prasad, A.S., Babu, C., Simmhan, Y.:
   Characterizing {FaaS} workflows on public clouds: The good, the bad and the
   ugly. arXiv preprint  (2025), arXiv:2509.23013
-
-\bibitem{li2023dataflower}
-Li, Z., Xu, C., Chen, Q., Zhao, J., Chen, C., Guo, M.: {DataFlower}: Exploiting
-  the data-flow paradigm for serverless workflow orchestration. In: Int. Conf.
-  on Architectural Support for Programming Languages and Operating Systems
-  (ASPLOS) (2023), arXiv:2304.14629
 
 \bibitem{mohammad2025resilient}
 Mohammad, M.: Resilient microservices: A systematic review of recovery
@@ -113,12 +88,6 @@ Strom, R.E., Yemini, S.: Typestate: A programming language concept for
 \bibitem{wen2021empirical}
 Wen, J., Liu, Y.: An empirical study on serverless workflow service. arXiv
   preprint  (2021), arXiv:2101.03513
-
-\bibitem{yu2021pheromone}
-Yu, M., Cao, T., Wang, W., Chen, R.: Following the data, not the function:
-  Rethinking function orchestration in serverless computing. In: USENIX Symp.
-  on Networked Systems Design and Implementation (NSDI) (2023),
-  arXiv:2109.13492
 
 \bibitem{zhang2020beldi}
 Zhang, H., Cardoza, A., Chen, P.B., Angel, S., Liu, V.: Fault-tolerant and
