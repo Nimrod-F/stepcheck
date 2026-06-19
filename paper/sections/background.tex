@@ -34,9 +34,11 @@ the workflow recovers if a later step fails.
 \subsection{Four classes of latent defect}
 \label{sec:bg:defects}
 
-Consider the canonical order-processing workflow \texttt{CreateOrder} $\to$
-\texttt{ReserveInventory} $\to$ \texttt{ChargeCard} $\to$ \texttt{ShipOrder}, which
-we use as a running example. It exhibits all four defect classes when edited
+Consider the canonical order-processing workflow
+\begin{center}\small
+\texttt{CreateOrder} $\to$ \texttt{ReserveInventory} $\to$ \texttt{ChargeCard} $\to$ \texttt{ShipOrder},
+\end{center}
+which we use as a running example. It exhibits all four defect classes when edited
 carelessly. \emph{(1) Contract:} if \texttt{ReserveInventory} produces
 \texttt{\{orderId, amount\}} but \texttt{ChargeCard} consumes \texttt{total}, the
 payment task fails at run time on a missing field. \emph{(2) Typestate:} reordering
