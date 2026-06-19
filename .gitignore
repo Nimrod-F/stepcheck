@@ -1,0 +1,29 @@
+# Rust build artifacts
+/stepcheck/target/
+
+# github-explorer cache (large third-party repo dumps, not part of this project)
+/.github-explorer-cache/
+
+# LaTeX auxiliary files (keep main.pdf and main.bbl)
+*.aux
+*.log
+*.out
+*.blg
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Python / Jupyter
+__pycache__/
+.ipynb_checkpoints/
+.jupyter/
+.jupyter_ystore.db
+.virtual_documents/
+
+# transient AWS round-trip artifacts
+infra/.last_sm_arn
+
+# OS
+.DS_Store
+Thumbs.db

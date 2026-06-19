@@ -1,0 +1,68 @@
+[workflow]
+
+[schemas.CustomerRequest]
+fields = ["customerId", "items"]
+
+[schemas.OrderCreated]
+fields = ["orderId", "amount", "items"]
+
+[schemas.OrderPaid]
+fields = ["orderId", "paymentId", "reservationId"]
+
+[schemas.OrderReserved]
+fields = ["orderId", "amount", "reservationId"]
+
+[schemas.OrderShipped]
+fields = ["orderId", "trackingId"]
+
+[tasks.ChargeCard]
+idempotent = false
+persistent = true
+compensation = "RefundPayment"
+state_in = "OrderReserved"
+state_out = "OrderPaid"
+input_schema = "OrderReserved"
+output_schema = "OrderPaid"
+
+[tasks.CreateOrder]
+idempotent = false
+persistent = true
+compensation = "CancelOrder"
+state_in = "CustomerRequest"
+state_out = "OrderCreated"
+input_schema = "CustomerRequest"
+output_schema = "OrderCreated"
+
+[tasks.ReserveInventory]
+idempotent = false
+persistent = true
+compensation = "ReleaseInventory"
+state_in = "OrderCreated"
+state_out = "OrderReserved"
+input_schema = "OrderCreated"
+output_schema = "OrderReserved"
+
+[tasks.ShipOrder]
+idempotent = false
+persistent = true
+compensation = "CancelShipment"
+state_in = "OrderPaid"
+state_out = "OrderShipped"
+input_schema = "OrderPaid"
+output_schema = "OrderShipped"
+
+[[protocol]]
+from = "CustomerRequest"
+to = "OrderCreated"
+
+[[protocol]]
+from = "OrderCreated"
+to = "OrderReserved"
+
+[[protocol]]
+from = "OrderReserved"
+to = "OrderPaid"
+
+[[protocol]]
+from = "OrderPaid"
+to = "OrderShipped"

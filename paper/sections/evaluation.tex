@@ -1,0 +1,175 @@
+\section{Evaluation}
+\label{sec:eval}
+
+We evaluate \tool{} on real serverless workflows, asking: can it detect the four
+defect classes before deployment (RQ1); can it recover the semantics \asl{} omits
+cheaply enough to analyse existing workflows (RQ2); and what does verification cost,
+at build and run time (RQ3)? Every number below is produced by the released tool over
+a committed corpus and is reproducible with the commands shown.
+
+\subsection{Setup and corpus (RQ1)}
+\label{sec:eval:corpus}
+
+We mined \textbf{193} Step Functions workflows from two public AWS repositories,
+\texttt{aws-samples/aws-stepfunctions-examples} and
+\texttt{aws-samples/step-func\-tions-workflows-collection}, taking every file that
+parses as an \asl{} state machine. The corpus (Fig.~\ref{fig:eval}) is realistic
+and diverse: 1{,}355 states in total, a median of 6 states per workflow (max 33;
+Fig.~\ref{fig:eval}a), and broad use of \texttt{Choice} (166), \texttt{Map} (64),
+\texttt{Parallel} (33; Fig.~\ref{fig:eval}b), retries (84 workflows), and catch handlers
+(51 workflows). All experiments ran on a commodity laptop with a release build of
+\tool{} (Rust~1.96).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/eval-figure.pdf}
+\caption{Evaluation overview. (a) Distribution of workflow sizes and (b) state-type
+usage across the 193-workflow corpus; (c) inference accuracy and coverage for
+idempotency and persistence against the hand-labelled gold set (Section~\ref{sec:eval:infer}).}
+\label{fig:eval}
+\end{figure}
+
+\subsection{Findings in the wild (RQ1)}
+\label{sec:eval:wild}
+
+Run unmodified over the corpus (with inference enabled), \tool{} flags
+\textbf{86 of 193} workflows. We separate \emph{sound native} findings, which need no
+annotations and which we manually confirmed, from \emph{inference-driven} findings,
+which are warnings requiring triage (Table~\ref{tab:wild}). Among the native
+findings, nine workflows contain a \texttt{Choice} with no \texttt{Default}
+(\code{SC0007})---a recognised cause of \texttt{States.NoChoiceMatched} run-time
+failures---and one is genuinely malformed (\code{SC0010}): an aws-samples example
+nests a top-level \texttt{QueryLanguage} directive \emph{inside} its \texttt{States}
+block, where Step Functions would reject it. The inference-driven warnings
+(\code{SC3001}: 36; \code{SC4001}: 117) mark non-idempotent tasks retried broadly and
+persistent tasks lacking a compensation path; as Section~\ref{sec:eval:infer} shows,
+these are high-recall but include false positives (e.g.\ a \texttt{RefundPayment}
+compensator inferred as needing its own compensation), which is precisely why they
+are surfaced as warnings rather than errors.
+
+\begin{table}[t]
+\centering
+\caption{In-the-wild findings over 193 unmodified workflows
+(\texttt{stepcheck eval corpus/asl --infer}).}
+\label{tab:wild}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+Tier & Code & Count & Finding \\
+\midrule
+\multirow{2}{*}{Sound (native)} & \code{SC0007} & 9 & \texttt{Choice} without \texttt{Default} \\
+                                & \code{SC0010} & 1 & malformed state (misplaced directive) \\
+\midrule
+\multirow{2}{*}{Inferred (triage)} & \code{SC3001} & 36 & broad retry on (inferred) non-idempotent task \\
+                                   & \code{SC4001} & 117 & (inferred) persistent task without compensation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mutation-based detection (RQ1)}
+\label{sec:eval:mut}
+
+Because correct real workflows expose few of the deeper defects, we measure detection
+power by \emph{error injection}. For each defect class we inject exactly one defect
+per applicable workflow with \texttt{stepcheck mutate} and re-verify; a defect counts
+as \emph{detected} only if the expected diagnostic's count strictly increases over the
+unmutated baseline (so we measure detection of the \emph{injected} defect, not
+pre-existing findings). Across \textbf{429} mutants spanning the four classes,
+\tool{} achieves \textbf{100\% recall} (Table~\ref{tab:mut}), and it never reports the
+expected defect on the corresponding originals. We stress that this measures
+\emph{reliability of each check on the defect class it targets}, not detection of
+arbitrary bugs; the mutations are constructed to fall within each check's remit.
+
+\begin{table}[t]
+\centering
+\caption{Mutation study: injected defects detected (delta over baseline).}
+\label{tab:mut}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Defect class & Check & Applicable & Detected & Recall \\
+\midrule
+Broken data binding & \code{SC1003} & 141 & 141 & 100\% \\
+Unsafe retry & \code{SC3001} & 103 & 103 & 100\% \\
+Missing compensation & \code{SC4001} & 19 & 19 & 100\% \\
+Dangling transition & \code{SC0002} & 166 & 166 & 100\% \\
+\midrule
+\textbf{Total} & & \textbf{429} & \textbf{429} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Inference accuracy (RQ2)}
+\label{sec:eval:infer}
+
+The semantic checks depend on recovering idempotency and persistence. We hand-labelled
+a gold standard of \textbf{44 tasks} across 10 workflows (spanning a Saga, an
+inventory domain, account vending, data quality, and text processing), labelling each
+task by its true operational semantics, and compared the inference to it
+(Table~\ref{tab:infer}). The heuristic abstains on $\sim$20\% of tasks (unconventional
+verbs such as \emph{confirm}, \emph{audit}, \emph{aggregate}); on the tasks it does
+classify it reaches \textbf{82.9\%} accuracy for idempotency and \textbf{91.4\%} for
+persistence (Fig.~\ref{fig:eval}c). Its errors are instructive and bounded: \emph{cancel} operations
+(idempotent in effect) are flagged non-idempotent, and a \emph{refund} compensator is
+flagged persistent. Because inference only supplies \emph{defaults}, a one-line
+annotation corrects any such case, and all inferred findings are warnings. This
+answers RQ2: useful semantics are recovered at zero authoring cost, with residual
+error made visible and cheaply correctable.
+
+\begin{table}[t]
+\centering
+\caption{Inference accuracy vs.\ a hand-labelled gold set (44 tasks, 10 workflows).}
+\label{tab:infer}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Property & Labelled & Predicted & Abstained & Correct & Accuracy & Coverage \\
+\midrule
+Idempotency & 44 & 35 & 9 & 29 & 82.9\% & 79.5\% \\
+Persistence & 44 & 35 & 9 & 32 & 91.4\% & 79.5\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Verification cost and runtime overhead (RQ3)}
+\label{sec:eval:cost}
+
+Verification is cheap. Averaged over the corpus, the five passes take \textbf{18.7}\,$\mu$s
+per workflow (median 14.9\,$\mu$s, max 111.8\,$\mu$s); the entire 193-workflow corpus
+verifies in \textbf{3.6\,ms}. Because all analysis happens before deployment and the
+output is ordinary \asl{}, the \emph{runtime} overhead introduced by \tool{} is
+\textbf{zero}: the generated workflow executes on the standard Step Functions runtime
+with no added middleware, sidecar, or instrumentation. This distinguishes \tool{}
+from runtime approaches to fault tolerance and transactions~\cite{zhang2020beldi,burckhardt2021durable}.
+
+\subsection{Conciseness and AWS round-trip}
+\label{sec:eval:roundtrip}
+
+The typed DSL is also more concise than the \asl{} it generates: the order workflow
+is 20 declarative DSL statements that expand to a 121-line \asl{} definition while
+additionally encoding five record schemas, a four-edge protocol, and per-task
+idempotency, persistence, and compensation---semantics \asl{} cannot express.
+
+Finally, to confirm the compatibility claim end-to-end, we deployed the DSL-verified
+order workflow to real AWS Step Functions. The emitted \asl{} was deployed
+\emph{unmodified} (only binding \texttt{FunctionName} to a deployed Lambda ARN) as an
+Express state machine and executed synchronously; the execution reached
+\texttt{SUCCEEDED} with the input propagating through all four task steps to the
+terminal state, billed at 500\,ms / 64\,MB. The temporary resources were then removed.
+A verified \tool{} workflow thus runs on the unmodified industrial platform.
+
+\subsection{Threats to validity}
+
+\emph{Construct.} The mutation study reports 100\% recall by design: each mutation
+targets a defect within a check's remit, so the result attests to the reliability of
+each check, not to coverage of all possible bugs. We report it alongside the
+in-the-wild findings, which are not constructed. \emph{Internal.} Gold labels for
+idempotency/persistence are judgements; we documented our labelling criteria and
+release the labels for scrutiny, and the contested cases (cancel, refund) are exactly
+where the paper claims inference is imperfect. \emph{External.} The corpus is drawn
+from AWS sample repositories, which may over-represent didactic workflows; we mitigate
+this by taking \emph{all} parseable workflows rather than a curated subset, yielding a
+realistic spread of sizes and features. \emph{Soundness.} The native contract checks
+are conservative (they flag only definite faults); typestate and typed-contract
+precision depend on annotation quality, which is why \tool{} reports inferred findings
+as warnings.

@@ -1,0 +1,79 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Serverless workflow orchestration.}
+The commercial orchestrators---AWS Step Functions, Azure Durable Functions, and IBM
+Composer---and their trade-offs have been analysed
+extensively~\cite{garciaLopez2018faas,wen2021empirical,kulkarni2025characterizing},
+and a range of programming models has been proposed to make orchestration more
+expressive or data-aware~\cite{burckhardt2021durable,arjona2021triggerflow,yu2021pheromone,li2023dataflower}.
+These works target execution---performance, scalability, programming convenience. We
+are complementary: \tool{} targets \emph{correctness}, statically, on the most widely
+deployed of these platforms, without changing how workflows run.
+
+\paragraph{Durable execution and transactions.}
+Durable-execution engines such as Temporal and Cadence~\cite{temporal,cadence}, and
+systems like Beldi~\cite{zhang2020beldi}, provide exactly-once execution and
+transactional or Saga-like semantics \emph{at run time}, via logs and recovery
+protocols. \tool{} instead establishes retry-safety and compensation properties
+\emph{before} deployment and on the existing platform, adding no runtime machinery.
+The two are composable: a statically verified workflow can still run on a durable
+backend.
+
+\paragraph{Typestate and behavioural types.}
+Typestate originates with Strom and Yemini~\cite{stromYemini1986typestate} and was
+extended to objects and API protocols~\cite{fahndrich2004typestates}; session and
+multiparty session types give a rich theory of protocol
+conformance~\cite{honda2008multiparty,denielou2012pmpst}. \tool{} adapts the core
+idea---only-in-a-valid-state composition---to serverless workflow tasks, trading the
+full generality of these systems for a decidable, linear-time check that integrates
+into an industrial deployment toolchain.
+
+\paragraph{Saga transactions and compensation.}
+The Saga pattern~\cite{garciaMolina1987sagas} underpins recovery in cloud-native
+systems~\cite{mohammad2025resilient}, but compensation is typically expressed in code
+and validated at run time~\cite{colombo2014compensation,chang2025sagallm}. \tool{}
+contributes a \emph{static} compensation-completeness check: every persistent
+operation must have a reachable compensator before the workflow ships.
+
+\paragraph{Workflow and service-composition verification.}
+A large body of work verifies workflow soundness with Petri
+nets~\cite{vanDerAalst1998petri,blondin2022soundness} and business-process
+compositions with model checking~\cite{bianculli2007bpel}. These provide strong,
+general guarantees but require dedicated formalisms and are rarely wired into everyday
+cloud development. \tool{} deliberately targets a deployed industrial language with
+lightweight, linear checks and direct compilation.
+
+\paragraph{Data contracts and interface compatibility.}
+Interface compatibility is usually enforced at test time via consumer-driven
+contracts, or statically for service interfaces and REST
+clients~\cite{seco2020contracts,burnay2020restscript}. Our contract pass brings this
+producer/consumer reasoning to the data flow \emph{inside} a workflow, both natively
+(JSONPath bindings) and, with schemas, as a typed field-subset check.
+
+\paragraph{Summary.}
+Table~\ref{tab:cmp} positions \tool{}. To our knowledge it is the first system to
+combine typestate conformance, retry safety, compensation completeness, and
+data-contract checking into a single \emph{static} verifier that compiles directly to
+executable AWS Step Functions.
+
+\begin{table}[t]
+\centering
+\caption{\tool{} vs.\ representative approaches. \checkmark\ full, $\circ$ partial /
+runtime-only, -- absent.}
+\label{tab:cmp}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Approach & Contract & Typestate & Retry & Compensation & Static & AWS target \\
+\midrule
+AWS Step Functions~\cite{awsStepFunctions} & -- & -- & -- & -- & -- & \checkmark \\
+CNCF Serverless Workflow~\cite{cncfServerlessWorkflow} & -- & -- & $\circ$ & $\circ$ & -- & $\circ$ \\
+Temporal / Cadence~\cite{temporal,cadence} & -- & -- & $\circ$ & $\circ$ & -- & -- \\
+Beldi~\cite{zhang2020beldi} & -- & -- & $\circ$ & $\circ$ & -- & $\circ$ \\
+Petri-net / BPEL verification~\cite{blondin2022soundness,bianculli2007bpel} & -- & $\circ$ & -- & -- & \checkmark & -- \\
+Session / typestate types~\cite{honda2008multiparty,stromYemini1986typestate} & $\circ$ & \checkmark & -- & -- & \checkmark & -- \\
+\textbf{\tool{}} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}

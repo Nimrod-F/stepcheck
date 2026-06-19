@@ -1,0 +1,73 @@
+\section{Background and Motivation}
+\label{sec:bg}
+
+\subsection{Step Functions and the Amazon States Language}
+
+A Step Functions workflow is a state machine: a \texttt{StartAt} entry and a map of
+named \emph{states}. A \texttt{Task} state invokes a Lambda function or a service
+integration; \texttt{Choice} branches; \texttt{Parallel} and \texttt{Map} fan out;
+\texttt{Wait}, \texttt{Pass}, \texttt{Succeed}, and \texttt{Fail} complete the set.
+Data flows through a JSON document that each state reshapes with JSONPath fields
+(\texttt{Parameters}, \texttt{InputPath}, \texttt{ResultPath}, \texttt{OutputPath}),
+where a key suffixed \texttt{.\$} denotes a path reference. States carry retry
+(\texttt{Retry}) and error-handling (\texttt{Catch}) policies. Listing~\ref{lst:asl}
+shows a representative task drawn verbatim from our corpus.
+
+\begin{lstlisting}[style=json,caption={A real \asl{} task state (excerpt, \texttt{ship-order}).},label={lst:asl}]
+"Get Customer Status": {
+  "Type": "Task",
+  "Resource": "arn:aws:states:::lambda:invoke",
+  "OutputPath": "$.Payload",
+  "Parameters": { "FunctionName": "${LambdaGetCustomerStatus}",
+                  "Payload.$": "$.detail.customer" },
+  "Retry": [ { "ErrorEquals": ["Lambda.ServiceException"],
+               "IntervalSeconds": 2, "MaxAttempts": 6, "BackoffRate": 2 } ],
+  "Next": "Do Fraud Check"
+}
+\end{lstlisting}
+
+The platform validates such a definition's JSON schema and that every transition
+target exists, then executes it. It does \emph{not} reason about whether
+\texttt{\$.detail.customer} is present, whether retrying this task is safe, or how
+the workflow recovers if a later step fails.
+
+\subsection{Four classes of latent defect}
+\label{sec:bg:defects}
+
+Consider the canonical order-processing workflow \texttt{CreateOrder} $\to$
+\texttt{ReserveInventory} $\to$ \texttt{ChargeCard} $\to$ \texttt{ShipOrder}, which
+we use as a running example. It exhibits all four defect classes when edited
+carelessly. \emph{(1) Contract:} if \texttt{ReserveInventory} produces
+\texttt{\{orderId, amount\}} but \texttt{ChargeCard} consumes \texttt{total}, the
+payment task fails at run time on a missing field. \emph{(2) Typestate:} reordering
+to \texttt{ShipOrder\,$\to$\,ChargeCard} ships before payment---valid JSON, invalid
+business protocol. \emph{(3) Retry:} \texttt{ChargeCard} is non-idempotent; a broad
+retry (\code{ErrorEquals:[States.ALL]}) may charge twice. \emph{(4) Compensation:}
+\texttt{ReserveInventory} commits a reservation; if \texttt{ChargeCard} fails with no
+\texttt{ReleaseInventory} path, the reservation leaks. None of these is caught by the
+platform; all are common in practice~\cite{mohammad2025resilient,kulkarni2025characterizing}.
+
+\subsection{The information gap}
+\label{sec:bg:gap}
+
+The obstacle to checking these properties statically is not the analysis but the
+\emph{input}. Raw \asl{} encodes control flow and JSONPath data plumbing, but it does
+not record: the \emph{type} of data a task consumes or produces; the \emph{business
+state} a task represents; whether a task is \emph{idempotent}; or whether a task is
+\emph{persistent} and which action \emph{compensates} it. A verifier for existing
+workflows must therefore either (a) restrict itself to properties decidable from
+\asl{} alone, or (b) recover the missing semantics. \tool{} does both: it runs sound
+native checks that need nothing beyond \asl, and it recovers the remaining semantics
+through a lightweight annotation layer whose defaults are inferred from the strong
+naming and resource conventions that pervade real workflows
+(Section~\ref{sec:approach}). Figure~\ref{fig:pipeline} contrasts the resulting
+development process with the status quo.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/pipeline.pdf}
+\caption{Status quo (left): \asl{} is deployed directly and defects surface at run
+time. \tool{} (right): semantics are recovered by annotation or inference, five
+analyses run before deployment, and only verified workflows are compiled to \asl{}.}
+\label{fig:pipeline}
+\end{figure}

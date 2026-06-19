@@ -1,0 +1,106 @@
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit,backgrounds}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{microtype}
+
+% ---- colours -----------------------------------------------------------
+\definecolor{kw}{RGB}{0,86,179}
+\definecolor{str}{RGB}{163,21,21}
+\definecolor{cmt}{RGB}{0,128,0}
+\definecolor{bg}{RGB}{248,248,248}
+\definecolor{rule}{RGB}{120,120,120}
+
+% ---- diagnostic code macro --------------------------------------------
+\newcommand{\code}[1]{\textsf{\small #1}}
+\newcommand{\tool}{\textsc{StepCheck}}
+\newcommand{\asl}{\textsc{Asl}}
+
+% ---- listings ----------------------------------------------------------
+\lstdefinestyle{base}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{bg},
+  frame=single, framesep=4pt, rulecolor=\color{rule!40},
+  breaklines=true, columns=fullflexible, keepspaces=true,
+  showstringspaces=false, xleftmargin=4pt, xrightmargin=2pt, aboveskip=4pt, belowskip=2pt,
+  commentstyle=\color{cmt}, stringstyle=\color{str}, keywordstyle=\color{kw}\bfseries,
+}
+\lstdefinelanguage{json}{
+  morestring=[b]",
+  morestring=[s]{:}{:},
+  keywords={true,false,null},
+}
+\lstdefinestyle{json}{style=base,language=json,
+  literate=*{:}{{{\color{kw}:}}}{1}{\{}{{{\color{kw}\{}}}{1}{\}}{{{\color{kw}\}}}}{1}}
+\lstdefinestyle{rust}{style=base,
+  morekeywords={trait,impl,fn,pub,struct,enum,let,mut,for,match,Some,None,Option,Vec,Result,Workflow,DiagnosticSink},
+}
+\lstdefinestyle{dsl}{style=base,language=Java,
+  morekeywords={task,schema,protocol,workflow,compensate,idempotent,nonIdempotent,persistent},
+}
+\lstset{style=base}
+
+\begin{document}
+
+\title{Safe Serverless Workflow Orchestration through\\ Typestate Verification, Retry Safety, and\\ Compensation Checking}
+\titlerunning{Safe Serverless Workflow Orchestration}
+
+\author{Anonymous Author(s)}
+\authorrunning{Anonymous}
+\institute{Anonymous Institution \\ \email{anonymous@example.org}}
+
+\maketitle
+
+\begin{abstract}
+Serverless workflow orchestration platforms such as AWS Step Functions coordinate
+fleets of functions and managed services, but their workflows are written as
+untyped JSON state machines (the Amazon States Language, \asl) whose correctness is
+checked only at run time. Incompatible task interfaces, out-of-order business
+transitions, unsafe retries of non-idempotent operations, and missing
+compensations therefore surface as production incidents rather than build errors.
+We present \tool, a static verifier that brings four complementary checks
+---data-contract compatibility, typestate (business-protocol) conformance, retry
+safety, and Saga compensation completeness--- to workflows \emph{before}
+deployment, and compiles verified workflows back to executable \asl{}. Because
+real \asl{} omits the semantics these checks need (task types, idempotency,
+compensation), \tool{} pairs sound native analyses with a lightweight annotation
+layer whose defaults are \emph{inferred} from task names and resource bindings,
+so existing workflows can be analysed with zero up-front effort and refined
+incrementally. \tool{} is implemented in Rust as a modular frontend/pass pipeline
+(2.4k LOC). We evaluate it on a corpus of \textbf{193} real Step Functions
+workflows mined from public AWS repositories. The native checks flag genuine
+defects in the wild; a mutation study injecting 429 defects of four classes is
+detected with 100\% recall; name-based inference reaches 83--91\% accuracy
+against a hand-labelled gold set; verification costs 19\,$\mu$s per workflow on
+average; and a verified workflow deploys and executes unmodified on AWS Step
+Functions with zero runtime overhead.
+
+\keywords{Serverless computing \and Workflow orchestration \and AWS Step Functions
+\and Static verification \and Typestate \and Saga transactions \and Domain-specific
+languages.}
+\end{abstract}
+
+\input{sections/intro}
+\input{sections/background}
+\input{sections/approach}
+\input{sections/analyses}
+\input{sections/implementation}
+\input{sections/evaluation}
+\input{sections/related}
+\input{sections/conclusion}
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

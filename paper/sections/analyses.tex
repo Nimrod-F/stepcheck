@@ -1,0 +1,79 @@
+\section{Static Analyses}
+\label{sec:analyses}
+
+\tool{} runs five passes over the IR. Each pass is independent and emits diagnostics
+with a stable code (Table~\ref{tab:codes}), a severity, the offending state, and a
+remediation note. We describe each pass operationally; all are linear in the number
+of states and run over nested \texttt{Map}/\texttt{Parallel} sub-machines.
+
+\begin{table}[t]
+\centering
+\caption{Diagnostic codes emitted by \tool{}. Severity~$\dagger$ is \emph{error} when
+derived from declared facts and \emph{warning} when derived from inference.}
+\label{tab:codes}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llp{7.4cm}@{}}
+\toprule
+Code & Pass & Meaning \\
+\midrule
+\code{SC0001--0010} & structural & undefined start/transition target, unreachable state,
+  dead-end, non-exhaustive \texttt{Choice}, empty \texttt{Map}/\texttt{Parallel},
+  malformed state \\
+\code{SC1001--1003} & contract & \texttt{waitForTaskToken} without a task token,
+  \texttt{\$\$.Map} misuse, invalid JSONPath payload \\
+\code{SC1010} & contract & typed contract mismatch: successor requires a field the
+  predecessor does not produce \\
+\code{SC2001--2002} & typestate & out-of-order composition; undeclared
+  business-protocol transition \\
+\code{SC3001}$^{\dagger}$ & retry & non-idempotent task retried on a broad error class \\
+\code{SC4001--4002}$^{\dagger}$ & compensation & persistent task with no
+  compensation/handling; compensation names a missing state \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Structural validation (\code{SC0xxx}).}
+A reachability traversal from \texttt{StartAt} (following normal \emph{and} error
+transitions) checks that all transition targets exist, that no state is unreachable, that
+every non-terminal offers a continuation, that a terminal is reachable, that
+\texttt{Choice} states declare a \texttt{Default}, and that \texttt{Map}/\texttt{Parallel}
+states are well-formed---sound checks that catch defects AWS reports only at run time.
+
+\paragraph{Contract / data-flow (\code{SC1xxx}).}
+Natively, the pass mines every JSONPath reference (\texttt{.\$} payloads and
+\texttt{Choice} variables) and checks \asl{}-semantic bindings: a
+\texttt{waitForTaskToken} task must pass \texttt{\$\$.Task.Token} or its callback can
+never be delivered (\code{SC1001}); the \texttt{\$\$.Map} context is valid only inside a
+\texttt{Map} (\code{SC1002}); and every payload must be a valid path or \texttt{States.*}
+intrinsic (\code{SC1003}). With declared schemas it also performs typed checking
+(\code{SC1010}): following control flow through transparent states, each successor's
+required fields must be a subset of the producer's output---the \texttt{amount}/%
+\texttt{total} defect of Section~\ref{sec:bg:defects}.
+
+\paragraph{Typestate (\code{SC2xxx}).}
+Using \texttt{state\_in}/\texttt{state\_out} labels, the pass checks that adjacent tasks
+compose (predecessor output state $=$ successor input state, \code{SC2001}), catching
+re-orderings such as ship-before-pay, and that each task's transition is a permitted
+protocol edge when one is declared (\code{SC2002}). Absent annotations it is a no-op.
+
+\paragraph{Retry safety (\code{SC3xxx}).}
+A task with a \texttt{Retry} policy whose \texttt{ErrorEquals} includes a broad class
+(\texttt{States.ALL}/\texttt{States.TaskFailed}) is flagged \code{SC3001} if its
+idempotency resolves to \emph{non-idempotent}. Retries restricted to transient errors
+(throttling, \texttt{ServiceException}) are not flagged, as they fire before any effect.
+
+\paragraph{Compensation completeness (\code{SC4xxx}).}
+A \emph{persistent} task needs either a declared compensation or a \texttt{Catch} path;
+one with neither leaves its effect uncompensated (\code{SC4001}), and a compensation
+naming a non-existent state is \code{SC4002}.
+
+\paragraph{Worked example.}
+Running \tool{} on the well-formed order workflow reports no findings. Reordering it
+to ship before charging (Section~\ref{sec:bg:defects}) yields five errors with no
+false positives: two \code{SC2001} typestate mismatches (\texttt{ShipOrder} consumes
+\emph{OrderPaid} after \texttt{ReserveInventory} produced \emph{OrderReserved}; and
+\texttt{ChargeCard} consumes \emph{OrderReserved} after \texttt{ShipOrder} produced
+\emph{OrderShipped}) and three \code{SC1010} contract mismatches
+(\texttt{paymentId}, \texttt{amount}, and \texttt{reservationId} are required but not
+produced upstream). The two checks are complementary: typestate explains the ordering
+fault, the contract check pinpoints the data that breaks.

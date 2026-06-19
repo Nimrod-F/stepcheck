@@ -1,0 +1,49 @@
+{
+  "corpus": {
+    "files": 193,
+    "total_states": 1355
+  },
+  "baseline": {
+    "flagged_files": 86,
+    "errors": 1,
+    "warnings": 162,
+    "code_totals": {
+      "SC0007": 9,
+      "SC0010": 1,
+      "SC3001": 36,
+      "SC4001": 117
+    }
+  },
+  "mutation_study": {
+    "Contract": {
+      "expected_code": "SC1003",
+      "applicable": 141,
+      "detected": 141,
+      "recall": 1.0
+    },
+    "Retry": {
+      "expected_code": "SC3001",
+      "applicable": 103,
+      "detected": 103,
+      "recall": 1.0
+    },
+    "Compensation": {
+      "expected_code": "SC4001",
+      "applicable": 19,
+      "detected": 19,
+      "recall": 1.0
+    },
+    "Structural": {
+      "expected_code": "SC0002",
+      "applicable": 166,
+      "detected": 166,
+      "recall": 1.0
+    }
+  },
+  "timing_us": {
+    "mean": 18.6860103626943,
+    "median": 14.9,
+    "max": 111.8,
+    "total_ms": 3.6064
+  }
+}

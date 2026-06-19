@@ -1,0 +1,119 @@
+{
+  "StartAt": "CreateOrder",
+  "States": {
+    "CreateOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "CancelOrder"
+        }
+      ],
+      "Next": "ReserveInventory"
+    },
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "ReleaseInventory"
+        }
+      ],
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "RefundPayment"
+        }
+      ],
+      "Next": "ShipOrder"
+    },
+    "ShipOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "CancelShipment"
+        }
+      ],
+      "Next": "OrderCompleted"
+    },
+    "CancelOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "ReleaseInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "RefundPayment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "CancelShipment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "OrderCompleted": {
+      "Type": "Succeed"
+    },
+    "OrderFailed": {
+      "Type": "Fail"
+    }
+  }
+}

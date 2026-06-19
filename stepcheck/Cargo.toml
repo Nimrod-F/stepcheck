@@ -1,0 +1,23 @@
+[package]
+name = "stepcheck"
+version = "0.1.0"
+edition = "2021"
+description = "A static verifier for serverless workflows (Amazon States Language): contract, typestate, retry-safety and compensation checking."
+license = "Apache-2.0"
+
+[[bin]]
+name = "stepcheck"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+indexmap = "2"
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
+walkdir = "2"
+anyhow = "1"
+
+[profile.release]
+opt-level = 3
+lto = true

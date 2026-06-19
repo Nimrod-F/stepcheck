@@ -1,0 +1,81 @@
+\section{Introduction}
+\label{sec:intro}
+
+Cloud-native applications increasingly decompose business logic into independently
+deployable functions that are coordinated by managed \emph{workflow orchestration}
+services. Among these, AWS Step Functions has become one of the most widely
+adopted platforms in industry~\cite{garciaLopez2018faas,wen2021empirical,kulkarni2025characterizing}.
+A Step Functions workflow is a state machine written in the \emph{Amazon States
+Language} (\asl), a JSON configuration format that describes task invocations,
+branching, parallelism, retries, and error handling, and that executes on top of
+AWS Lambda and dozens of service integrations~\cite{awsStepFunctions}.
+
+While orchestration platforms simplify \emph{running} distributed workflows, they
+provide little support for \emph{reasoning about workflow correctness before
+deployment}. An \asl{} state machine is an untyped artifact: the platform validates
+its JSON schema and the existence of transitions, but not whether the data produced
+by one task matches what the next consumes, whether tasks are invoked in a valid
+business order, whether an automatically retried task is safe to repeat, or whether
+a long-running transaction can roll back the effects it has already committed. As a
+consequence, four recurring classes of defect surface only at run time:
+
+\begin{description}
+  \item[Contract mismatches.] A task reads a field its predecessor never produces
+    (e.g.\ \texttt{ChargeCard} expects \texttt{total} but receives \texttt{amount}).
+  \item[Protocol (typestate) violations.] An edit reorders the machine so a task runs
+    out of business order (shipping before payment)---valid JSON, invalid protocol.
+  \item[Unsafe retries.] A retry policy re-invokes a non-idempotent operation after a
+    partial success, duplicating its effect~\cite{mohammad2025resilient}.
+  \item[Missing compensation.] A persistent operation reserves a resource the workflow
+    cannot release when a later step fails---an incomplete Saga~\cite{garciaMolina1987sagas}.
+\end{description}
+
+A central obstacle to checking these properties is that \asl{} \emph{omits the very
+information the checks require}. \asl{} has no notion of a task's input or output
+type, no business-state labels, no idempotency annotation, and no concept of
+``compensation'' beyond a generic \texttt{Catch}. Existing language-level
+approaches sidestep this by introducing a new programming model with a proprietary
+runtime~\cite{burckhardt2021durable,zhang2020beldi,temporal}; but the millions of
+workflows already written in \asl{} cannot benefit, and re-platforming is rarely an
+option.
+
+\paragraph{Approach.}
+We present \tool, a static verifier that brings four complementary checks to
+serverless workflows \emph{before deployment} while remaining fully compatible with
+AWS Step Functions. \tool{} is organised around two ideas. First, a \emph{two-layer}
+analysis model: a set of \emph{native} checks operate soundly on raw \asl{} with no
+extra input (structural well-formedness and \asl{}-semantic data-binding checks),
+while a set of \emph{semantic} checks (typestate, retry safety, compensation) draw
+on a lightweight \emph{annotation} layer. Second, because most existing workflows
+carry no annotations, the missing semantics are \emph{inferred} from task names and
+resource bindings by a documented, configurable heuristic, giving a zero-effort
+default analysis that developers can override or refine. Verified workflows are
+compiled back to executable \asl, so \tool{} introduces no runtime component and no
+lock-in. A typed builder frontend additionally lets greenfield workflows be authored
+with full static guarantees and the same compilation target.
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item A practical model and four static analyses ---contract/data-flow, typestate,
+        retry safety, compensation completeness--- for serverless workflows, framed
+        operationally rather than through heavy formalism
+        (Sections~\ref{sec:approach}--\ref{sec:analyses}).
+  \item A two-layer design that verifies \emph{existing} \asl{} workflows by pairing
+        sound native checks with an annotation layer whose defaults are inferred
+        from naming/resource conventions (Section~\ref{sec:approach}).
+  \item \tool, an open, modular implementation in Rust (2.4k LOC) with pluggable
+        frontends and analysis passes, a diagnostics engine, an \asl{} emitter, and a
+        mutation-based error-injection tool (Section~\ref{sec:impl}).
+  \item An evaluation on \textbf{193 real} Step Functions workflows mined from public
+        AWS repositories: in-the-wild findings, a 429-mutant detection study (100\%
+        recall), inference accuracy against a hand-labelled gold set (83--91\%),
+        sub-millisecond verification cost, and a real AWS round-trip
+        (Section~\ref{sec:eval}).
+\end{itemize}
+
+\paragraph{Research questions.}
+\textbf{RQ1:} Can a static verifier detect the four defect classes in serverless
+workflows before deployment? \textbf{RQ2:} Can the semantics \asl{} omits be
+recovered cheaply enough to analyse existing workflows? \textbf{RQ3:} What is the
+cost of verification and what runtime overhead does it impose? We answer these in
+Section~\ref{sec:eval}.

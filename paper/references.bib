@@ -1,0 +1,419 @@
+% =====================================================================
+% References for
+%   "Safe Serverless Workflow Orchestration through Typestate
+%    Verification, Retry Safety, and Compensation Checking"
+%   (ICSOC 2026, Springer LNCS / splncs04).
+%
+% Every entry below was verified against arXiv (get_abstract),
+% Crossref, and/or Semantic Scholar on 2026-06-18.
+% See bib-verification.md for the per-entry audit trail (VERIFIED /
+% CORRECTED / DROPPED).  38 references, grouped by theme.
+% =====================================================================
+
+% =====================================================================
+% Theme A --- Serverless workflow orchestration (platforms & models)
+% =====================================================================
+
+@misc{awsStepFunctions,
+  author       = {{Amazon Web Services}},
+  title        = {{AWS} Step Functions Developer Guide (Amazon States Language)},
+  year         = {2026},
+  howpublished = {\url{https://docs.aws.amazon.com/step-functions/}},
+  note         = {Accessed 2026-06-17}
+}
+
+@inproceedings{garciaLopez2018faas,
+  author    = {Garc{\'\i}a L{\'o}pez, Pedro and S{\'a}nchez-Artigas, Marc and Par{\'\i}s, Gerard and Barcelona Pons, Daniel and Ruiz Ollobarren, {\'A}lvaro and Arroyo Pinto, David},
+  title     = {Comparison of {FaaS} Orchestration Systems},
+  booktitle = {IEEE/ACM Int. Conf. on Utility and Cloud Computing Companion (UCC)},
+  year      = {2018},
+  note      = {arXiv:1807.11248}
+}
+
+@article{arjona2021triggerflow,
+  author  = {Arjona, Aitor and Garc{\'\i}a L{\'o}pez, Pedro and Samp{\'e}, Josep and Slominski, Aleksander and Villard, Lionel},
+  title   = {Triggerflow: Trigger-based Orchestration of Serverless Workflows},
+  journal = {Future Generation Computer Systems},
+  year    = {2021},
+  note    = {arXiv:2106.00583}
+}
+
+@inproceedings{yu2021pheromone,
+  author    = {Yu, Minchen and Cao, Tingjia and Wang, Wei and Chen, Ruichuan},
+  title     = {Following the Data, Not the Function: Rethinking Function Orchestration in Serverless Computing},
+  booktitle = {USENIX Symp. on Networked Systems Design and Implementation (NSDI)},
+  year      = {2023},
+  note      = {arXiv:2109.13492}
+}
+
+@article{wen2021empirical,
+  author  = {Wen, Jinfeng and Liu, Yi},
+  title   = {An Empirical Study on Serverless Workflow Service},
+  journal = {arXiv preprint},
+  year    = {2021},
+  note    = {arXiv:2101.03513}
+}
+
+@inproceedings{li2023dataflower,
+  author    = {Li, Zijun and Xu, Chuhao and Chen, Quan and Zhao, Jieru and Chen, Chen and Guo, Minyi},
+  title     = {{DataFlower}: Exploiting the Data-flow Paradigm for Serverless Workflow Orchestration},
+  booktitle = {Int. Conf. on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
+  year      = {2023},
+  note      = {arXiv:2304.14629}
+}
+
+% =====================================================================
+% Theme B --- Durable execution & portability
+% =====================================================================
+
+@article{burckhardt2021durable,
+  author  = {Burckhardt, Sebastian and Gillum, Chris and Justo, David and Kallas, Konstantinos and McMahon, Connor and Meiklejohn, Christopher S.},
+  title   = {Durable Functions: Semantics for Stateful Serverless},
+  journal = {Proc. ACM Program. Lang.},
+  volume  = {5},
+  number  = {OOPSLA},
+  year    = {2021},
+  doi     = {10.1145/3485510}
+}
+
+@article{burckhardt2021netherite,
+  author  = {Burckhardt, Sebastian and Gillum, Chris and Justo, David and Kallas, Konstantinos and McMahon, Connor and Meiklejohn, Christopher S.},
+  title   = {Serverless Workflows with Durable Functions and Netherite},
+  journal = {arXiv preprint},
+  year    = {2021},
+  note    = {arXiv:2103.00033}
+}
+
+@misc{temporal,
+  author       = {{Temporal Technologies}},
+  title        = {Temporal: Durable Execution and Workflow Orchestration},
+  year         = {2026},
+  howpublished = {\url{https://temporal.io/}},
+  note         = {Accessed 2026-06-17}
+}
+
+@misc{cadence,
+  author       = {{Uber Technologies}},
+  title        = {Cadence: Fault-Oblivious Stateful Workflow Orchestration},
+  year         = {2026},
+  howpublished = {\url{https://cadenceworkflow.io/}},
+  note         = {Accessed 2026-06-17}
+}
+
+@misc{cncfServerlessWorkflow,
+  author       = {{Cloud Native Computing Foundation}},
+  title        = {Serverless Workflow Specification},
+  year         = {2026},
+  howpublished = {\url{https://serverlessworkflow.io/}},
+  note         = {Accessed 2026-06-17}
+}
+
+@article{kulkarni2025characterizing,
+  author  = {Kulkarni, Varad and Reddy, Nikhil and Khare, Tuhin and Prasad, Abhinandan S. and Babu, Chitra and Simmhan, Yogesh},
+  title   = {Characterizing {FaaS} Workflows on Public Clouds: The Good, the Bad and the Ugly},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2509.23013}
+}
+
+@article{li2025jointlambda,
+  author  = {Li, Rui and Liu, Jianfei and Yang, Zhilin and Shi, Peichang and Yi, Guodong and Wang, Huaimin},
+  title   = {{Joint$\lambda$}: Orchestrating Serverless Workflows on Jointcloud {FaaS} Systems},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2505.21899}
+}
+
+% =====================================================================
+% Theme C --- Static analysis & verification of cloud/serverless
+% =====================================================================
+
+@inproceedings{zhang2020beldi,
+  author    = {Zhang, Haoran and Cardoza, Adney and Chen, Peter Baile and Angel, Sebastian and Liu, Vincent},
+  title     = {Fault-tolerant and Transactional Stateful Serverless Workflows},
+  booktitle = {USENIX Symp. on Operating Systems Design and Implementation (OSDI)},
+  year      = {2020},
+  note      = {arXiv:2010.06706}
+}
+
+@article{zhang2025causalmesh,
+  author  = {Zhang, Haoran and Zhang, Zihao and Mu, Shuai and Angel, Sebastian and Liu, Vincent},
+  title   = {{CausalMesh}: A Formally Verified Causally Consistent Distributed Cache with Support for Client Migration},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2508.15647}
+}
+
+@article{cauli2022iac,
+  author  = {Cauli, Claudia and Ortiz, Magdalena and Piterman, Nir},
+  title   = {Actions over Core-closed Knowledge Bases},
+  journal = {arXiv preprint},
+  year    = {2022},
+  note    = {arXiv:2202.12592}
+}
+
+% =====================================================================
+% Theme D --- Typestate & protocol/behavioural types
+% =====================================================================
+
+@article{stromYemini1986typestate,
+  author  = {Strom, Robert E. and Yemini, Shaula},
+  title   = {Typestate: A Programming Language Concept for Enhancing Software Reliability},
+  journal = {IEEE Transactions on Software Engineering},
+  volume  = {SE-12},
+  number  = {1},
+  pages   = {157--171},
+  year    = {1986},
+  doi     = {10.1109/TSE.1986.6312929}
+}
+
+@inproceedings{fahndrich2004typestates,
+  author    = {DeLine, Robert and F{\"a}hndrich, Manuel},
+  title     = {Typestates for Objects},
+  booktitle = {European Conf. on Object-Oriented Programming (ECOOP)},
+  pages     = {465--490},
+  year      = {2004},
+  doi       = {10.1007/978-3-540-24851-4_21}
+}
+
+@inproceedings{campos2011channels,
+  author    = {Campos, Joana and Vasconcelos, Vasco T.},
+  title     = {Channels as Objects in Concurrent Object-Oriented Programming},
+  booktitle = {Workshop on Programming Language Approaches to Concurrency and Communication-cEntric Software (PLACES)},
+  year      = {2011},
+  doi       = {10.4204/EPTCS.69.2}
+}
+
+@article{crafa2016actors,
+  author  = {Crafa, Silvia and Padovani, Luca},
+  title   = {On the Chemistry of Typestate-Oriented Actors},
+  journal = {arXiv preprint},
+  year    = {2016},
+  note    = {arXiv:1607.02927}
+}
+
+@inproceedings{gerbo2019typestate,
+  author    = {Gerbo, Rosita and Padovani, Luca},
+  title     = {Concurrent Typestate-Oriented Programming in {Java}},
+  booktitle = {Workshop on Programming Language Approaches to Concurrency and Communication-cEntric Software (PLACES)},
+  year      = {2019},
+  doi       = {10.4204/EPTCS.291.3}
+}
+
+@inproceedings{honda1993dyadic,
+  author    = {Honda, Kohei},
+  title     = {Types for Dyadic Interaction},
+  booktitle = {Int. Conf. on Concurrency Theory (CONCUR)},
+  pages     = {509--523},
+  year      = {1993},
+  doi       = {10.1007/3-540-57208-2_35}
+}
+
+@inproceedings{honda2008multiparty,
+  author    = {Honda, Kohei and Yoshida, Nobuko and Carbone, Marco},
+  title     = {Multiparty Asynchronous Session Types},
+  booktitle = {ACM SIGPLAN-SIGACT Symp. on Principles of Programming Languages (POPL)},
+  pages     = {273--284},
+  year      = {2008},
+  doi       = {10.1145/1328438.1328472}
+}
+
+@article{denielou2012pmpst,
+  author  = {Deni{\'e}lou, Pierre-Malo and Yoshida, Nobuko and Bejleri, Andi and Hu, Raymond},
+  title   = {Parameterised Multiparty Session Types},
+  journal = {Logical Methods in Computer Science},
+  year    = {2012},
+  note    = {arXiv:1208.6483}
+}
+
+@article{udomsrirungruang2025mpst,
+  author  = {Udomsrirungruang, Thien and Yoshida, Nobuko},
+  title   = {Top-Down or Bottom-Up? Complexity Analyses of Synchronous Multiparty Session Types},
+  journal = {Proc. ACM Program. Lang.},
+  volume  = {9},
+  number  = {POPL},
+  year    = {2025},
+  doi     = {10.1145/3704872}
+}
+
+@inproceedings{casetta2026mpst,
+  author    = {Casetta, Richard and Gesbert, Nils and Genev{\`e}s, Pierre},
+  title     = {Towards Multiparty Session Types for Highly-Concurrent and Fault-Tolerant Web Applications},
+  booktitle = {Electronic Proceedings in Theoretical Computer Science (EPTCS)},
+  volume    = {444},
+  pages     = {68--78},
+  year      = {2026},
+  doi       = {10.4204/EPTCS.444.7}
+}
+
+@article{carbone2018choreographies,
+  author  = {Carbone, Marco and Cruz-Filipe, Lu{\'\i}s and Montesi, Fabrizio and Murawska, Agata},
+  title   = {Multiparty Classical Choreographies},
+  journal = {arXiv preprint},
+  year    = {2018},
+  note    = {arXiv:1808.05088}
+}
+
+% =====================================================================
+% Theme E --- Saga transactions & compensation
+% =====================================================================
+
+@inproceedings{garciaMolina1987sagas,
+  author    = {Garcia-Molina, Hector and Salem, Kenneth},
+  title     = {Sagas},
+  booktitle = {ACM SIGMOD Int. Conf. on Management of Data},
+  pages     = {249--259},
+  year      = {1987},
+  doi       = {10.1145/38713.38742}
+}
+
+@article{colombo2014compensation,
+  author  = {Colombo, Christian and Pace, Gordon J.},
+  title   = {Comprehensive Monitor-Oriented Compensation Programming},
+  journal = {arXiv preprint},
+  year    = {2014},
+  note    = {arXiv:1404.0849}
+}
+
+@article{hellerstein2019calm,
+  author  = {Hellerstein, Joseph M. and Alvaro, Peter},
+  title   = {Keeping {CALM}: When Distributed Consistency is Easy},
+  journal = {arXiv preprint},
+  year    = {2019},
+  note    = {arXiv:1901.01930}
+}
+
+@article{chang2025sagallm,
+  author  = {Chang, Edward Y. and Geng, Longling},
+  title   = {{SagaLLM}: Context Management, Validation, and Transaction Guarantees for Multi-Agent {LLM} Planning},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2503.11951}
+}
+
+@article{mohammad2025resilient,
+  author  = {Mohammad, Muzeeb},
+  title   = {Resilient Microservices: A Systematic Review of Recovery Patterns, Strategies, and Evaluation Frameworks},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2512.16959}
+}
+
+% =====================================================================
+% Theme F --- Workflow & service-composition verification
+%             (Petri nets, model checking)
+% =====================================================================
+
+@article{vanDerAalst1998petri,
+  author  = {van der Aalst, Wil M. P.},
+  title   = {The Application of {P}etri Nets to Workflow Management},
+  journal = {Journal of Circuits, Systems and Computers},
+  volume  = {8},
+  number  = {1},
+  pages   = {21--66},
+  year    = {1998},
+  doi     = {10.1142/S0218126698000043}
+}
+
+@inproceedings{blondin2022soundness,
+  author    = {Blondin, Michael and Mazowiecki, Filip and Offtermatt, Philip},
+  title     = {Verifying Generalised and Structural Soundness of Workflow Nets via Relaxations},
+  booktitle = {Int. Conf. on Computer Aided Verification (CAV)},
+  pages     = {435--458},
+  year      = {2022},
+  doi       = {10.1007/978-3-031-13188-2_23}
+}
+
+@inproceedings{bianculli2007bpel,
+  author    = {Bianculli, Domenico and Ghezzi, Carlo and Spoletini, Paola},
+  title     = {A Model Checking Approach to Verify {BPEL4WS} Workflows},
+  booktitle = {IEEE Int. Conf. on Service-Oriented Computing and Applications (SOCA)},
+  pages     = {13--20},
+  year      = {2007},
+  doi       = {10.1109/SOCA.2007.5}
+}
+
+@article{bartoletti2012lending,
+  author  = {Bartoletti, Massimo and Cimoli, Tiziana and Pinna, G. Michele},
+  title   = {Lending Petri Nets and Contracts},
+  journal = {arXiv preprint},
+  year    = {2012},
+  note    = {arXiv:1211.3624}
+}
+
+% =====================================================================
+% Theme G --- Data contracts & interface compatibility
+% =====================================================================
+
+@article{seco2020contracts,
+  author  = {Seco, Jo{\~a}o Costa and Ferreira, Paulo and Louren{\c{c}}o, Hugo and Ferreira, Carla and Ferr{\~a}o, L{\'u}cio},
+  title   = {Robust Contract Evolution in a TypeSafe MicroServices Architecture},
+  journal = {The Art, Science, and Engineering of Programming},
+  volume  = {4},
+  number  = {3},
+  year    = {2020},
+  doi     = {10.22152/programming-journal.org/2020/4/10}
+}
+
+@inproceedings{lehva2019cdc,
+  author    = {Lehv{\"a}, Jyri and M{\"a}kitalo, Niko and Mikkonen, Tommi},
+  title     = {Consumer-Driven Contract Tests for Microservices: A Case Study},
+  booktitle = {Int. Conf. on Product-Focused Software Process Improvement (PROFES)},
+  pages     = {497--512},
+  year      = {2019},
+  doi       = {10.1007/978-3-030-35333-9_35}
+}
+
+@inproceedings{ayas2022cdc,
+  author    = {Ayas, Hamdy Michael and Fischer, Hartmut and Leitner, Philipp and Gomes de Oliveira Neto, Francisco},
+  title     = {An Empirical Analysis of Microservices Systems Using Consumer-Driven Contract Testing},
+  booktitle = {Euromicro Conf. on Software Engineering and Advanced Applications (SEAA)},
+  pages     = {92--99},
+  year      = {2022},
+  doi       = {10.1109/SEAA56994.2022.00022}
+}
+
+@inproceedings{wu2022eventdriven,
+  author    = {Wu, Chu-Fei and Ma, Shang-Pin and Shau, An-Chi and Yeh, Hang-Wei},
+  title     = {Testing for Event-Driven Microservices Based on Consumer-Driven Contracts and State Models},
+  booktitle = {Asia-Pacific Software Engineering Conf. (APSEC)},
+  pages     = {467--471},
+  year      = {2022},
+  doi       = {10.1109/APSEC57359.2022.00064}
+}
+
+@article{fu2024schema,
+  author  = {Fu, Silvery D. and Chen, Xuewei},
+  title   = {Compound Schema Registry},
+  journal = {arXiv preprint},
+  year    = {2024},
+  note    = {arXiv:2406.11227}
+}
+
+% =====================================================================
+% Theme H --- Typed DSLs & infrastructure-as-code
+% =====================================================================
+
+@article{burnay2020restscript,
+  author  = {Burnay, Nuno and Lopes, Ant{\'o}nia and Vasconcelos, Vasco T.},
+  title   = {{SafeRESTScript}: Statically Checking {REST} {API} Consumers},
+  journal = {arXiv preprint},
+  year    = {2020},
+  note    = {arXiv:2007.08048}
+}
+
+@article{sarkar2024hastee,
+  author  = {Sarkar, Abhiroop and Russo, Alejandro},
+  title   = {{HasTEE+}: Confidential Cloud Computing and Analytics with {Haskell}},
+  journal = {arXiv preprint},
+  year    = {2024},
+  note    = {arXiv:2401.08901}
+}
+
+@article{khan2025iac,
+  author  = {Khan, Rana Nameer Hussain and Wasif, Dawood and Cho, Jin-Hee and Butt, Ali},
+  title   = {Multi-Agent Code-Orchestrated Generation for Reliable Infrastructure-as-Code},
+  journal = {arXiv preprint},
+  year    = {2025},
+  note    = {arXiv:2510.03902}
+}

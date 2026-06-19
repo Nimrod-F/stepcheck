@@ -1,0 +1,378 @@
+{
+  "workflows": 10,
+  "tasks_labeled": 44,
+  "idempotency": {
+    "property": "idempotency",
+    "labeled": 44,
+    "predicted": 35,
+    "abstained": 9,
+    "correct": 29,
+    "wrong": 6,
+    "accuracy_on_predicted": 82.9,
+    "coverage": 79.5
+  },
+  "persistence": {
+    "property": "persistence",
+    "labeled": 44,
+    "predicted": 35,
+    "abstained": 9,
+    "correct": 32,
+    "wrong": 3,
+    "accuracy_on_predicted": 91.4,
+    "coverage": 79.5
+  },
+  "per_task": [
+    {
+      "file": "ship-order.asl.json",
+      "task": "Get Customer Status",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify New Order",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Products Reserved",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Initate Packaging and Shipping",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Successful Shipping",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Packaging and Shipping Failed",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Fraudulent Customer",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Invalid Input",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "ReserveFlight",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "ReserveCarRental",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "ProcessPayment",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "ConfirmFlight",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "ConfirmCarRental",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "SendingSMSSuccess",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "RefundPayment",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "CancelRentalReservation",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "CancelFlightReservation",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "SendingSMSFailure",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "DynamoDB GetItem",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "create-purchase-order-statemachine.asl.json",
+      "task": "Send Purchase Order Email",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "create-purchase-order-statemachine.asl.json",
+      "task": "Update Inventory",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Initial Scan",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get the next set of records",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get Organization Root",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create New Organizational Unit",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create New Account",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "New Account Status",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Move Account To OU",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Stack",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "List Organizational Units",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "StateMachine.asl.json",
+      "task": "Bedrock InvokeModel",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "Copy input file",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "Data quality using Lambda",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "List Data Quality Results",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "Send Failure Message",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "Aggregate Data",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "dataquality.asl.json",
+      "task": "Send Success Message",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "businessrules_orchestration.asl.json",
+      "task": "Audit Request",
+      "gold_idem": false,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "businessrules_orchestration.asl.json",
+      "task": "Execute Ruleset",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "businessrules_orchestration.asl.json",
+      "task": "Audit Response",
+      "gold_idem": false,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Decode base64 string",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Generate statistics",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Remove special characters",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Tokenize and count",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+\section{Conclusion}
+\label{sec:concl}
+
+Serverless workflow orchestration has become a backbone of cloud-native systems, yet
+its workflows are untyped configuration whose correctness is checked only when they
+run. We presented \tool, a static verifier that catches four classes of orchestration
+defect ---contract mismatches, out-of-order business transitions, unsafe retries, and
+missing compensations--- \emph{before} deployment, and compiles verified workflows
+back to executable Amazon States Language. The key to analysing the workflows that
+already exist is a two-layer model: sound native checks that need nothing beyond
+\asl, paired with a lightweight annotation layer whose defaults are inferred from the
+naming and resource conventions that pervade real workflows.
+
+Our evaluation on 193 real Step Functions workflows supports the three research
+questions. \tool{} detects the targeted defect classes (100\% recall over 429
+injected defects) and surfaces genuine issues in unmodified workflows (RQ1); it
+recovers idempotency and persistence at zero authoring cost with 83--91\% accuracy and
+visible, correctable residual error (RQ2); and it verifies a workflow in 19\,$\mu$s on
+average while adding zero runtime overhead, with verified workflows running unmodified
+on real AWS Step Functions (RQ3).
+
+The broader message mirrors the history of type systems: just as static typing moved
+classes of error from run time to compile time, lightweight static verification can do
+the same for serverless orchestration, on the industrial platforms developers already
+use. Several directions remain. Additional frontends (CNCF Serverless Workflow, SAM,
+CDK) would widen reach; richer effect and ownership information would sharpen the
+contract and compensation analyses; and a precise data-flow analysis of \texttt{Map}
+and \texttt{Parallel} item contexts would extend native contract checking. We release
+\tool, the corpus, and the evaluation harness to support replication and reuse.

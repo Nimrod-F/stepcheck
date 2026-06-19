@@ -1,0 +1,2920 @@
+[
+  {
+    "id": "wf038",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "bedrock-invokemodel\\statemachine\\StateMachine.asl.json",
+    "file": "corpus/asl/sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf039",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "call-http-api\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__call-http-api__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf058",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-csv-iterator\\sam\\child-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator__sam__child-statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf075",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "eventbridge-custom-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__eventbridge-custom-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf076",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "eventbridge-custom-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__eventbridge-custom-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf077",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "eventbridge-custom-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__eventbridge-custom-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf125",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sagemaker-pipeline-notifications-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sagemaker-pipeline-notifications-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf126",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sagemaker-pipeline-notifications-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sagemaker-pipeline-notifications-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf148",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-sns-task-timer\\statemachine\\TimeBoundedTasks.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-sns-task-timer__statemachine__TimeBoundedTasks.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf163",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "stepfunction-redshift-batchexecutestatement-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__stepfunction-redshift-batchexecutestatement-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 1,
+    "types": {
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf025",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "activity-state-machine\\statemachine\\activity_state.asl.json",
+    "file": "corpus/asl/sfn-collection__activity-state-machine__statemachine__activity_state.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf026",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "activity-state-machine-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__activity-state-machine-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf033",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "background-cropper\\statemachine\\img-cropper-sfn.asl.json",
+    "file": "corpus/asl/sfn-collection__background-cropper__statemachine__img-cropper-sfn.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf034",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "batch-lambda-cdk\\batch_lambda_cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__batch-lambda-cdk__batch_lambda_cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf035",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "batch-lambda-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__batch-lambda-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf036",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "batch-lambda-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__batch-lambda-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf042",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "calling-async-api-callback\\statemachine\\workflow_ExternalAsyncAPISimulator.asl.json",
+    "file": "corpus/asl/sfn-collection__calling-async-api-callback__statemachine__workflow_ExternalAsyncAPISimulator.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Wait": 1,
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf059",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-csv-iterator\\sam\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator__sam__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 2,
+    "types": {
+      "Map": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf060",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-csv-iterator\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 2,
+    "types": {
+      "Map": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf061",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-csv-iterator-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 2,
+    "types": {
+      "Map": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf080",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "execution-error-notification-workflow\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__execution-error-notification-workflow__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf113",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "request-response\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__request-response__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Wait": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf114",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "request-response-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__request-response-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Wait": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf115",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "request-response-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__request-response-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Wait": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf153",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "smart-cron-job\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__smart-cron-job__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Wait": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf181",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "vod-transcode-delivery-cdk\\typescript\\statemachine\\delivery-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__vod-transcode-delivery-cdk__typescript__statemachine__delivery-statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 2,
+    "types": {
+      "Task": 2
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf001",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-business-rules-orchestration\\statemachine\\businessrules_orchestration.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-business-rules-orchestration__statemachine__businessrules_orchestration.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf008",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-decompose-for-parallelism\\statemachine\\runner-simplewait.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-decompose-for-parallelism__statemachine__runner-simplewait.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Choice": 1,
+      "Pass": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf019",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-distributed-map-data-processing\\statemachines\\dmap-temperatures.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-distributed-map-data-processing__statemachines__dmap-temperatures.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 3,
+    "types": {
+      "Map": 1,
+      "Task": 2
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf117",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "retry-with-exponential-backoff-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__retry-with-exponential-backoff-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 1,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf136",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-bedrock-describe-assets\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-bedrock-describe-assets__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 3,
+    "types": {
+      "Map": 1,
+      "Task": 2
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf141",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-eks-inventory\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-eks-inventory__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 3,
+    "types": {
+      "Task": 2,
+      "Map": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf150",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-textract-callback-ts-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-textract-callback-ts-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf152",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "simple-retry\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__simple-retry__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 1,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf154",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "stateless-roundrobin\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__stateless-roundrobin__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf160",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-load-testing\\statemachine\\load-generator-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-load-testing__statemachine__load-generator-statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 3,
+    "types": {
+      "Map": 1,
+      "Pass": 1,
+      "Task": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf168",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "synchronous-job\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__synchronous-job__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf183",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "wait-for-callback\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__wait-for-callback__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf193",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "_workflow_model\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection___workflow_model__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 3,
+    "types": {
+      "Task": 3
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf002",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-control-concurrency-with-dynamodb\\statemachines\\dynamodb-semaphore-cleanfromincomplete.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 1
+  },
+  {
+    "id": "wf004",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-control-concurrency-with-dynamodb\\statemachines\\test-run-semaphore.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__test-run-semaphore.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 4,
+    "types": {
+      "Pass": 2,
+      "Map": 1,
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf027",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "app-control-concurrency-with-dynamodb-tf\\statemachines\\dynamodb-semaphore-cleanfromincomplete.asl.json",
+    "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 1
+  },
+  {
+    "id": "wf030",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "app-control-concurrency-with-dynamodb-tf\\statemachines\\test-run-semaphore.asl.json",
+    "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__test-run-semaphore.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 4,
+    "types": {
+      "Pass": 2,
+      "Map": 1,
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf040",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "call-microservice-apigw\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__call-microservice-apigw__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf041",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "calling-async-api-callback\\statemachine\\workflow_AsyncAPICallbackPattern.asl.json",
+    "file": "corpus/asl/sfn-collection__calling-async-api-callback__statemachine__workflow_AsyncAPICallbackPattern.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf045",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "chain-of-responsibility\\statemachine\\atm_dispenser_chained.asl.json",
+    "file": "corpus/asl/sfn-collection__chain-of-responsibility__statemachine__atm_dispenser_chained.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf046",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "chain-of-responsibility-cdk\\python\\statemachine\\atm_dispenser_chained.asl.json",
+    "file": "corpus/asl/sfn-collection__chain-of-responsibility-cdk__python__statemachine__atm_dispenser_chained.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf047",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "chain-of-responsibility-cdk\\typscript\\statemachine\\atm_dispenser_chained.asl.json",
+    "file": "corpus/asl/sfn-collection__chain-of-responsibility-cdk__typscript__statemachine__atm_dispenser_chained.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf049",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "common-error-handling\\statemachine\\common_error_option1.asl.json",
+    "file": "corpus/asl/sfn-collection__common-error-handling__statemachine__common_error_option1.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 3
+  },
+  {
+    "id": "wf050",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "common-error-handling\\statemachine\\common_error_option2.asl.json",
+    "file": "corpus/asl/sfn-collection__common-error-handling__statemachine__common_error_option2.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 3
+  },
+  {
+    "id": "wf062",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-montecarlo\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-montecarlo__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Map": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf064",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "dynamic-rest-api\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__dynamic-rest-api__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Choice": 1,
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf073",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "event-driven-workflow-monitor\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__event-driven-workflow-monitor__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 4,
+    "types": {
+      "Parallel": 1,
+      "Task": 2,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf082",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "generate-thumbnail\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__generate-thumbnail__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf093",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "inventory-management-sam\\statemachine\\create-purchase-order-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__inventory-management-sam__statemachine__create-purchase-order-statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf100",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "manage-emr-job-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__manage-emr-job-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf105",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "pagination-loop\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__pagination-loop__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Succeed": 1,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf110",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "path-based-on-data\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__path-based-on-data__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Choice": 1,
+      "Pass": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf127",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "scatter-gather\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__scatter-gather__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 4,
+    "types": {
+      "Map": 1,
+      "Task": 2,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf130",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "selective-checkpointing\\statemachine\\statemachineChild.asl.json",
+    "file": "corpus/asl/sfn-collection__selective-checkpointing__statemachine__statemachineChild.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf132",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "selective-checkpointing-cdk\\typescript\\statemachine\\statemachineChild.asl.json",
+    "file": "corpus/asl/sfn-collection__selective-checkpointing-cdk__typescript__statemachine__statemachineChild.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf151",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "shared-fallback-state-jsonata\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__shared-fallback-state-jsonata__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Pass": 1
+    },
+    "retryStates": 3,
+    "catchStates": 3
+  },
+  {
+    "id": "wf155",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-api-gateway-cdk-typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-api-gateway-cdk-typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf156",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-api-gateway-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-api-gateway-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf165",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "support-notifications-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__support-notifications-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf166",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "support-notifications-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__support-notifications-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf167",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "synchronous-api\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__synchronous-api__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 4,
+    "types": {
+      "Parallel": 1,
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf169",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "text-processing-sqs-express\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__text-processing-sqs-express__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf170",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "text-processing-sqs-express-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__text-processing-sqs-express-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf172",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "train-ml-model\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__train-ml-model__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 4,
+    "types": {
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf189",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "workflow-within-a-workflow\\statemachines\\main-state-machine.asl.json",
+    "file": "corpus/asl/sfn-collection__workflow-within-a-workflow__statemachines__main-state-machine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Parallel": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf191",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "workflow-within-a-workflow-cdk\\statemachines\\main-state-machine.asl.json",
+    "file": "corpus/asl/sfn-collection__workflow-within-a-workflow-cdk__statemachines__main-state-machine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 4,
+    "types": {
+      "Task": 3,
+      "Parallel": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf015",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-video-segment-detection-and-edition\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-video-segment-detection-and-edition__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf018",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-distributed-map-data-processing\\statemachines\\delete-s3-data.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-distributed-map-data-processing__statemachines__delete-s3-data.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 3,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf043",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "categorization-state-machine\\statemachine\\stateMachine.asl.json",
+    "file": "corpus/asl/sfn-collection__categorization-state-machine__statemachine__stateMachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 4,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf052",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "data-processing\\cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__data-processing__cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 5,
+    "types": {
+      "Map": 1,
+      "Parallel": 1,
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf053",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "data-processing\\sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__data-processing__sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 5,
+    "types": {
+      "Map": 1,
+      "Parallel": 1,
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf054",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "data-processing-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__data-processing-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 5,
+    "types": {
+      "Map": 1,
+      "Parallel": 1,
+      "Task": 3
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf072",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "emit-and-wait\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__emit-and-wait__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Pass": 1,
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 3
+  },
+  {
+    "id": "wf084",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "github-repo-views-counter\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__github-repo-views-counter__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 5,
+    "types": {
+      "Pass": 2,
+      "Map": 1,
+      "Task": 2
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf085",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "human-in-the-loop\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__human-in-the-loop__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 4,
+      "Choice": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf086",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "human-in-the-loop-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__human-in-the-loop-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 4,
+      "Choice": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf087",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "human-in-the-loop-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__human-in-the-loop-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 4,
+      "Choice": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf090",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "image-processing-app\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__image-processing-app__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 5,
+    "types": {
+      "Task": 4,
+      "Map": 1
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf129",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "segment-detection-workflow\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__segment-detection-workflow__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf149",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-start-athena-query-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-start-athena-query-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 5
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf171",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "textract-analyze-expense-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__textract-analyze-expense-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Task": 3,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf190",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "workflow-within-a-workflow\\statemachines\\nested-state-machine.asl.json",
+    "file": "corpus/asl/sfn-collection__workflow-within-a-workflow__statemachines__nested-state-machine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Wait": 2,
+      "Choice": 1,
+      "Task": 1,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf192",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "workflow-within-a-workflow-cdk\\statemachines\\nested-state-machine.asl.json",
+    "file": "corpus/asl/sfn-collection__workflow-within-a-workflow-cdk__statemachines__nested-state-machine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 5,
+    "types": {
+      "Wait": 2,
+      "Choice": 1,
+      "Task": 1,
+      "Pass": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf013",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-s3-athena-dataprocessing\\statemachines\\initialize_account.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-s3-athena-dataprocessing__statemachines__initialize_account.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 6,
+    "types": {
+      "Pass": 1,
+      "Map": 2,
+      "Task": 3
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf056",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-data-stream-aggregator\\statemachine\\data-processing-child.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-data-stream-aggregator__statemachine__data-processing-child.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 6,
+    "types": {
+      "Pass": 3,
+      "Task": 2,
+      "Map": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf063",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-map-state-gif-generator\\statemachine\\workflow.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-map-state-gif-generator__statemachine__workflow.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 6,
+    "types": {
+      "Pass": 2,
+      "Task": 3,
+      "Map": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf078",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "eventbridge-replay-events\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__eventbridge-replay-events__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 6,
+    "types": {
+      "Map": 1,
+      "Task": 2,
+      "Choice": 1,
+      "Pass": 1,
+      "Wait": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf107",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "parallel-agent-early-stopping\\statemachine\\worker.asl.json",
+    "file": "corpus/asl/sfn-collection__parallel-agent-early-stopping__statemachine__worker.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 6,
+    "types": {
+      "Map": 1,
+      "Task": 3,
+      "Fail": 1,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf108",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "parallel-human-approval\\statemachine\\StateMachine.asl.json",
+    "file": "corpus/asl/sfn-collection__parallel-human-approval__statemachine__StateMachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 6,
+    "types": {
+      "Parallel": 1,
+      "Task": 3,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf120",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "s3-sfn-lambda-bedrock\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__s3-sfn-lambda-bedrock__statemachine__statemachine.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 6,
+    "types": {
+      "Choice": 1,
+      "Task": 4,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf135",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-athena-results\\statemachine\\query-athena.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-athena-results__statemachine__query-athena.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 6,
+    "types": {
+      "Task": 3,
+      "Choice": 1,
+      "Wait": 1,
+      "Fail": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf140",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-dynamodb-batchwriteitem\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-dynamodb-batchwriteitem__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 6,
+    "types": {
+      "Task": 2,
+      "Map": 2,
+      "Pass": 2
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf164",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "stepfunctions-bedrock-model-customisation-sam\\statemachine\\bedrock-model-customisation.asl.json",
+    "file": "corpus/asl/sfn-collection__stepfunctions-bedrock-model-customisation-sam__statemachine__bedrock-model-customisation.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 6,
+    "types": {
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf173",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "transfer-data-records\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__transfer-data-records__statemachine__statemachine.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 6,
+    "types": {
+      "Task": 3,
+      "Choice": 1,
+      "Pass": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf006",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-decompose-for-parallelism\\statemachine\\distributor.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-decompose-for-parallelism__statemachine__distributor.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 7,
+    "types": {
+      "Task": 4,
+      "Choice": 1,
+      "Map": 2
+    },
+    "retryStates": 4,
+    "catchStates": 1
+  },
+  {
+    "id": "wf017",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-distributed-map-data-processing\\statemachines\\copy-noaa-data-us-east-1.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-distributed-map-data-processing__statemachines__copy-noaa-data-us-east-1.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Map": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf021",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-fis-stepfunctions\\stepfunction\\fis.ecs.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-fis-stepfunctions__stepfunction__fis.ecs.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Choice": 1,
+      "Wait": 1,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf031",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "async-state-machine-streaming-lambda-results-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__async-state-machine-streaming-lambda-results-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 7,
+    "types": {
+      "Pass": 2,
+      "Map": 1,
+      "Wait": 1,
+      "Choice": 1,
+      "Task": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf044",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "celebrity-identifier-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__celebrity-identifier-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 7,
+    "types": {
+      "Task": 2,
+      "Choice": 2,
+      "Succeed": 2,
+      "Map": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf065",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "dynamically-process-data-with-map-state\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__dynamically-process-data-with-map-state__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 7,
+    "types": {
+      "Task": 4,
+      "Choice": 1,
+      "Map": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf066",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "dynamically-process-data-with-map-state-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__dynamically-process-data-with-map-state-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 7,
+    "types": {
+      "Task": 4,
+      "Choice": 1,
+      "Map": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf068",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "dynamodb-transfer\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 7,
+    "types": {
+      "Task": 4,
+      "Map": 1,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf074",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "event-sourcing\\statemachine\\event-sourcing.asl.json",
+    "file": "corpus/asl/sfn-collection__event-sourcing__statemachine__event-sourcing.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 5,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf083",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "gif-generator\\statemachine\\workflow.asl.json",
+    "file": "corpus/asl/sfn-collection__gif-generator__statemachine__workflow.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 7,
+    "types": {
+      "Choice": 1,
+      "Pass": 3,
+      "Task": 2,
+      "Map": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf095",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "lambda-orchestration-cdk\\lambda_orchestration_cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__lambda-orchestration-cdk__lambda_orchestration_cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 6,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf096",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "lambda-orchestration-cdk\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__lambda-orchestration-cdk__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 6,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf097",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "lambda-orchestration-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__lambda-orchestration-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 6,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf098",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "lambda-orchestration-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__lambda-orchestration-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 6,
+      "Choice": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf101",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "migrate-csv-to-ddb-distributed-map-main\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__migrate-csv-to-ddb-distributed-map-main__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Pass": 1,
+      "Fail": 2,
+      "Map": 1
+    },
+    "retryStates": 2,
+    "catchStates": 3
+  },
+  {
+    "id": "wf124",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sagemaker-endpoint-maintainer\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sagemaker-endpoint-maintainer__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Choice": 2,
+      "Wait": 1,
+      "Task": 3,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf128",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "script-generator\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__script-generator__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Fail": 1,
+      "Task": 4,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf134",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-athena-query\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-athena-query__statemachine__statemachine.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 7,
+    "types": {
+      "Task": 2,
+      "Pass": 2,
+      "Choice": 1,
+      "Map": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf139",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-datazone-update-metadata-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-datazone-update-metadata-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 7,
+    "types": {
+      "Pass": 1,
+      "Task": 3,
+      "Choice": 1,
+      "Fail": 1,
+      "Map": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf142",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-query-large-datasets-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-query-large-datasets-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 5,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf143",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-query-large-datasets-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-query-large-datasets-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 5,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf144",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-query-large-datasets-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-query-large-datasets-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 5,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf174",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "tts-converter\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__tts-converter__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Fail": 1,
+      "Succeed": 1,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf175",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "tts-converter-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__tts-converter-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf176",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "tts-converter-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__tts-converter-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf184",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "web-contact-form-processor-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__web-contact-form-processor-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 3,
+      "Pass": 2,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf185",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "webhook-provider\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__webhook-provider__statemachine__statemachine.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 7,
+    "types": {
+      "Task": 4,
+      "Choice": 1,
+      "Pass": 2
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf009",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-decompose-for-parallelism\\statemachine\\test-result-recorder.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-decompose-for-parallelism__statemachine__test-result-recorder.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 4,
+      "Choice": 2,
+      "Pass": 1,
+      "Fail": 1
+    },
+    "retryStates": 4,
+    "catchStates": 2
+  },
+  {
+    "id": "wf067",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "dynamodb-migrations\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__dynamodb-migrations__statemachine__statemachine.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 8,
+    "types": {
+      "Task": 5,
+      "Map": 1,
+      "Choice": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf081",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "explicit-failure-with-parallel-states\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__explicit-failure-with-parallel-states__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 8,
+    "types": {
+      "Parallel": 1,
+      "Task": 2,
+      "Pass": 2,
+      "Choice": 1,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf099",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "lookout-for-vision-inference-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__lookout-for-vision-inference-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 4,
+      "Choice": 2,
+      "Wait": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf102",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "moderated-image-catalog\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__moderated-image-catalog__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 8,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Parallel": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf103",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "moderated-image-catalog-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__moderated-image-catalog-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 8,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Parallel": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf104",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "moderated-image-catalog-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__moderated-image-catalog-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 8,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Parallel": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf112",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "redshift-serverless-unload\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__redshift-serverless-unload__statemachine__statemachine.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Pass": 1,
+      "Task": 3,
+      "Wait": 1,
+      "Choice": 1,
+      "Fail": 2
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf131",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "selective-checkpointing\\statemachine\\statemachineParent.asl.json",
+    "file": "corpus/asl/sfn-collection__selective-checkpointing__statemachine__statemachineParent.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 8
+    },
+    "retryStates": 0,
+    "catchStates": 2
+  },
+  {
+    "id": "wf133",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "selective-checkpointing-cdk\\typescript\\statemachine\\statemachineParent.asl.json",
+    "file": "corpus/asl/sfn-collection__selective-checkpointing-cdk__typescript__statemachine__statemachineParent.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 8
+    },
+    "retryStates": 0,
+    "catchStates": 2
+  },
+  {
+    "id": "wf147",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-sns-task-timer\\statemachine\\TaskTimer.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-sns-task-timer__statemachine__TaskTimer.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf157",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-athena-glue-sam\\athenaquery.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-athena-glue-sam__athenaquery.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 8,
+    "types": {
+      "Task": 3,
+      "Pass": 2,
+      "Choice": 1,
+      "Map": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf158",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-emr-serverless-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-emr-serverless-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Pass": 1,
+      "Task": 2,
+      "Wait": 1,
+      "Choice": 2,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf162",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "stepfunction-progress-tracking\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__stepfunction-progress-tracking__statemachine__statemachine.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 8,
+    "types": {
+      "Task": 6,
+      "Wait": 2
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf182",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "vod-transcode-delivery-cdk\\typescript\\statemachine\\transcoding-statemachine.asl.json.asl.json",
+    "file": "corpus/asl/sfn-collection__vod-transcode-delivery-cdk__typescript__statemachine__transcoding-statemachine.asl.json.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 8,
+    "types": {
+      "Task": 5,
+      "Wait": 1,
+      "Choice": 1,
+      "Parallel": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf032",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "automating-a-security-incident-with-step-functions-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__automating-a-security-incident-with-step-functions-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 9,
+    "types": {
+      "Pass": 2,
+      "Task": 5,
+      "Choice": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf079",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "eventbridge-rules-to-schedules\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__eventbridge-rules-to-schedules__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 9,
+    "types": {
+      "Task": 4,
+      "Map": 1,
+      "Choice": 2,
+      "Pass": 2
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf091",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "ingest-and-analyze-historical-storm-events\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__ingest-and-analyze-historical-storm-events__statemachine__statemachine.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 9,
+    "types": {
+      "Task": 4,
+      "Fail": 1,
+      "Map": 1,
+      "Pass": 1,
+      "Choice": 1,
+      "Wait": 1
+    },
+    "retryStates": 2,
+    "catchStates": 1
+  },
+  {
+    "id": "wf118",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "s3-bucket-nested-distributed-map\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__s3-bucket-nested-distributed-map__statemachine__statemachine.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 9,
+    "types": {
+      "Map": 3,
+      "Task": 2,
+      "Pass": 3,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 2
+  },
+  {
+    "id": "wf177",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "uml-statemachine\\statemachine\\BlogBackgroundChecksSM.asl.json",
+    "file": "corpus/asl/sfn-collection__uml-statemachine__statemachine__BlogBackgroundChecksSM.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 9,
+    "types": {
+      "Task": 6,
+      "Parallel": 1,
+      "Choice": 2
+    },
+    "retryStates": 6,
+    "catchStates": 0
+  },
+  {
+    "id": "wf178",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "uml-statemachine\\statemachine\\BlogBuySellSM.asl.json",
+    "file": "corpus/asl/sfn-collection__uml-statemachine__statemachine__BlogBuySellSM.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 9,
+    "types": {
+      "Task": 7,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 7,
+    "catchStates": 0
+  },
+  {
+    "id": "wf180",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "uml-statemachine\\statemachine\\BlogServiceRequestSM.asl.json",
+    "file": "corpus/asl/sfn-collection__uml-statemachine__statemachine__BlogServiceRequestSM.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 9,
+    "types": {
+      "Pass": 3,
+      "Task": 4,
+      "Choice": 2
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf186",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "word-filtering-script-generator\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__word-filtering-script-generator__statemachine__statemachine.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 9,
+    "types": {
+      "Task": 5,
+      "Wait": 2,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf007",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-decompose-for-parallelism\\statemachine\\main.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-decompose-for-parallelism__statemachine__main.asl.json",
+    "topLevelStates": 7,
+    "totalStates": 10,
+    "types": {
+      "Choice": 1,
+      "Task": 6,
+      "Pass": 2,
+      "Map": 1
+    },
+    "retryStates": 6,
+    "catchStates": 1
+  },
+  {
+    "id": "wf010",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-local-testing-mock-config\\statemachine\\local_testing.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-local-testing-mock-config__statemachine__local_testing.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 10,
+    "types": {
+      "Parallel": 1,
+      "Task": 8,
+      "Choice": 1
+    },
+    "retryStates": 3,
+    "catchStates": 1
+  },
+  {
+    "id": "wf012",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-s3-athena-dataprocessing\\statemachines\\execute_athena_query.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-s3-athena-dataprocessing__statemachines__execute_athena_query.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 10,
+    "types": {
+      "Choice": 2,
+      "Pass": 4,
+      "Task": 3,
+      "Wait": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf016",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-bulk-delete-s3-objects\\bulk-delete-objects-from-s3.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-bulk-delete-s3-objects__bulk-delete-objects-from-s3.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 10,
+    "types": {
+      "Choice": 2,
+      "Pass": 4,
+      "Fail": 1,
+      "Map": 2,
+      "Task": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf022",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-local-testing-using-java\\statemachine\\local_testing.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-local-testing-using-java__statemachine__local_testing.asl.json",
+    "topLevelStates": 8,
+    "totalStates": 10,
+    "types": {
+      "Parallel": 1,
+      "Task": 8,
+      "Choice": 1
+    },
+    "retryStates": 3,
+    "catchStates": 1
+  },
+  {
+    "id": "wf055",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-data-stream-aggregator\\statemachine\\data-extraction-child.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-data-stream-aggregator__statemachine__data-extraction-child.asl.json",
+    "topLevelStates": 3,
+    "totalStates": 10,
+    "types": {
+      "Pass": 4,
+      "Map": 1,
+      "Task": 3,
+      "Choice": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf092",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "inventory-management-sam\\statemachine\\check-inventory-level-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__inventory-management-sam__statemachine__check-inventory-level-statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 10,
+    "types": {
+      "Pass": 3,
+      "Parallel": 1,
+      "Choice": 2,
+      "Task": 4
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf109",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "parallelized-embedding-pipeline\\statemachine.json",
+    "file": "corpus/asl/sfn-collection__parallelized-embedding-pipeline__statemachine.json",
+    "topLevelStates": 9,
+    "totalStates": 10,
+    "types": {
+      "Pass": 1,
+      "Choice": 1,
+      "Task": 6,
+      "Fail": 1,
+      "Map": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf116",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "resource-configuration-backup-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__resource-configuration-backup-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 10,
+    "types": {
+      "Map": 2,
+      "Task": 5,
+      "Choice": 2,
+      "Succeed": 1
+    },
+    "retryStates": 5,
+    "catchStates": 0
+  },
+  {
+    "id": "wf119",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "s3-glacier-multi-file-restore-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__s3-glacier-multi-file-restore-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 2,
+    "totalStates": 10,
+    "types": {
+      "Map": 2,
+      "Task": 2,
+      "Fail": 1,
+      "Choice": 3,
+      "Pass": 1,
+      "Succeed": 1
+    },
+    "retryStates": 1,
+    "catchStates": 1
+  },
+  {
+    "id": "wf138",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-continous-running-glue-workflow-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-continous-running-glue-workflow-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 10,
+    "types": {
+      "Task": 3,
+      "Wait": 2,
+      "Choice": 2,
+      "Pass": 2,
+      "Fail": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf161",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-load-testing\\statemachine\\load-orchestrator-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-load-testing__statemachine__load-orchestrator-statemachine.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 10,
+    "types": {
+      "Pass": 4,
+      "Task": 4,
+      "Choice": 2
+    },
+    "retryStates": 0,
+    "catchStates": 2
+  },
+  {
+    "id": "wf179",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "uml-statemachine\\statemachine\\BlogOpenRequestSM.asl.json",
+    "file": "corpus/asl/sfn-collection__uml-statemachine__statemachine__BlogOpenRequestSM.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 10,
+    "types": {
+      "Choice": 2,
+      "Pass": 3,
+      "Task": 5
+    },
+    "retryStates": 5,
+    "catchStates": 0
+  },
+  {
+    "id": "wf005",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-dataquality-using-lambda\\statemachine\\dataquality.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 11,
+    "types": {
+      "Task": 6,
+      "Map": 1,
+      "Pass": 2,
+      "Choice": 1,
+      "Fail": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf051",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "cqrs\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__cqrs__statemachine__statemachine.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 11,
+    "types": {
+      "Choice": 2,
+      "Task": 6,
+      "Map": 1,
+      "Pass": 1,
+      "Fail": 1
+    },
+    "retryStates": 2,
+    "catchStates": 0
+  },
+  {
+    "id": "wf094",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "inventory-management-sam\\statemachine\\reserve-stock-statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__inventory-management-sam__statemachine__reserve-stock-statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 11,
+    "types": {
+      "Task": 7,
+      "Choice": 1,
+      "Parallel": 2,
+      "Pass": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf106",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "parallel-agent-early-stopping\\statemachine\\main.asl.json",
+    "file": "corpus/asl/sfn-collection__parallel-agent-early-stopping__statemachine__main.asl.json",
+    "topLevelStates": 11,
+    "totalStates": 11,
+    "types": {
+      "Choice": 1,
+      "Pass": 5,
+      "Task": 3,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf187",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "word-filtering-script-generator-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__word-filtering-script-generator-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 11,
+    "totalStates": 11,
+    "types": {
+      "Task": 6,
+      "Choice": 2,
+      "Wait": 2,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf188",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "word-filtering-script-generator-cdk\\typescript\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__word-filtering-script-generator-cdk__typescript__statemachine__statemachine.asl.json",
+    "topLevelStates": 11,
+    "totalStates": 11,
+    "types": {
+      "Task": 6,
+      "Choice": 2,
+      "Wait": 2,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf048",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "checkout-processing-workflow\\statemachine\\checkout_workflow.asl.json",
+    "file": "corpus/asl/sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 12,
+    "types": {
+      "Task": 10,
+      "Choice": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf121",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "saga-pattern-cdk\\resources\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__saga-pattern-cdk__resources__statemachine.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 12,
+    "types": {
+      "Task": 10,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 8,
+    "catchStates": 5
+  },
+  {
+    "id": "wf122",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "saga-pattern-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__saga-pattern-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 12,
+    "types": {
+      "Task": 10,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 8,
+    "catchStates": 5
+  },
+  {
+    "id": "wf123",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "saga-pattern-tf\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__saga-pattern-tf__statemachine__statemachine.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 12,
+    "types": {
+      "Task": 10,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 8,
+    "catchStates": 5
+  },
+  {
+    "id": "wf159",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "step-functions-lambda-version-cleanup\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__step-functions-lambda-version-cleanup__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 13,
+    "types": {
+      "Task": 5,
+      "Map": 1,
+      "Choice": 3,
+      "Pass": 3,
+      "Succeed": 1
+    },
+    "retryStates": 4,
+    "catchStates": 1
+  },
+  {
+    "id": "wf057",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "distributed-data-stream-aggregator\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__distributed-data-stream-aggregator__statemachine__statemachine.asl.json",
+    "topLevelStates": 10,
+    "totalStates": 14,
+    "types": {
+      "Pass": 3,
+      "Task": 6,
+      "Map": 1,
+      "Choice": 2,
+      "Wait": 1,
+      "Fail": 1
+    },
+    "retryStates": 1,
+    "catchStates": 0
+  },
+  {
+    "id": "wf071",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "either-or-parallel-pattern\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__either-or-parallel-pattern__statemachine__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 14,
+    "types": {
+      "Parallel": 1,
+      "Pass": 5,
+      "Wait": 3,
+      "Choice": 2,
+      "Fail": 3
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf003",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-control-concurrency-with-dynamodb\\statemachines\\dynamodb-semaphore.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__dynamodb-semaphore.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 15,
+    "types": {
+      "Parallel": 2,
+      "Task": 5,
+      "Choice": 1,
+      "Pass": 5,
+      "Wait": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 3
+  },
+  {
+    "id": "wf020",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\demo-fis-stepfunctions\\stepfunction\\fis.ec2.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__demo-fis-stepfunctions__stepfunction__fis.ec2.asl.json",
+    "topLevelStates": 15,
+    "totalStates": 15,
+    "types": {
+      "Task": 9,
+      "Choice": 3,
+      "Wait": 1,
+      "Fail": 1,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf023",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "usecases\\genai-prompt-chaining-hitl\\src\\workflow.asl.json",
+    "file": "corpus/asl/sfn-examples__usecases__genai-prompt-chaining-hitl__src__workflow.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 15,
+    "types": {
+      "Task": 8,
+      "Choice": 2,
+      "Pass": 2,
+      "Parallel": 1,
+      "Wait": 1,
+      "Fail": 1
+    },
+    "retryStates": 3,
+    "catchStates": 0
+  },
+  {
+    "id": "wf028",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "app-control-concurrency-with-dynamodb-tf\\statemachines\\dynamodb-semaphore.asl.json",
+    "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 15,
+    "types": {
+      "Parallel": 2,
+      "Task": 5,
+      "Choice": 1,
+      "Pass": 5,
+      "Wait": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 3
+  },
+  {
+    "id": "wf029",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "app-control-concurrency-with-dynamodb-tf\\statemachines\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__statemachine.asl.json",
+    "topLevelStates": 4,
+    "totalStates": 15,
+    "types": {
+      "Parallel": 2,
+      "Task": 5,
+      "Choice": 1,
+      "Pass": 5,
+      "Wait": 1,
+      "Succeed": 1
+    },
+    "retryStates": 2,
+    "catchStates": 3
+  },
+  {
+    "id": "wf024",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "account-vending-machine\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
+    "topLevelStates": 13,
+    "totalStates": 16,
+    "types": {
+      "Task": 7,
+      "Wait": 1,
+      "Choice": 2,
+      "Pass": 4,
+      "Map": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 1
+  },
+  {
+    "id": "wf088",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "idempotent-workflow\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__idempotent-workflow__statemachine__statemachine.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 17,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Wait": 1,
+      "Fail": 2,
+      "Pass": 5,
+      "Succeed": 1,
+      "Parallel": 1
+    },
+    "retryStates": 6,
+    "catchStates": 2
+  },
+  {
+    "id": "wf089",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "idempotent-workflow-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__idempotent-workflow-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 12,
+    "totalStates": 17,
+    "types": {
+      "Task": 6,
+      "Choice": 1,
+      "Wait": 1,
+      "Fail": 2,
+      "Pass": 5,
+      "Succeed": 1,
+      "Parallel": 1
+    },
+    "retryStates": 6,
+    "catchStates": 2
+  },
+  {
+    "id": "wf137",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-cfn-stacksets-workflow-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 17,
+    "totalStates": 17,
+    "types": {
+      "Task": 7,
+      "Choice": 3,
+      "Fail": 4,
+      "Wait": 2,
+      "Succeed": 1
+    },
+    "retryStates": 0,
+    "catchStates": 2
+  },
+  {
+    "id": "wf145",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-rds-to-aurora-migrate-postgres-cdk\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-rds-to-aurora-migrate-postgres-cdk__statemachine__statemachine.asl.json",
+    "topLevelStates": 17,
+    "totalStates": 17,
+    "types": {
+      "Task": 8,
+      "Wait": 3,
+      "Choice": 4,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 4
+  },
+  {
+    "id": "wf011",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-order-management\\statemachines\\ship-order.asl.json",
+    "file": "corpus/asl/sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json",
+    "topLevelStates": 13,
+    "totalStates": 18,
+    "types": {
+      "Choice": 3,
+      "Task": 10,
+      "Map": 1,
+      "Succeed": 2,
+      "Wait": 1,
+      "Fail": 1
+    },
+    "retryStates": 3,
+    "catchStates": 1
+  },
+  {
+    "id": "wf069",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "ec2-instance-isolation-cdk\\python\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__ec2-instance-isolation-cdk__python__statemachine__statemachine.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 19,
+    "types": {
+      "Task": 12,
+      "Choice": 3,
+      "Parallel": 1,
+      "Pass": 1,
+      "Wait": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf070",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "ec2-instance-isolation-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__ec2-instance-isolation-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 9,
+    "totalStates": 19,
+    "types": {
+      "Task": 12,
+      "Choice": 3,
+      "Parallel": 1,
+      "Pass": 1,
+      "Wait": 2
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf146",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "sfn-rekognition-video-catalog-workflow\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__sfn-rekognition-video-catalog-workflow__statemachine__statemachine.asl.json",
+    "topLevelStates": 5,
+    "totalStates": 23,
+    "types": {
+      "Map": 4,
+      "Choice": 1,
+      "Task": 17,
+      "Pass": 1
+    },
+    "retryStates": 4,
+    "catchStates": 0
+  },
+  {
+    "id": "wf014",
+    "repo": "aws-samples/aws-stepfunctions-examples",
+    "path": "sam\\app-sfn-appflow-integration\\statemachines\\CreateCatalogTable.json",
+    "file": "corpus/asl/sfn-examples__sam__app-sfn-appflow-integration__statemachines__CreateCatalogTable.json",
+    "topLevelStates": 23,
+    "totalStates": 26,
+    "types": {
+      "Pass": 9,
+      "Task": 9,
+      "Choice": 5,
+      "Map": 1,
+      "Succeed": 1,
+      "Fail": 1
+    },
+    "retryStates": 0,
+    "catchStates": 3
+  },
+  {
+    "id": "wf037",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "bedrock-evaluations-sam\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json",
+    "topLevelStates": 1,
+    "totalStates": 27,
+    "types": {
+      "Parallel": 1,
+      "Task": 12,
+      "Choice": 4,
+      "Fail": 2,
+      "Succeed": 2,
+      "Wait": 6
+    },
+    "retryStates": 0,
+    "catchStates": 0
+  },
+  {
+    "id": "wf111",
+    "repo": "aws-samples/step-functions-workflows-collection",
+    "path": "quorum-with-parallel-pattern\\statemachine\\statemachine.asl.json",
+    "file": "corpus/asl/sfn-collection__quorum-with-parallel-pattern__statemachine__statemachine.asl.json",
+    "topLevelStates": 6,
+    "totalStates": 33,
+    "types": {
+      "Task": 16,
+      "Parallel": 1,
+      "Pass": 8,
+      "Choice": 3,
+      "Fail": 4,
+      "Wait": 1
+    },
+    "retryStates": 3,
+    "catchStates": 5
+  }
+]

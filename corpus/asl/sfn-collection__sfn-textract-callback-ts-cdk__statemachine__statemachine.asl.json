@@ -1,0 +1,57 @@
+{
+  "StartAt": "textract",
+  "States": {
+    "textract": {
+      "Next": "Wait for Textract Callback Token",
+      "Type": "Task",
+      "ResultPath": "$.Result",
+      "Resource": "arn:aws:states:::aws-sdk:textract:startDocumentTextDetection",
+      "Parameters": {
+        "DocumentLocation": {
+          "S3Object": {
+            "Bucket.$": "$.detail.bucket.name",
+            "Name.$": "$.detail.object.key"
+          }
+        },
+        "NotificationChannel": {
+          "RoleArn": "TEXTRACT_SNS_NOTIFICATION_ROLE",
+          "SnsTopicArn": "TEXTRACT_SNS_NOTIFICATION_TOPIC"
+        },
+        "OutputConfig": {
+          "S3Bucket": "DESTINATION_BUCKET",
+          "S3Prefix": "output"
+        }
+      }
+    },
+    "Wait for Textract Callback Token": {
+      "Next": "Notify Success",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem.waitForTaskToken",
+      "Parameters": {
+        "TableName": "DYNAMODB_CHECKPOINT_TABLE",
+        "Item": {
+          "PK1": {
+            "S.$": "$.Result.JobId"
+          },
+          "TT": {
+            "S.$": "$$.Task.Token"
+          },
+          "STATUS": {
+            "S": "PROCESSING"
+          }
+        }
+      },
+      "TimeoutSeconds": 1800
+    },
+    "Notify Success": {
+      "End": true,
+      "Type": "Task",
+      "ResultPath": "$.Result",
+      "Resource": "arn:aws:states:::aws-sdk:sns:publish",
+      "Parameters": {
+        "Message": "Success",
+        "TopicArn": "TOPIC_ARN"
+      }
+    }
+  }
+}

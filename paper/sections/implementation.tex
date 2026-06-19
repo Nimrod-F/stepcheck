@@ -1,0 +1,88 @@
+\section{Implementation}
+\label{sec:impl}
+
+\tool{} is implemented in Rust as a single command-line tool, \texttt{stepcheck}
+(2{,}359 lines; Table~\ref{tab:loc}). We chose Rust deliberately: a standalone
+analyzer with a \texttt{serde}-based parser is what makes it possible to ingest the
+\emph{existing} \asl{} JSON found in real repositories ---rather than only workflows
+authored in a new embedded language--- and it yields a single dependency-light binary
+with predictable, sub-millisecond performance.
+
+\subsection{A modular frontend/pass pipeline}
+
+The architecture's extensibility rests on two traits (Listing~\ref{lst:traits}). A
+\texttt{Frontend} lowers a surface syntax to the workflow IR; a \texttt{Pass} reads
+only the IR and writes diagnostics. Adding an input format (e.g.\ the CNCF Serverless
+Workflow DSL~\cite{cncfServerlessWorkflow}) is a new \texttt{Frontend}; adding a check
+is a new \texttt{Pass}. Everything else is unchanged---the property the original
+design called \emph{extensibility}.
+
+\begin{lstlisting}[style=rust,caption={The two extension points.},label={lst:traits}]
+pub trait Frontend { fn load(&self, src: &str) -> Result<Workflow>; }
+
+pub trait Pass {
+    fn id(&self) -> &'static str;
+    fn run(&self, wf: &Workflow, sink: &mut DiagnosticSink);
+}
+\end{lstlisting}
+
+\subsection{Components}
+
+\paragraph{Workflow IR.}
+A format-agnostic graph of states (\texttt{Task}, \texttt{Choice}, \texttt{Parallel},
+\texttt{Map}, \texttt{Wait}, \texttt{Pass}, \texttt{Succeed}, \texttt{Fail}) with
+control flow, JSONPath data-flow fields, retry/catch policies, nested sub-machines,
+and a slot for resolved annotations.
+
+\paragraph{\asl{} frontend.}
+To tolerate the diversity of real \asl{}---intrinsic functions, \texttt{.\$}
+parameters, the \texttt{\$\$} context object, SAM \texttt{\$\{\}} placeholders,
+classic \texttt{Iterator} vs.\ distributed \texttt{ItemProcessor}, and recent JSONata
+features--- the frontend lowers from a generic \texttt{serde\_json} value rather than
+rigid structs, so unknown fields never cause a hard failure. It parses all 193 corpus
+workflows without error.
+
+\paragraph{Annotation resolution and inference.}
+Loads a TOML sidecar, resolves schema names to field sets, and fills the remaining
+gaps with the naming/resource heuristic of Section~\ref{sec:approach:infer}.
+
+\paragraph{Passes and diagnostics.}
+The five analyses of Section~\ref{sec:analyses}, plus a diagnostics engine that
+renders findings for a terminal or as JSON.
+
+\paragraph{\asl{} emitter and round-trip.}
+Lowers a verified IR back to \asl{} JSON for deployment. The emitter is the
+DSL frontend's code-generator and the basis of the AWS round-trip
+(Section~\ref{sec:eval}); deploying its output to AWS surfaced ---and we
+fixed--- a real bug where an explicit \texttt{End} was emitted on \texttt{Succeed}/
+\texttt{Fail} states, which Step Functions rejects.
+
+\paragraph{CLI and error injection.}
+\texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{stats},
+\texttt{eval}, \texttt{emit}, and \texttt{mutate}. The \texttt{mutate} command injects
+exactly one defect of a chosen class into a workflow (a broken JSONPath binding, a
+broad retry on a non-idempotent task, a removed compensation, or a dangling
+transition) and re-emits deployable \asl{}; it drives the mutation study of
+Section~\ref{sec:eval}.
+
+\begin{table}[t]
+\centering
+\caption{Implementation size (lines of Rust).}
+\label{tab:loc}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Component & LOC \\
+\midrule
+Workflow IR & 277 \\
+Frontends (\asl{} parse/emit, typed DSL) & 412 \\
+Annotations + inference & 245 \\
+Analysis passes (5 + manager) & 650 \\
+Diagnostics & 115 \\
+Mutation engine & 184 \\
+CLI + statistics + evaluation harness & 476 \\
+\midrule
+\textbf{Total} & \textbf{2{,}359} \\
+\bottomrule
+\end{tabular}
+\end{table}
