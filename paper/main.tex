@@ -78,13 +78,14 @@ compensation), \tool{} pairs sound native analyses with a lightweight annotation
 layer whose defaults are \emph{inferred} from task names and resource bindings,
 so existing workflows can be analysed with zero up-front effort and refined
 incrementally. \tool{} is implemented in Rust as a modular frontend/pass pipeline
-(2.4k LOC). We evaluate it on a corpus of \textbf{193} real Step Functions
+(2.6k LOC) and evaluated on a corpus of \textbf{193} real Step Functions
 workflows mined from public AWS repositories. The native checks flag genuine
 defects in the wild; a mutation study injecting 429 defects of four classes is
 detected with 100\% recall; name-based inference reaches 83--91\% accuracy
 against a hand-labelled gold set; verification costs 19\,$\mu$s per workflow on
-average; and a verified workflow deploys and executes unmodified on AWS Step
-Functions with zero runtime overhead.
+average; a verified workflow deploys and executes unmodified on AWS Step
+Functions with zero runtime overhead; and the architecture generalizes to a second
+workflow language (CNCF Serverless Workflow) with no change to the analyses.
 
 \keywords{Serverless computing \and Workflow orchestration \and AWS Step Functions
 \and Static verification \and Typestate \and Saga transactions \and Domain-specific

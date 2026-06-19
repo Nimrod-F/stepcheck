@@ -22,8 +22,9 @@ on real AWS Step Functions (RQ3).
 The broader message mirrors the history of type systems: just as static typing moved
 classes of error from run time to compile time, lightweight static verification can do
 the same for serverless orchestration, on the industrial platforms developers already
-use. Several directions remain. Additional frontends (CNCF Serverless Workflow, SAM,
-CDK) would widen reach; richer effect and ownership information would sharpen the
+use. Several directions remain. We have already shown the architecture generalizes by
+adding a CNCF Serverless Workflow frontend with no change to the analyses; further
+frontends (SAM, CDK) would widen reach; richer effect and ownership information would sharpen the
 contract and compensation analyses; and a precise data-flow analysis of \texttt{Map}
 and \texttt{Parallel} item contexts would extend native contract checking. We release
 \tool, the corpus, and the evaluation harness to support replication and reuse.

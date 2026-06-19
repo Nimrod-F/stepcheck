@@ -158,6 +158,32 @@ Express state machine and executed synchronously; the execution reached
 terminal state, billed at 500\,ms / 64\,MB. The temporary resources were then removed.
 A verified \tool{} workflow thus runs on the unmodified industrial platform.
 
+\subsection{Cross-format generalization: CNCF Serverless Workflow}
+\label{sec:eval:cncf}
+
+To test that the approach generalizes beyond AWS, we added a third frontend for the
+vendor-neutral CNCF Serverless Workflow DSL~\cite{cncfServerlessWorkflow} and ran it on
+\textbf{66} example workflows from the specification's repository. The frontend lowers
+the DSL's tasks (\texttt{call}/\texttt{do}/\texttt{fork}/\texttt{for}/\texttt{switch}/
+\texttt{try}/\texttt{listen}/\dots) to the \emph{same} IR \emph{without changing the IR
+or any analysis pass}, and parses all 66 workflows with no failures. The structural,
+typestate, retry-safety, and compensation analyses apply unchanged; only the
+\asl-specific data-binding checks (\code{SC1001}--\code{SC1003}) stay silent---correctly,
+since the CNCF DSL uses runtime expressions rather than JSONPath. A mutation study on
+this corpus detects every injected defect for which the class has an injection site
+(retry 4/4, structural 9/9); contract- and compensation-class mutations have no sites in
+these mostly single-task feature demos.
+
+Crucially, the CNCF DSL can declare JSON Schemas for task input and output. Where it
+does, the typed contract check (\code{SC1010}) runs at \emph{full precision with no
+inference}: a reordered, schema-annotated order workflow is rejected with three
+\code{SC1010} errors derived directly from the declared schemas (e.g.\ \texttt{shipOrder}
+requires \texttt{paymentId}, which its new predecessor does not produce)---the same
+defect the inference layer only approximates on raw \asl, here established exactly. The
+asymmetry is informative: CNCF makes data contracts explicit, closing that gap natively,
+but---like \asl---leaves idempotency and compensation implicit, so those checks still
+rely on annotation or inference in both ecosystems.
+
 \subsection{Threats to validity}
 
 \emph{Construct.} The mutation study reports 100\% recall by design: each mutation

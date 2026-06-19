@@ -12,10 +12,13 @@ with predictable, sub-millisecond performance.
 
 The architecture's extensibility rests on two traits (Listing~\ref{lst:traits}). A
 \texttt{Frontend} lowers a surface syntax to the workflow IR; a \texttt{Pass} reads
-only the IR and writes diagnostics. Adding an input format (e.g.\ the CNCF Serverless
-Workflow DSL~\cite{cncfServerlessWorkflow}) is a new \texttt{Frontend}; adding a check
-is a new \texttt{Pass}. Everything else is unchanged---the property the original
-design called \emph{extensibility}.
+only the IR and writes diagnostics. Adding an input format is a new \texttt{Frontend};
+adding a check is a new \texttt{Pass}; everything else is unchanged. We exercised this
+directly: the tool ships three frontends---the typed DSL, raw \asl, and the CNCF
+Serverless Workflow DSL~\cite{cncfServerlessWorkflow}---and the last was added
+\emph{without changing the IR or any analysis pass}
+(Section~\ref{sec:eval:cncf}), turning the extensibility claim into a demonstrated
+property.
 
 \begin{lstlisting}[style=rust,caption={The two extension points.},label={lst:traits}]
 pub trait Frontend { fn load(&self, src: &str) -> Result<Workflow>; }
@@ -75,14 +78,14 @@ Section~\ref{sec:eval}.
 Component & LOC \\
 \midrule
 Workflow IR & 277 \\
-Frontends (\asl{} parse/emit, typed DSL) & 412 \\
-Annotations + inference & 245 \\
+Frontends (\asl{} parse/emit, typed DSL, CNCF Serverless Workflow) & 664 \\
+Annotations + inference & 251 \\
 Analysis passes (5 + manager) & 650 \\
 Diagnostics & 115 \\
 Mutation engine & 184 \\
-CLI + statistics + evaluation harness & 476 \\
+CLI + statistics + evaluation harness & 490 \\
 \midrule
-\textbf{Total} & \textbf{2{,}359} \\
+\textbf{Total} & \textbf{2{,}631} \\
 \bottomrule
 \end{tabular}
 \end{table}

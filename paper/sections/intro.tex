@@ -63,9 +63,10 @@ with full static guarantees and the same compilation target.
   \item A two-layer design that verifies \emph{existing} \asl{} workflows by pairing
         sound native checks with an annotation layer whose defaults are inferred
         from naming/resource conventions (Section~\ref{sec:approach}).
-  \item \tool, an open, modular implementation in Rust (2.4k LOC) with pluggable
-        frontends and analysis passes, a diagnostics engine, an \asl{} emitter, and a
-        mutation-based error-injection tool (Section~\ref{sec:impl}).
+  \item \tool, an open, modular implementation in Rust (2.6k LOC) with pluggable
+        frontends (raw \asl, a typed DSL, and the CNCF Serverless Workflow DSL) and
+        analysis passes, a diagnostics engine, an \asl{} emitter, and a mutation-based
+        error-injection tool (Section~\ref{sec:impl}).
   \item An evaluation on \textbf{193 real} Step Functions workflows mined from public
         AWS repositories: in-the-wild findings, a 429-mutant detection study (100\%
         recall), inference accuracy against a hand-labelled gold set (83--91\%),
