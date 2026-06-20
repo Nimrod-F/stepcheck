@@ -2,7 +2,7 @@
 \label{sec:impl}
 
 \tool{} is implemented in Rust as a single command-line tool, \texttt{stepcheck}
-(2{,}631 lines). We chose Rust deliberately: a standalone
+(3{,}692 lines). We chose Rust deliberately: a standalone
 analyzer with a \texttt{serde}-based parser is what makes it possible to ingest the
 \emph{existing} \asl{} JSON found in real repositories ---rather than only workflows
 authored in a new embedded language--- and it yields a single dependency-light binary
@@ -38,8 +38,10 @@ the \texttt{\$\$} context, SAM \texttt{\$\{\}} placeholders, classic \texttt{Ite
 vs.\ distributed \texttt{ItemProcessor}, JSONata) never causes a hard failure---and
 parses all 193 corpus workflows without error. \textbf{Annotation resolution} loads a
 TOML sidecar, resolves schema names to field sets, and fills gaps with the heuristic of
-Section~\ref{sec:approach:infer}. The \textbf{passes and diagnostics} implement the five
-analyses plus an engine that renders findings for a terminal or as JSON. The
+Section~\ref{sec:approach:infer}. The \textbf{passes and diagnostics} implement the eight
+analyses plus an engine that renders findings for a terminal or as JSON; the data-flow
+pass is the largest at $\approx$400 lines (the shape lattice, transfer functions, and
+control-flow fixpoint), the rest a few dozen lines each. The
 \textbf{\asl{} emitter} lowers a verified IR back to deployable \asl{} JSON; it is the
 DSL frontend's code-generator and the basis of the AWS round-trip
 (Section~\ref{sec:eval})---deploying its output surfaced (and we fixed) a real bug where
@@ -49,13 +51,14 @@ Step Functions rejects.
 \paragraph{CLI and error injection.}
 \texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{scan},
 \texttt{stats}, \texttt{eval}, \texttt{mutate}, and \texttt{demo} (the last emits the
-built-in typed-DSL example to \asl{}). The \texttt{mutate} command injects
-exactly one defect of a chosen class into a workflow (a broken JSONPath binding, a
-broad retry on a non-idempotent task, a removed compensation, or a dangling
-transition) and re-emits deployable \asl{}; it drives the mutation study of
-Section~\ref{sec:eval}.
+built-in typed-DSL example to \asl{}). The \texttt{mutate} command injects exactly one
+defect of a chosen class into a workflow---a broken JSONPath binding, a reference
+redirected to an absent field (data-flow), a broad retry on a non-idempotent task, a
+removed compensation, a dangling transition, two \texttt{Parallel} branches made to
+write one resource, or a heartbeat~$\geq$~timeout---and re-emits deployable \asl{}; it
+drives the mutation study of Section~\ref{sec:eval}.
 
-The \textbf{2{,}631} lines divide as: workflow IR 277; three frontends (\asl{}
-parse/emit, typed DSL, CNCF) 664; annotations\,+\,inference 251; the five analysis
-passes\,+\,manager 650; diagnostics 115; mutation engine 184; and CLI\,+\,statistics\,+\,%
-evaluation harness 490.
+The \textbf{3{,}692} lines divide as: workflow IR 298; three frontends (\asl{}
+parse/emit, typed DSL, CNCF) 729; annotations\,+\,inference 258; the eight analysis
+passes\,+\,manager 1{,}426; diagnostics 115; mutation engine 309; and
+CLI\,+\,statistics\,+\,evaluation harness 557.

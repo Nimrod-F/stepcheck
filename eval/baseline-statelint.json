@@ -58,6 +58,20 @@
           "problem": "No state found named \"__StepCheckMissingState__\", referenced at State Machine.States.Get Organization Root.Next"
         }
       ]
+    },
+    "concurrency": {
+      "applicable": 21,
+      "statelint_detected": 0,
+      "statelint_recall": 0,
+      "statelint_any_new_problem": 11,
+      "examples": []
+    },
+    "temporal": {
+      "applicable": 166,
+      "statelint_detected": 0,
+      "statelint_recall": 0,
+      "statelint_any_new_problem": 106,
+      "examples": []
     }
   }
 }

@@ -85,6 +85,13 @@ pub fn resolve(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool) {
         }
         wf.protocol = sc.protocol.iter().map(|e| (e.from.clone(), e.to.clone())).collect();
     }
+    // Resolve the declared workflow-input schema name to its field set so the
+    // data-flow analysis can seed the start document as a closed record.
+    if wf.input_fields.is_none() {
+        if let Some(f) = schema_fields(sidecar, &wf.input_schema) {
+            wf.input_fields = Some(f);
+        }
+    }
     resolve_machine(wf, sidecar, infer);
 }
 

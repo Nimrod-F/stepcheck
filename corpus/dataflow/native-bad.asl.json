@@ -1,0 +1,21 @@
+{
+  "Comment": "Native data-flow demonstrator (no annotations): a record the workflow itself constructs is then mis-referenced. StepCheck's provenance analysis flags this with zero annotations; statelint/asl-validator accept it (the path is syntactically valid).",
+  "StartAt": "BuildOrder",
+  "States": {
+    "BuildOrder": {
+      "Type": "Pass",
+      "Result": { "order": { "orderId": "o-1", "amount": 42 } },
+      "ResultPath": "$",
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ChargeCard",
+        "Payload": { "total.$": "$.order.total" }
+      },
+      "End": true
+    }
+  }
+}

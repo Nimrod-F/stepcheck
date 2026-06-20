@@ -1,0 +1,29 @@
+{
+  "Comment": "The faulty typed workflow. ChargeCard reads $.total (not in the declared input schema) and $.reservation.reservationCode (the merge produced reservationId, not reservationCode). The flow-sensitive provenance analysis flags both as SC1101.",
+  "StartAt": "ReserveInventory",
+  "States": {
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ReserveInventory",
+        "Payload": { "orderId.$": "$.orderId" }
+      },
+      "ResultSelector": { "reservationId.$": "$.Payload.id" },
+      "ResultPath": "$.reservation",
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ChargeCard",
+        "Payload": {
+          "amount.$": "$.total",
+          "reservation.$": "$.reservation.reservationCode"
+        }
+      },
+      "End": true
+    }
+  }
+}

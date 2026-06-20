@@ -3,29 +3,36 @@
 
 Serverless workflow orchestration has become a backbone of cloud-native systems, yet
 its workflows are untyped configuration whose correctness is checked only when they
-run. We presented \tool, a static verifier that catches four classes of orchestration
-defect ---contract mismatches, out-of-order business transitions, unsafe retries, and
-missing compensations--- \emph{before} deployment, and compiles verified workflows
-back to executable Amazon States Language. The key to analysing the workflows that
-already exist is a two-layer model: sound native checks that need nothing beyond
+run---and the tooling developers have stops at JSONPath \emph{syntax}. We presented
+\tool, a static verifier whose centrepiece is the first \emph{sound} data-flow analysis
+of the Amazon States Language: a flow-sensitive abstract interpretation over a
+may-present lattice of document shapes that catches missing-field references with no
+false positives and no annotations. Around it \tool{} adds seven further checks---%
+structural, typed contracts, typestate, retry safety, concurrency interference,
+retry/timeout budget, and Saga compensation---two of them for classes no \asl{} tool had
+addressed, all compiling back to executable \asl{}. The key to analysing the workflows
+that already exist is a two-layer model: sound native checks that need nothing beyond
 \asl, paired with a lightweight annotation layer whose defaults are inferred from the
 naming and resource conventions that pervade real workflows.
 
-Our evaluation on 193 real Step Functions workflows supports the three research
-questions. \tool{} detects the targeted defect classes (100\% recall over 429
-injected defects) where a standard schema validator detects none of the retry or
-compensation defects, and surfaces genuine issues in unmodified workflows (RQ1); it
-recovers persistence at 86\% and idempotency at 62\% accuracy at zero authoring cost
-against an agreement-checked gold set---enough to make compensation warnings mostly
-actionable (81\% precision) while idempotency-driven retry warnings stay noisier, all
-surfaced as correctable warnings (RQ2); and it verifies a workflow in 19\,$\mu$s on
-average while adding zero runtime overhead, with verified workflows running unmodified
-on real AWS Step Functions (RQ3).
+Our evaluation on 193 real Step Functions workflows (plus 66 CNCF) supports the three
+research questions. \tool{} detects the targeted defect classes (100\% recall over 616
+injected defects) where a standard schema validator detects none of the retry,
+compensation, concurrency, or temporal defects, and surfaces 33 unbounded-callback
+defects in unmodified workflows; the data-flow and concurrency analyses fire zero false
+positives in the wild (RQ1). It recovers persistence at 86\% and idempotency at 62\% accuracy at zero authoring
+cost against an agreement-checked gold set---enough to make compensation warnings mostly
+actionable (81\% precision)---all surfaced as correctable warnings, and its typed tier
+recovers two-thirds of injected missing-field defects, the remainder being ASL's
+intrinsic opacity (RQ2); and it verifies a workflow in $\approx$39\,$\mu$s while adding
+zero runtime overhead, with verified workflows running unmodified on real AWS Step
+Functions (RQ3).
 
 The broader message mirrors the history of type systems: just as static typing moved
-classes of error from run time to compile time, lightweight static verification can do
-the same for serverless orchestration, on the platforms developers already use. Future
-work includes further frontends (SAM, CDK), richer effect/ownership information to
-sharpen the contract and compensation analyses, and a precise data-flow analysis of
-\texttt{Map}/\texttt{Parallel} item contexts. We release \tool, the corpus, and the
-evaluation harness to support replication and reuse.
+classes of error from run time to compile time, lightweight static verification---rooted
+in a sound data-flow core---can do the same for serverless orchestration, on the
+platforms developers already use. Future work includes further frontends (SAM, CDK),
+richer effect/ownership information to sharpen the compensation and concurrency analyses,
+a precise element-level shape for \texttt{Map}/\texttt{Parallel} item contexts, and a
+labelled-precision study of the concurrency and temporal warnings. We release \tool, the
+corpus, and the evaluation harness to support replication and reuse.
