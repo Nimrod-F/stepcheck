@@ -27,21 +27,36 @@ at run time~\cite{colombo2014compensation}; \tool{} adds a \emph{static}
 completeness check---every persistent operation must have a reachable compensator
 before shipping.
 
-\paragraph{Workflow verification and data contracts.}
-Workflow soundness is verified with Petri
-nets~\cite{vanDerAalst1998petri,blondin2022soundness} and service compositions with
-model checking~\cite{bianculli2007bpel}: strong, general guarantees that require
-dedicated formalisms and are rarely wired into everyday cloud development. Interface
-compatibility is usually enforced via consumer-driven contracts or statically for REST
-clients~\cite{seco2020contracts}; our contract pass brings this
-producer/consumer reasoning to the data flow \emph{inside} a workflow. \tool{}
-deliberately targets a deployed industrial language with lightweight, linear checks and
-direct compilation. Against representative approaches---AWS Step
-Functions~\cite{awsStepFunctions} and CNCF~\cite{cncfServerlessWorkflow} (no static
-semantic checks), Temporal/Cadence~\cite{temporal,cadence} and
-Beldi~\cite{zhang2020beldi} (runtime retry/Saga, not static), Petri-net/BPEL
+\paragraph{Data-flow analysis and \asl{} tooling.}
+The validators available for \asl{}---\texttt{statelint}~\cite{awsStatelint},
+\texttt{asl-validator}, and AWS's \texttt{ValidateStateMachineDefinition}---check the
+J2119/\asl{} JSON schema, transition existence, and JSONPath \emph{syntax}; none reasons
+about field provenance. Our data-flow pass casts \asl{}'s I/O-processing pipeline as an
+abstract interpretation~\cite{cousot1977} over a may-present lattice of document shapes,
+yielding a \emph{sound} (no-false-positive) provenance check---to our knowledge the first
+static data-flow analysis for the language. It is the workflow-internal analogue of the
+producer/consumer reasoning that consumer-driven contracts and static REST-client checks
+apply \emph{across} services~\cite{seco2020contracts}.
+
+\paragraph{Concurrency and workflow verification.}
+Interference and coordination for concurrent objects and distributed transactions are
+studied for actors and state-machine DSLs---interference-free network objects, and
+path-sensitive atomic commit that reasons about whether two messages'
+effects commute~\cite{soethout2019psac}---but not for serverless-workflow
+\texttt{Parallel}/\texttt{Map} fan-out, which our concurrency pass targets. Workflow
+soundness is verified with Petri nets~\cite{vanDerAalst1998petri,blondin2022soundness}
+and service compositions with model checking~\cite{bianculli2007bpel}: strong, general
+guarantees that require dedicated formalisms and are rarely wired into everyday cloud
+development. \tool{} deliberately targets a deployed industrial language with
+lightweight, linear checks and direct compilation. Against representative
+approaches---AWS Step Functions~\cite{awsStepFunctions} and
+CNCF~\cite{cncfServerlessWorkflow} (no static semantic checks),
+Temporal/Cadence~\cite{temporal,cadence} and Beldi~\cite{zhang2020beldi} (runtime
+retry/Saga, not static), Petri-net/BPEL
 verification~\cite{blondin2022soundness,bianculli2007bpel} (static but heavyweight,
-non-AWS), and session/typestate types~\cite{honda2008multiparty,stromYemini1986typestate}
-(typestate only)---\tool{} is, to our knowledge, the first to combine typestate
-conformance, retry safety, compensation completeness, and data-contract checking in a
-single \emph{static} verifier that compiles directly to executable AWS Step Functions.
+non-AWS), and session/typestate
+types~\cite{honda2008multiparty,stromYemini1986typestate} (typestate only)---\tool{} is,
+to our knowledge, the first to combine sound data-flow provenance, typestate conformance,
+retry safety, concurrency-interference and temporal-budget checking, and compensation
+completeness in a single \emph{static} verifier that compiles directly to executable AWS
+Step Functions.

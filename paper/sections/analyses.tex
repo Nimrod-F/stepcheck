@@ -1,10 +1,11 @@
 \section{Static Analyses}
 \label{sec:analyses}
 
-\tool{} runs five independent passes over the IR, each emitting diagnostics with a
+\tool{} runs eight independent passes over the IR, each emitting diagnostics with a
 stable code (Table~\ref{tab:codes}), a severity, the offending state, and a remediation
-note. All are linear in the number of states and recurse into nested
-\texttt{Map}/\texttt{Parallel} sub-machines.
+note. All are linear in the number of states (the data-flow pass, linear modulo the
+control-flow fixpoint) and recurse into nested \texttt{Map}/\texttt{Parallel}
+sub-machines.
 
 \begin{table}[t]
 \centering
@@ -20,15 +21,21 @@ Code & Pass & Meaning \\
 \code{SC0001--0010} & structural & undefined start/transition target, unreachable state,
   dead-end, non-exhaustive \texttt{Choice}, empty \texttt{Map}/\texttt{Parallel},
   malformed state \\
-\code{SC1001--1003} & contract & \texttt{waitForTaskToken} without a task token,
+\code{SC1001--1003} & data-flow & \texttt{waitForTaskToken} without a task token,
   \texttt{\$\$.Map} misuse, invalid JSONPath payload \\
-\code{SC1010} & contract & typed contract mismatch: successor requires a field the
+\code{SC1010} & data-flow & typed contract mismatch: successor requires a field the
   predecessor does not produce \\
+\code{SC1101} & data-flow & reference to a field no execution can have produced
+  (provenance; sound) \\
 \code{SC2001--2002} & typestate & out-of-order composition; undeclared
   business-protocol transition \\
 \code{SC3001}$^{\dagger}$ & retry & non-idempotent task retried on a broad error class \\
 \code{SC4001--4002}$^{\dagger}$ & compensation & persistent task with no
   compensation/handling; compensation names a missing state \\
+\code{SC5001--5002} & concurrency & \texttt{Parallel} branches / concurrent \texttt{Map}
+  iterations write the same resource \\
+\code{SC6001--6003} & temporal & unbounded callback; retry budget exceeds machine
+  timeout; heartbeat~$\geq$~timeout \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -40,14 +47,23 @@ every non-terminal offers a continuation, that a terminal is reachable, that
 \texttt{Choice} states declare a \texttt{Default}, and that \texttt{Map}/\texttt{Parallel}
 states are well-formed---sound checks that catch defects AWS reports only at run time.
 
-\paragraph{Contract / data-flow (\code{SC1xxx}).}
-Natively, the pass mines every JSONPath reference and checks \asl{}-semantic bindings: a
+\paragraph{Data-flow provenance (\code{SC1xxx}, \code{SC1101}).}
+This is the analysis of Section~\ref{sec:approach:dataflow}, run as a forward abstract
+interpretation that computes each state's document shape and checks the data references
+a state evaluates against it (its \texttt{Parameters}/\texttt{ItemSelector} `.\$'
+constructors and \texttt{ItemsPath}). A reference to a path that is \emph{definitely
+absent} in the state's shape is \code{SC1101}---a sound finding (no false positives). Three legacy
+\asl-binding checks are special cases the same pass still reports: a
 \texttt{waitForTaskToken} task must pass \texttt{\$\$.Task.Token} (\code{SC1001}); the
 \texttt{\$\$.Map} context is valid only inside a \texttt{Map} (\code{SC1002}); and every
-payload must be a valid path or \texttt{States.*} intrinsic (\code{SC1003}). With declared
-schemas it adds typed checking (\code{SC1010}): following control flow through transparent
-states, each successor's required fields must be a subset of the producer's
-output---the \texttt{amount}/\texttt{total} defect of Section~\ref{sec:bg:defects}.
+payload must be a valid path or \texttt{States.*} intrinsic (\code{SC1003}). \code{SC1101}
+goes strictly beyond all of these and beyond what \texttt{statelint}/%
+\texttt{asl-validator} check: it is the only one that asks whether the field a
+\emph{valid} path names can ever have been produced. With a declared input schema the
+shape is closed and the analysis recovers the full \texttt{amount}/\texttt{total} class
+(Section~\ref{sec:bg:defects}); \tool{} additionally retains an adjacent-task
+field-subset check (\code{SC1010}) as a cheap complement when only per-task schemas, not
+a workflow input schema, are declared.
 
 \paragraph{Typestate (\code{SC2xxx}).}
 Using \texttt{state\_in}/\texttt{state\_out} labels, the pass checks that adjacent tasks
@@ -66,6 +82,34 @@ A \emph{persistent} task needs either a declared compensation or a \texttt{Catch
 one with neither leaves its effect uncompensated (\code{SC4001}), and a compensation
 naming a non-existent state is \code{SC4002}.
 
+\paragraph{Concurrency interference (\code{SC5xxx}).}
+\texttt{Parallel} branches and \texttt{Map} iterations each receive their own copy of
+the state document, so the document cannot race---but the \emph{external} resources
+their tasks touch can. The pass mines each task's resource (its integration service plus
+the named target: \texttt{TableName}, \texttt{QueueUrl}, \texttt{TopicArn},
+\texttt{Bucket}) and, to avoid false positives on idiomatic keyed/commuting patterns,
+considers only \emph{overwriting} writes---\texttt{PutItem}/\texttt{PutObject}, which are
+last-writer-wins. It excludes \texttt{UpdateItem} (an atomic merge that commutes for
+disjoint attributes) and fire-and-forget \texttt{Publish}/\texttt{SendMessage}
+(independent messages). It then flags two patterns: two \texttt{Parallel} branches that
+both overwrite the \emph{same} resource (\code{SC5001}); and a concurrent \texttt{Map}
+(\texttt{MaxConcurrency}~$\neq 1$) whose iterations overwrite a shared resource while
+threading \emph{no} per-item data (no `.\$' reference in the write, so every iteration
+clobbers the same item, \code{SC5002}). Both are \emph{warnings}, consistent with the
+tool's confidence model. No prior \asl{} tool reasons about cross-branch interference.
+
+\paragraph{Retry / timeout budget (\code{SC6xxx}).}
+\asl{}'s resilience knobs interact in ways the platform never cross-checks. A
+\texttt{waitForTaskToken} (or Activity) task with neither \texttt{TimeoutSeconds} nor
+\texttt{HeartbeatSeconds} waits up to a year for a token that may never arrive
+(\code{SC6001}, the most common in-the-wild finding---human-approval and external-%
+callback steps). When the state machine declares a \texttt{TimeoutSeconds}, the pass
+computes a task's worst-case retry budget as the geometric back-off sum
+$\sum_k \mathit{interval}\cdot\mathit{backoff}^{\,k}$ and flags retries that cannot
+complete within it (\code{SC6002}). Finally \texttt{HeartbeatSeconds}~$\geq$~%
+\texttt{TimeoutSeconds} is a definite mis-configuration the platform rejects only at
+deploy time (\code{SC6003}).
+
 \paragraph{Worked example.}
 \tool{} reports no findings on the well-formed order workflow. Reordering it to ship
 before charging (Section~\ref{sec:bg:defects}) yields five errors and no false
@@ -74,3 +118,8 @@ positives: two \code{SC2001} typestate mismatches (e.g.\ \texttt{ShipOrder} cons
 \code{SC1010} contract mismatches (\texttt{paymentId}, \texttt{amount},
 \texttt{reservationId} required but not produced upstream)---complementary checks:
 typestate explains the ordering fault, the contract check pinpoints the broken data.
+The native data-flow tier needs no annotations at all: on a workflow that constructs
+\texttt{\{order:\{orderId,amount\}\}} in a \texttt{Pass} and then reads
+\texttt{\$.order.total}, \tool{} reports \code{SC1101} directly---the
+\texttt{amount}/\texttt{total} bug caught on raw \asl{}, which \texttt{statelint}
+accepts as a valid path.

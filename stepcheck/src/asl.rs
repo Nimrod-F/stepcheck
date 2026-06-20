@@ -26,6 +26,7 @@ fn lower_machine(v: &Value, name: &str) -> Result<Workflow> {
 
     let mut wf = Workflow::new(name, start_at);
     wf.comment = s(v, "Comment");
+    wf.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
     for (sname, sval) in states_obj {
         // A state entry whose value is not an object is malformed (e.g. a
         // top-level `QueryLanguage` directive mistakenly nested in `States`).
@@ -78,6 +79,12 @@ fn lower_state(name: &str, v: &Value) -> Result<State> {
     st.result = v.get("Result").cloned();
     st.items_path = s(v, "ItemsPath");
     st.default = s(v, "Default");
+    st.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
+    st.heartbeat_seconds = v.get("HeartbeatSeconds").and_then(|x| x.as_f64());
+    st.max_concurrency = v.get("MaxConcurrency").and_then(|x| x.as_i64());
+    // `ItemSelector` (distributed Map) / `Parameters` of a Map describe the
+    // per-item document handed to each iteration.
+    st.item_selector = v.get("ItemSelector").cloned();
 
     // Retry rules
     if let Some(arr) = v.get("Retry").and_then(|x| x.as_array()) {
@@ -132,6 +139,16 @@ fn lower_state(name: &str, v: &Value) -> Result<State> {
     }
 
     Ok(st)
+}
+
+/// Emit a duration as an integer when it is whole (ASL `TimeoutSeconds`/
+/// `HeartbeatSeconds` are integer-typed), else as a float.
+fn num(x: f64) -> Value {
+    if x.fract() == 0.0 && x.abs() < 9.0e15 {
+        Value::from(x as i64)
+    } else {
+        Value::from(x)
+    }
 }
 
 fn str_array(v: Option<&Value>) -> Vec<String> {
@@ -201,6 +218,18 @@ fn emit_state(st: &State) -> Value {
     }
     if let Some(d) = &st.default {
         o.insert("Default".into(), Value::String(d.clone()));
+    }
+    if let Some(t) = st.timeout_seconds {
+        o.insert("TimeoutSeconds".into(), num(t));
+    }
+    if let Some(h) = st.heartbeat_seconds {
+        o.insert("HeartbeatSeconds".into(), num(h));
+    }
+    if let Some(mc) = st.max_concurrency {
+        o.insert("MaxConcurrency".into(), Value::from(mc));
+    }
+    if let Some(is) = &st.item_selector {
+        o.insert("ItemSelector".into(), is.clone());
     }
     if let Some(it) = &st.iterator {
         o.insert("Iterator".into(), emit(it));

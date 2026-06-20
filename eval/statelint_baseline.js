@@ -66,8 +66,9 @@ for (const f of files) {
   perFile.push({ file: f, count: r.count, cats, problems: r.problems });
 }
 
-// Detection power on StepCheck's 4 mutation classes.
-const KINDS = ['contract', 'retry', 'compensation', 'structural'];
+// Detection power on StepCheck's defect classes (the 4 original + the 2 new
+// analyses that fire on raw ASL: concurrency interference and temporal budget).
+const KINDS = ['contract', 'retry', 'compensation', 'structural', 'concurrency', 'temporal'];
 // What an injected defect looks like in statelint's eyes (attribution patterns):
 // A statelint problem counts as DETECTING the injected defect only if it names the
 // actual fault, not an incidental schema nit. (Note: every injected unsafe retry also
@@ -79,6 +80,11 @@ const ATTRIB = {
   contract: /BROKEN|is not a JSONPath|not a JSONPath or intrinsic/i, // broken .$ payload
   retry: /States\.ALL can only appear|States\.ALL.{0,40}last element/i, // only misplacement
   compensation: /__never__/,                                     // no compensation concept
+  // statelint has no notion of cross-branch interference or of a heartbeat/timeout
+  // budget; an injected shared write and an integer Heartbeat>=Timeout are both
+  // schema-valid, so statelint cannot name either fault.
+  concurrency: /__never__/,
+  temporal: /Heartbeat.{0,40}Timeout|Timeout.{0,40}Heartbeat/i,
 };
 
 console.error(`[2/2] mutation detection: ${files.length} x ${KINDS.length} ...`);

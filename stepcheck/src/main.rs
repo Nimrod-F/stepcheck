@@ -72,6 +72,11 @@ enum Cmd {
         annot: Option<PathBuf>,
         #[arg(long)]
         infer: bool,
+        /// Typed-tier data-flow mode: seed each workflow's input document as a
+        /// closed record of the top-level fields it references, and additionally
+        /// run the data-flow (SC1101) mutation class.
+        #[arg(long)]
+        strict_input: bool,
     },
     /// Inject one defect of a given class into a workflow (error injection).
     Mutate {
@@ -104,7 +109,9 @@ fn main() {
         Cmd::Infer { path, json } => cmd_infer(&path, json),
         Cmd::Scan { dir, annot, infer } => cmd_scan(&dir, annot.as_deref(), infer),
         Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
-        Cmd::Eval { dir, annot, infer } => cmd_eval(&dir, annot.as_deref(), infer),
+        Cmd::Eval { dir, annot, infer, strict_input } => {
+            cmd_eval(&dir, annot.as_deref(), infer, strict_input)
+        }
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
     };
@@ -275,15 +282,54 @@ fn code_counts(sink: &diag::DiagnosticSink) -> BTreeMap<String, usize> {
     m
 }
 
+/// Mine the top-level fields a workflow references (`$.<field>...`), used to
+/// seed the typed-tier data-flow experiment with a closed input record.
+fn mine_top_level_fields(wf: &ir::Workflow) -> Vec<String> {
+    use std::collections::BTreeSet;
+    let mut set = BTreeSet::new();
+    wf.walk_machines(&mut |m| {
+        for st in m.states.values() {
+            let mut refs = Vec::new();
+            if let Some(p) = &st.parameters {
+                ir::collect_jsonpath_refs(p, &mut refs);
+            }
+            if let Some(is) = &st.item_selector {
+                ir::collect_jsonpath_refs(is, &mut refs);
+            }
+            for c in &st.choices {
+                ir::collect_jsonpath_refs(&c.condition, &mut refs);
+            }
+            if let Some(ip) = &st.items_path {
+                refs.push(ip.clone());
+            }
+            for r in refs {
+                if let Some(rest) = r.strip_prefix("$.") {
+                    let seg = rest.split('.').next().unwrap_or("");
+                    if !seg.is_empty()
+                        && seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+                    {
+                        set.insert(seg.to_string());
+                    }
+                }
+            }
+        }
+    });
+    set.into_iter().collect()
+}
+
 /// The mutation study (E3) + in-the-wild baseline (E2) + timing (E5), in-process.
-fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -> Result<i32> {
     use std::time::Instant;
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
     };
 
-    let kinds = mutate::MutationKind::all();
+    let mut kinds: Vec<mutate::MutationKind> = mutate::MutationKind::all().to_vec();
+    if strict_input {
+        kinds.push(mutate::MutationKind::Dataflow);
+    }
+    let kinds = kinds; // freeze
     let mut applicable = BTreeMap::<String, usize>::new();
     let mut detected = BTreeMap::<String, usize>::new();
     let mut baseline_codes = BTreeMap::<String, usize>::new();
@@ -306,8 +352,19 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         files += 1;
         total_states += base.total_states();
 
+        // typed-tier seed: a closed input record of the fields the workflow uses
+        let strict_fields = if strict_input {
+            let f = mine_top_level_fields(&base);
+            if f.is_empty() { None } else { Some(f) }
+        } else {
+            None
+        };
+
         // baseline (timed)
         let mut b = base.clone();
+        if let Some(f) = &strict_fields {
+            b.input_fields = Some(f.clone());
+        }
         annot::resolve(&mut b, sc.as_ref(), infer);
         let t = Instant::now();
         let bsink = run_pipeline(&b);
@@ -324,9 +381,12 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         }
 
         // mutation study
-        for kind in kinds {
+        for &kind in &kinds {
             let ec = kind.expected_code();
             if let Some(mut mw) = mutate::mutate(&base, kind, 0) {
+                if let Some(f) = &strict_fields {
+                    mw.input_fields = Some(f.clone());
+                }
                 annot::resolve(&mut mw, sc.as_ref(), infer);
                 let msink = run_pipeline(&mw);
                 let before = bcounts.get(ec).copied().unwrap_or(0);
@@ -347,7 +407,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
     let max_us = times_ns.last().copied().unwrap_or(0) as f64 / 1000.0;
 
     let mut per_kind = serde_json::Map::new();
-    for kind in kinds {
+    for &kind in &kinds {
         let key = format!("{kind:?}");
         let app = applicable.get(&key).copied().unwrap_or(0);
         let det = detected.get(&key).copied().unwrap_or(0);

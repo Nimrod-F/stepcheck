@@ -51,12 +51,18 @@
       "applicable": 166,
       "detected": 166,
       "recall": 1.0
+    },
+    "Dataflow": {
+      "expected_code": "SC1101",
+      "applicable": 126,
+      "detected": 84,
+      "recall": 0.6666666666666666
     }
   },
   "timing_us": {
-    "mean": 36.572020725388604,
-    "median": 27.5,
-    "max": 1027.4,
-    "total_ms": 7.0584
+    "mean": 50.72746113989638,
+    "median": 31.0,
+    "max": 1132.1,
+    "total_ms": 9.7904
   }
 }

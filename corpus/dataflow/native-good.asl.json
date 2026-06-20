@@ -1,0 +1,21 @@
+{
+  "Comment": "The corrected native demonstrator: ChargeCard reads $.order.amount, a field BuildOrder actually produces. StepCheck reports no findings.",
+  "StartAt": "BuildOrder",
+  "States": {
+    "BuildOrder": {
+      "Type": "Pass",
+      "Result": { "order": { "orderId": "o-1", "amount": 42 } },
+      "ResultPath": "$",
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ChargeCard",
+        "Payload": { "total.$": "$.order.amount" }
+      },
+      "End": true
+    }
+  }
+}

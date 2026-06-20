@@ -5,12 +5,18 @@
 
 \tool{} separates what can be checked from \asl{} alone from what needs recovered
 semantics. \emph{Native} analyses (Layer~A) are sound and require no annotations:
-structural well-formedness, and \asl{}-semantic data-binding checks such as a
-\texttt{waitForTaskToken} task that never passes its task token, misuse of the
-\texttt{\$\$.Map} context, and syntactically invalid JSONPath payloads.
+structural well-formedness; the \emph{data-flow provenance} analysis of
+Section~\ref{sec:approach:dataflow} (which subsumes the \asl{}-semantic binding checks
+---a \texttt{waitForTaskToken} task that never passes its token, \texttt{\$\$.Map}
+misuse, invalid JSONPath payloads---and adds field-availability reasoning); the
+\emph{concurrency-interference} check (\texttt{Parallel}/\texttt{Map} branches that
+write a shared resource); and the \emph{retry/timeout-budget} check (unbounded
+callbacks, retries that overrun a timeout, heartbeat/timeout mis-configuration).
 \emph{Semantic} analyses (Layer~B) ---typestate, retry safety, compensation, and
 typed contract compatibility--- consume an \emph{annotation} layer that records the
-task semantics \asl{} omits. The annotation layer has two sources, in priority
+task semantics \asl{} omits. (Concurrency and retry safety also \emph{read} the
+annotation layer to learn which tasks write or are non-idempotent, so they sharpen as
+annotations are added, but their structural triggers fire natively.) The annotation layer has two sources, in priority
 order: explicit annotations (authored by hand or produced by the typed DSL
 frontend), and \emph{inference} that supplies defaults from naming and resource
 conventions. Findings derived from inferred facts are reported at \emph{warning}
@@ -42,7 +48,79 @@ error classes. \textbf{Persistence/compensation:} a \emph{persistent} task commi
 durable resource (reservation, charge, created record) that a later failure should undo,
 so it needs a \emph{compensation}---an explicit handler or a \texttt{Catch} to a
 compensating state. This vocabulary is deliberately lightweight---no separate formal
-calculus---yet exactly what the four checks of Section~\ref{sec:analyses} consume.
+calculus---yet exactly what the semantic checks of Section~\ref{sec:analyses} consume.
+
+\subsection{Sound data-flow provenance by abstract interpretation}
+\label{sec:approach:dataflow}
+
+The contract defect of Section~\ref{sec:bg:defects} is a \emph{data-flow} fact:
+\texttt{\$.total} fails not because it is malformed---it is a valid path---but because
+no execution reaching \texttt{ChargeCard} produces a \texttt{total} field. Deciding
+this requires modelling how \asl{} reshapes its state document, which it does through a
+fixed five-stage pipeline per state: \texttt{InputPath} selects a sub-document;
+\texttt{Parameters}/\texttt{ItemSelector} \emph{construct} the task input (each
+\texttt{"k.\$":"\$.p"} entry \emph{reads} \texttt{\$.p}); the task result is combined
+through \texttt{ResultSelector} and merged into the \emph{raw} input at
+\texttt{ResultPath}; and \texttt{OutputPath} selects the state output. We give this an
+abstract interpretation.
+
+\paragraph{Domain.}
+A document shape over-approximates the set of field paths that \emph{may} be present:
+\[
+  \sigma \;::=\; \top \;\mid\; \{\,k_1{:}\sigma_1,\dots,k_n{:}\sigma_n\,\}
+\]
+where $\top$ is opaque (any field may be present---e.g.\ an arbitrary Lambda result or
+the execution input) and a record lists \emph{exactly} the keys that may occur (a key
+absent from the record is absent on every represented document; scalars/arrays are the
+empty record / $\top$). The order is $\sigma\sqsubseteq\top$ and pointwise on records;
+the join $\sqcup$ is the \emph{union} of keys ($\top$ absorbs), so a key present on any
+incoming path survives. A path $\$.p_1.\dots.p_k$ is \emph{definitely absent} in
+$\sigma$ iff descending the records hits a missing key without first reaching $\top$.
+
+\paragraph{Transfer functions.}
+Each stage is a monotone function on shapes: \texttt{InputPath}/\texttt{OutputPath}
+re-root by descent (a missing or non-trivial selection yields $\top$);
+\texttt{Parameters}/\texttt{ItemSelector}/\texttt{ResultSelector} build a record whose
+keys are the constructor's keys (a \texttt{.\$} leaf reads an opaque value, hence
+$\top$); the opaque task result is $\top$ unless a \texttt{ResultSelector} pins its
+keys; \texttt{ResultPath} places the result into the raw input, preserving siblings
+($\$$ replaces, \texttt{null} discards). A standard forward fixpoint over the
+control-flow graph---joining at merge points and along \texttt{Catch} edges (which
+carry an opaque error object)---computes an entry shape for every state. We then check
+exactly the references the \asl{} runtime \emph{evaluates and aborts on when absent}:
+the `.\$' constructors of \texttt{Parameters}/\texttt{ItemSelector} and a \texttt{Map}'s
+\texttt{ItemsPath}. We deliberately do \emph{not} check \texttt{Choice} operands: a
+\texttt{Choice} comparison (\texttt{IsPresent}, \texttt{IsNull}, value comparators) is a
+\emph{test} that returns false on an absent field rather than failing the
+execution---flagging it would be unsound.
+
+\paragraph{Soundness.}
+The analysis reports \code{SC1101} for a reference only when its path is definitely
+absent in the state's entry shape. Because every transfer function over-approximates
+the set of may-present paths and $\top$ absorbs all uncertainty, this yields:
+
+\begin{quote}\itshape
+If \tool{} reports \code{SC1101} for path $p$ at state $s$, then in every concrete
+execution that reaches $s$, $p$ is absent from the state document---so the reference
+fails at run time.
+\end{quote}
+
+\noindent Equivalently, the analysis has \emph{no false positives}: it never flags a
+reference that some execution could satisfy. We corroborate this empirically---zero
+\code{SC1101} on 193 unmodified workflows (Section~\ref{sec:eval:dataflow}). The
+analysis has two tiers that mirror the tool's two layers. The \textbf{native} tier seeds
+the start document as $\top$ (the execution input is arbitrary), so findings arise only
+where the workflow itself constructs the data it later reads---a \texttt{Pass}
+\texttt{Result}, a \texttt{ResultSelector}, a static \texttt{Parameters} object, or an
+\texttt{OutputPath} that drops a field; the statement above holds \emph{unconditionally}
+for this tier. The \textbf{typed} tier seeds the start as a closed record of the declared
+input schema (sidecar, DSL, or CNCF JSON Schema), which recovers the full ``field never
+produced'' class flow-sensitively through the \texttt{ResultPath} merge---strictly more
+than an adjacent-task field-subset check. There the guarantee is relative to a
+\emph{closed-world reading} of the declared contract: the schema enumerates the fields
+the input may contain. This matches the intent of an author who declares a contract;
+where inputs are genuinely open, the native tier (which assumes nothing) is the sound
+fallback.
 
 \subsection{The annotation layer}
 \label{sec:approach:annot}
@@ -88,7 +166,9 @@ yields a zero-effort default whose mistakes (Section~\ref{sec:eval}) are visible
 
 The pipeline is a straight line: a \emph{frontend} lowers a surface syntax to a
 format-agnostic intermediate representation (IR); annotation resolution attaches
-declared and inferred semantics to the IR; a \emph{pass} pipeline runs the five
+declared and inferred semantics to the IR; a \emph{pass} pipeline runs the eight
 analyses, each emitting coded diagnostics; and an \emph{emitter} lowers verified
 workflows back to \asl{}. The design is modular along two axes: a new input format is a
-new \texttt{Frontend}, and a new check is a new \texttt{Pass} (Section~\ref{sec:impl}).
+new \texttt{Frontend}, and a new check is a new \texttt{Pass} (Section~\ref{sec:impl})%
+---indeed the three analyses new to this paper were each added as a single
+\texttt{Pass} with no change to the IR or the other checks.

@@ -1,0 +1,7 @@
+# Declares only the workflow input schema; the data-flow analysis recovers the
+# rest of the document shape flow-sensitively from the ASL I/O processing.
+[workflow]
+input_schema = "OrderInput"
+
+[schemas.OrderInput]
+fields = ["orderId", "amount", "items"]

@@ -42,6 +42,12 @@ Burckhardt, S., Gillum, C., Justo, D., Kallas, K., McMahon, C., Meiklejohn,
 Colombo, C., Pace, G.J.: Comprehensive monitor-oriented compensation
   programming. arXiv preprint  (2014), arXiv:1404.0849
 
+\bibitem{cousot1977}
+Cousot, P., Cousot, R.: Abstract interpretation: A unified lattice model for
+  static analysis of programs by construction or approximation of fixpoints.
+  In: Proceedings of the 4th ACM SIGACT-SIGPLAN Symposium on Principles of
+  Programming Languages (POPL). pp. 238--252. ACM (1977)
+
 \bibitem{fahndrich2004typestates}
 DeLine, R., F{\"a}hndrich, M.: Typestates for objects. In: European Conf. on
   Object-Oriented Programming (ECOOP). pp. 465--490 (2004).
@@ -71,6 +77,11 @@ Seco, J.C., Ferreira, P., Louren{\c{c}}o, H., Ferreira, C., Ferr{\~a}o, L.:
   Robust contract evolution in a typesafe microservices architecture. The Art,
   Science, and Engineering of Programming  \textbf{4}(3) (2020).
   \doi{10.22152/programming-journal.org/2020/4/10}
+
+\bibitem{soethout2019psac}
+Soethout, T., van~der Storm, T., Vinju, J.J.: Path-sensitive atomic commit:
+  Local coordination avoidance for distributed transactions. The Art, Science,
+  and Engineering of Programming  \textbf{4}(1) (2020)
 
 \bibitem{stromYemini1986typestate}
 Strom, R.E., Yemini, S.: Typestate: A programming language concept for

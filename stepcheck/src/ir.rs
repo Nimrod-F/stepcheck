@@ -123,6 +123,14 @@ pub struct State {
     pub items_path: Option<String>,
     /// Sub-machines of a `Parallel` state.
     pub branches: Vec<Workflow>,
+    /// Per-attempt task `TimeoutSeconds` (temporal analysis).
+    pub timeout_seconds: Option<f64>,
+    /// `HeartbeatSeconds` for activity / `waitForTaskToken` tasks.
+    pub heartbeat_seconds: Option<f64>,
+    /// `MaxConcurrency` of a `Map` state (`None` = unbounded).
+    pub max_concurrency: Option<i64>,
+    /// `ItemSelector`/`Parameters` of a `Map` describing the per-item document.
+    pub item_selector: Option<Value>,
     pub anno: Anno,
 }
 
@@ -148,9 +156,14 @@ impl State {
             iterator: None,
             items_path: None,
             branches: Vec::new(),
+            timeout_seconds: None,
+            heartbeat_seconds: None,
+            max_concurrency: None,
+            item_selector: None,
             anno: Anno::default(),
         }
     }
+
 
     pub fn is_terminal(&self) -> bool {
         self.kind.is_terminal_kind() || self.end
@@ -203,6 +216,12 @@ pub struct Workflow {
     pub states: IndexMap<String, State>,
     /// Optional declared schema of the whole-workflow input (typed contract).
     pub input_schema: Option<String>,
+    /// Resolved field set of the declared workflow input schema. When present
+    /// the data-flow analysis seeds the start document as a *closed* record of
+    /// these fields (the typed tier); otherwise the start document is `Top`.
+    pub input_fields: Option<Vec<String>>,
+    /// Machine-level `TimeoutSeconds` (temporal analysis); `None` = unbounded.
+    pub timeout_seconds: Option<f64>,
     /// Allowed business-state transitions `(from -> to)`; empty if no protocol
     /// was declared (typestate pass is then a no-op for ordering checks).
     pub protocol: Vec<(String, String)>,
@@ -216,6 +235,8 @@ impl Workflow {
             start_at: start_at.into(),
             states: IndexMap::new(),
             input_schema: None,
+            input_fields: None,
+            timeout_seconds: None,
             protocol: Vec::new(),
         }
     }

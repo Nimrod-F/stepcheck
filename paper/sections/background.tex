@@ -28,20 +28,29 @@ target exists, then executes it. It does \emph{not} reason about whether
 \texttt{\$.detail.customer} is present, whether retrying this task is safe, or how
 the workflow recovers if a later step fails.
 
-\subsection{Four classes of latent defect}
+\subsection{Six classes of latent defect}
 \label{sec:bg:defects}
 
 Our running example is the canonical order-processing workflow
 \texttt{CreateOrder} $\to$ \texttt{ReserveInventory} $\to$ \texttt{ChargeCard} $\to$
-\texttt{ShipOrder}, which exhibits all four defect classes when edited carelessly. \emph{(1) Contract:}
-\texttt{ReserveInventory} produces \texttt{\{orderId, amount\}} but \texttt{ChargeCard}
-consumes \texttt{total}---a run-time failure on a missing field. \emph{(2) Typestate:}
-reordering to \texttt{ShipOrder\,$\to$\,ChargeCard} ships before payment (valid JSON,
-invalid protocol). \emph{(3) Retry:} non-idempotent \texttt{ChargeCard} with a broad
-retry (\code{States.ALL}) may charge twice. \emph{(4) Compensation:}
-\texttt{ReserveInventory} commits a reservation that leaks if \texttt{ChargeCard} fails
-with no release path. None is caught by the platform; all four are recognised,
-under-tooled failure modes in cloud-native
+\texttt{ShipOrder}, which exhibits six defect classes when edited carelessly.
+\emph{(1) Contract / data-flow:} \texttt{ReserveInventory} produces
+\texttt{\{orderId, amount\}} but \texttt{ChargeCard} reads \texttt{\$.total}---a
+run-time failure on a missing field. Crucially the path \texttt{\$.total} is
+\emph{syntactically} a perfectly good JSONPath, so every schema/syntax validator
+accepts it; only reasoning about \emph{provenance}---which fields the document can
+hold at that point---exposes it. \emph{(2) Typestate:} reordering to
+\texttt{ShipOrder\,$\to$\,ChargeCard} ships before payment (valid JSON, invalid
+protocol). \emph{(3) Retry:} non-idempotent \texttt{ChargeCard} with a broad
+retry (\code{States.ALL}) may charge twice. \emph{(4) Concurrency:} a
+\texttt{Parallel} that runs \texttt{ChargeCard} and a fraud-screen branch which both
+write the same DynamoDB row, or a \texttt{Map} whose concurrent iterations all
+\texttt{PutItem} to one fixed key, races on a shared resource. \emph{(5) Temporal:} a
+\texttt{waitForTaskToken} approval step with no \texttt{TimeoutSeconds}/%
+\texttt{HeartbeatSeconds} blocks the execution for up to a year if the token is lost.
+\emph{(6) Compensation:} \texttt{ReserveInventory} commits a reservation that leaks if
+\texttt{ChargeCard} fails with no release path. None is caught by the platform; all six
+are recognised, under-tooled failure modes in cloud-native
 systems~\cite{mohammad2025resilient,kulkarni2025characterizing}. We claim nothing about
 their prevalence---curated examples are mostly correct
 (Section~\ref{sec:eval:wild})---only that they escape static checking entirely today;
