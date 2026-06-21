@@ -103,8 +103,9 @@ real Step Functions workflows: the sound data-flow analysis fires zero false
 positives in the wild (corroborating its soundness theorem) and the conservative
 concurrency analysis likewise fires none; the temporal analysis surfaces 33
 unbounded-callback defects; on independently mined fix-commit pairs from public
-repositories \tool{} catches \textbf{four genuine defects} the commits fixed (missing-field,
-dead-guard, and unbounded-callback bugs across three real repositories); and a
+repositories \tool{} catches \textbf{six genuine defects} the commits fixed (missing-field,
+dead-guard, unbounded-callback, and malformed-structure bugs across five real
+repositories, four in classes no validator can express); and a
 \textbf{616}-mutant study detects every injected defect
 \emph{in the six classes it targets} (\textbf{100\%} recall on those classes)---where the
 \texttt{statelint} validator catches none of the
