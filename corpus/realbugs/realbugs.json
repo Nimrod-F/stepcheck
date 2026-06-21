@@ -1,0 +1,42 @@
+{
+  "_README": "Adjudicated real-bug benchmark: pre-fix/post-fix ASL pairs mined from public Step Functions repos (eval/mine_realbugs.js), where StepCheck flags a defect on the pre-fix version that the fix removes. Each entry was manually confirmed to be a genuine defect in StepCheck's targeted classes. Run: stepcheck eval-pairs corpus/realbugs --infer.",
+  "mined_pairs_examined": 58,
+  "confirmed_real_bugs": [
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-123d1d4-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "123d1d4",
+      "code": "SC1101",
+      "state": "Parse Job Attributes",
+      "bug": "Reads '$.Execution.Input' (single '$' selects a document field 'Execution' that no state produces; the execution input is the context object '$$.Execution.Input'). The '.$' Parameters read fails at run time.",
+      "fix": "Adds 'OriginalEvent.$': '$' upstream and reads '$.OriginalEvent' instead."
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-ec868b6-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "ec868b6",
+      "code": "SC1101",
+      "state": "Format Workout Object / Save Workout",
+      "bug": "Reads '$.profile.Item' and '$.userId', fields no predecessor produces at those states.",
+      "fix": "Refactors the user-data flow so the reads resolve to produced fields ($.user, $.user.pk.S)."
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-f2efaaa-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "f2efaaa",
+      "code": "SC1110",
+      "state": "Is Subscriber?",
+      "bug": "A Choice branch guards on '$.profile.subscription.level', a field never produced, so the subscriber branch is unreachable (dead guard) — subscribers were never routed correctly.",
+      "fix": "Corrects the guard to the produced path '$.user.subscription.M.level.S'."
+    },
+    {
+      "id": "manikanta5827-leave-management-9672f84-leave-approval-sm",
+      "repo": "manikanta5827/leave-management",
+      "commit": "9672f84",
+      "code": "SC6001",
+      "state": "Router",
+      "bug": "A callback task has neither TimeoutSeconds nor HeartbeatSeconds and can wait indefinitely for a token that may never arrive.",
+      "fix": "Adds 'TimeoutSeconds': 60."
+    }
+  ]
+}

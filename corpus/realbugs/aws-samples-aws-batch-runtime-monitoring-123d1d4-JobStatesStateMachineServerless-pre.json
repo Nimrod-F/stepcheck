@@ -1,0 +1,219 @@
+{
+  "Comment": "Job States Handler",
+  "StartAt": "Get Common Fields",
+  "States": {
+    "Get Common Fields": {
+      "Type": "Pass",
+      "Next": "Check Job State",
+      "Parameters": {
+        "JobId.$": "$.detail.jobId",
+        "Region.$": "$.region",
+        "JobQueue.$": "$.detail.jobQueue",
+        "JobName.$": "$.detail.jobName",
+        "JobDefinition.$": "$.detail.jobDefinition",
+        "LastEventType.$": "$.detail.status",
+        "LastEventTime.$": "$.time"
+      }
+    },
+    "Check Job State": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Or": [
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "SUCCEEDED"
+            },
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "FAILED"
+            },
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "RUNNING"
+            },
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "STARTING"
+            }
+          ],
+          "Next": "Parse Job Attributes"
+        }
+      ],
+      "Default": "SQS SendMessage Job State Not Associated"
+    },
+    "Parse Job Attributes": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ParseJobPropertiesFunction}",
+        "Payload.$": "$.Execution.Input"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 3
+        }
+      ],
+      "ResultSelector": {
+        "JobId.$": "$.Payload.JobId",
+        "Region.$": "$.Payload.Region",
+        "JobQueue.$": "$.Payload.JobQueue",
+        "JobName.$": "$.Payload.JobName",
+        "JobDefinition.$": "$.Payload.JobDefinition",
+        "LastEventType.$": "$.Payload.LastEventType",
+        "LastEventTime.$": "$.Payload.LastEventTime",
+        "isParentArrayJob.$": "$.Payload.isParentArrayJob",
+        "isMnpChildNode.$": "$.Payload.isMnpChildNode",
+        "containerInstanceArn.$": "$.Payload.containerInstanceArn"
+      },
+      "ResultPath": "$",
+      "Next": "Check If Parent Array Job"
+    },
+    "Check If Parent Array Job": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.isParentArrayJob",
+          "BooleanEquals": true,
+          "Next": "Skip Event"
+        }
+      ],
+      "Default": "Check Container Instance ARN"
+    },
+    "Check Container Instance ARN": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.containerInstanceArn",
+          "IsPresent": true,
+          "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
+        }
+      ],
+      "Default": "Skip Event"
+    },
+    "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${ECSRegistrationTable}",
+        "Key": {
+          "ContainerInstanceId": {
+            "S.$": "$.containerInstanceArn"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 5
+        }
+      ],
+      "ResultPath": "$.ECSInstance",
+      "Next": "Check Association ContainerInstanceId to ECS Container Instance"
+    },
+    "Check Association ContainerInstanceId to ECS Container Instance": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ECSInstance.Item",
+          "IsPresent": true,
+          "Next": "SQS SendMessage Job State Associated"
+        }
+      ],
+      "Default": "Wait for new request on ECS Registration table"
+    },
+    "Wait for new request on ECS Registration table": {
+      "Type": "Wait",
+      "Seconds": 3,
+      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
+    },
+    "SQS SendMessage Job State Associated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${SQSMetricsQueue}",
+        "MessageBody": {
+          "Dimensions": {
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "Properties": {
+            "JobId.$": "$.JobId",
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+            "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
+            "JobName.$": "$.JobName",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "MetricName.$": "$.LastEventType",
+          "MetricTime.$": "$.LastEventTime"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 10
+        }
+      ],
+      "End": true
+    },
+    "SQS SendMessage Job State Not Associated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${SQSMetricsQueue}",
+        "MessageBody": {
+          "Dimensions": {
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "Properties": {
+            "JobId.$": "$.JobId",
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "JobName.$": "$.JobName",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "MetricName.$": "$.LastEventType",
+          "MetricTime.$": "$.LastEventTime"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 10
+        }
+      ],
+      "End": true
+    },
+    "Skip Event": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "Comment": "Shipment Aggregation Kickoff state machine",
+  "StartAt": "WaitForQueueToFill",
+  "States": {
+    "WaitForQueueToFill": {
+      "Type": "Wait",
+      "Seconds": 15,
+      "Next": "Check Queue Depth"
+    },
+    "Check Queue Depth": {
+      "Type": "Task",
+      "Parameters": {
+        "QueueUrl": "${ShipmentQueueUrl}",
+        "AttributeNames": [
+          "ApproximateNumberOfMessages"
+        ]
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sqs:getQueueAttributes",
+      "Next": "Check For Zero Depth"
+    },
+    "Check For Zero Depth": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Attributes.ApproximateNumberOfMessages",
+          "StringEquals": "0",
+          "Next": "WaitForShortInterval"
+        }
+      ],
+      "Default": "Long Wait"
+    },
+    "WaitForShortInterval": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Recheck Queue Depth"
+    },
+    "Recheck Queue Depth": {
+      "Type": "Task",
+      "Parameters": {
+        "QueueUrl": "${ShipmentQueueUrl}",
+        "AttributeNames": [
+          "ApproximateNumberOfMessages"
+        ]
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sqs:getQueueAttributes",
+      "Next": "Recheck again for Zero depth"
+    },
+    "Recheck again for Zero depth": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Attributes.ApproximateNumberOfMessages ",
+          "StringEquals": "0",
+          "Next": "Check Shipment Groups"
+        }
+      ],
+      "Default": "Check Queue Depth"
+    },
+    "Long Wait": {
+      "Type": "Wait",
+      "Seconds": 15,
+      "Next": "Check Queue Depth"
+    },
+    "Check Shipment Groups": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "ResultSelector": {
+        "HashIdList.$": "$.Payload"
+      },
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${ShipmentAddressGrouperFunction}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Map"
+    },
+    "Map": {
+      "Type": "Map",
+      "Iterator": {
+        "StartAt": "Handle Shipment Group using SAWB",
+        "States": {
+          "Handle Shipment Group using SAWB": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::states:startExecution.sync:2",
+            "Parameters": {
+              "StateMachineArn": "${SWABProcessorStepFunction}",
+              "Input": {
+                "addrHashCode.$": "$.addrHashCode",
+                "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true,
+      "ItemsPath": "$.HashIdList"
+    }
+  }
+}

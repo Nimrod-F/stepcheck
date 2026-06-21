@@ -1,0 +1,241 @@
+{
+  "Comment": "SAWB Processing state machine",
+  "StartAt": "Invoke SAWB",
+  "States": {
+    "Invoke SAWB": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "ResultSelector": {
+        "AirwayBill.$": "$.Payload"
+      },
+      "ResultPath": "$.AirwayBill",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:523933434461:function:AirwayShipmentGeneratorFunction"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Save ShipmentBill"
+    },
+    "Save ShipmentBill": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "ResultPath": null,
+      "Parameters": {
+        "TableName": "AirwaysShipmentDetail",
+        "Item": {
+          "addrHashCode": {
+            "S.$": "$.addrHashCode"
+          },
+          "shipmentRecordID": {
+            "S.$": "$.AirwayBill.AirwayBill.sawb_bill_number"
+          },
+          "processTime": {
+            "S.$": "$$.State.EnteredTime"
+          },
+          "body": {
+            "S.$": "States.JsonToString($.AirwayBill)"
+          }
+        }
+      },
+      "Next": "Invoke Inventory"
+    },
+    "Invoke Inventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "ResultSelector": {
+        "inventory.$": "$.Payload.Inventory"
+      },
+      "ResultPath": "$.InventoryResult",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:523933434461:function:InventoryHandlerFunction"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.InventoryResult.inventory.available",
+          "IsPresent": false,
+          "Next": "ReplaceSupplier"
+        }
+      ],
+      "Default": "GoWithSupplier"
+    },
+    "GoWithSupplier": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:523933434461:function:airway-shipment-SupplierHandlerFunction-EzmFjjWPqbQB"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Update ShipmentHash As Processed with ShipmentRecord"
+    },
+    "Update ShipmentHash As Processed with ShipmentRecord": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "ResultPath": null,
+      "Parameters": {
+        "TableName": "ShipmentHash",
+        "Key": {
+          "addrHashCode": {
+            "S.$": "$.addrHashCode"
+          }
+        },
+        "UpdateExpression": "SET wasProcessed = :myValueRef, sawbHash = :sawbHashRef",
+        "ExpressionAttributeValues": {
+          ":myValueRef": {
+            "S": "true"
+          },
+          ":sawbHashRef": {
+            "S.$": "$.AirwayBill.AirwayBill.sawb_bill_number"
+          }
+        }
+      },
+      "Next": "Map",
+      "ResultPath": "$.GroupShipmentHashUpdate"
+    },
+    "Map": {
+      "Type": "Map",
+      "Iterator": {
+        "StartAt": "UPS Shipment Invoke",
+        "States": {
+          "UPS Shipment Invoke": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "ResultPath": "$.UPSShipment",
+            "Parameters": {
+              "Payload.$": "$",
+              "FunctionName": "arn:aws:lambda:us-east-1:523933434461:function:UPSShipperFunction"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed",
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "Next": "Save UPSTracker"
+          },
+          "Save UPSTracker": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:putItem",
+            "ResultPath": null,   
+            "Parameters": {
+              "TableName": "UPSTracking",
+              "Item": {
+                "addrHashCode": {
+                  "S.$": "$.AddressHash"
+                },
+                "shipmentCode": {
+                  "S.$": "$.ShipmentCode"
+                },
+                "shipmentRecordId": {
+                  "S.$": "$.Shipment.recordId"
+                },
+                "upsTracker": {
+                  "S.$": "$.UPSShipment.Payload.UPSShipmentTrackingCode"
+                },
+                "upsShipmentResponse": {
+                  "S.$": "States.JsonToString($.UPSShipment.Payload.UPSShipmentTracker.ShipmentResponse)"
+                },
+                "associatedShipmentDetail": {
+                  "S.$": "States.JsonToString($.UPSShipment.Payload.ShipmentRequest)"
+                },
+                "processTime": {
+                  "S.$": "$$.State.EnteredTime"
+                }
+              }
+            },
+            "Next": "Save Results of SAWB and UPS"
+          },
+          "Save Results of SAWB and UPS": {
+            "Type": "Pass",
+            "Parameters": {
+                  "AddressHash.$": "$.AddressHash",
+                  "AirwayShipmentID.$": "$.ShipmentCode",
+                  "ShipmentRecordId.$": "$.Shipment.recordId",
+                  "UPSTrackerID.$": "$.UPSShipment.Payload.UPSShipmentTrackingCode" 
+            },            
+            "ResultPath" : "$.myResultParameters",
+            "OutputPath": "$.myResultParameters",
+            "End": true
+          }
+        }
+      },
+      "End": true,
+      "ItemsPath": "$.AirwayBill.AirwayBill.shipment_entries",      
+      "Parameters": {
+        "Shipment.$": "$$.Map.Item.Value",
+        "AddressHash.$": "$.addrHashCode",
+        "ShipmentCode.$": "$.AirwayBill.AirwayBill.sawb_bill_number"
+      },      
+      "MaxConcurrency": 0
+    },
+    "ReplaceSupplier": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.UPSShippingResponse",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:523933434461:function:SupplierHandlerFunction"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Update ShipmentHash As Processed with ShipmentRecord"
+    }
+  }
+}
