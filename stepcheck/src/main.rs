@@ -5,6 +5,7 @@
 mod annot;
 mod asl;
 mod cncf;
+mod concrete;
 mod diag;
 mod dsl;
 mod ir;
@@ -78,6 +79,27 @@ enum Cmd {
         #[arg(long)]
         strict_input: bool,
     },
+    /// Cross-check the data-flow `SC1101` findings against an independent per-path
+    /// execution oracle (witnesses the soundness theorem at corpus scale). Injects a
+    /// data-flow miss per workflow (typed tier) so the check fires, then confirms each
+    /// finding's field is absent on every reaching path; any `Present` is a soundness
+    /// counterexample.
+    Oracle {
+        dir: PathBuf,
+        #[arg(long)]
+        annot: Option<PathBuf>,
+        #[arg(long)]
+        infer: bool,
+    },
+    /// Real-bug benchmark: replay StepCheck on (pre-fix, post-fix) workflow pairs.
+    /// Place pairs as `<id>-pre.json` / `<id>-post.json` in DIR (mine these from
+    /// fix commits that touch an ASL definition). A bug is "caught" when a code
+    /// fires on the pre-fix version and is gone (or reduced) on the post-fix one.
+    EvalPairs {
+        dir: PathBuf,
+        #[arg(long)]
+        infer: bool,
+    },
     /// Inject one defect of a given class into a workflow (error injection).
     Mutate {
         path: PathBuf,
@@ -112,6 +134,8 @@ fn main() {
         Cmd::Eval { dir, annot, infer, strict_input } => {
             cmd_eval(&dir, annot.as_deref(), infer, strict_input)
         }
+        Cmd::Oracle { dir, annot, infer } => cmd_oracle(&dir, annot.as_deref(), infer),
+        Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
     };
@@ -332,6 +356,10 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
     let kinds = kinds; // freeze
     let mut applicable = BTreeMap::<String, usize>::new();
     let mut detected = BTreeMap::<String, usize>::new();
+    // operator -> (code -> #mutants on which that code newly fired): the confusion
+    // matrix. A near-diagonal matrix shows each check is specific to its defect
+    // class rather than trigger-happy (defuses "100% recall is trivial").
+    let mut confusion = BTreeMap::<String, BTreeMap<String, usize>>::new();
     let mut baseline_codes = BTreeMap::<String, usize>::new();
     let mut baseline_errors = 0usize;
     let mut baseline_warnings = 0usize;
@@ -389,11 +417,19 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
                 }
                 annot::resolve(&mut mw, sc.as_ref(), infer);
                 let msink = run_pipeline(&mw);
+                let mcounts = code_counts(&msink);
                 let before = bcounts.get(ec).copied().unwrap_or(0);
-                let after = code_counts(&msink).get(ec).copied().unwrap_or(0);
+                let after = mcounts.get(ec).copied().unwrap_or(0);
                 *applicable.entry(format!("{kind:?}")).or_default() += 1;
                 if after > before {
                     *detected.entry(format!("{kind:?}")).or_default() += 1;
+                }
+                // record every code that newly fired on this mutant (confusion row)
+                let row = confusion.entry(format!("{kind:?}")).or_default();
+                for (c, n) in &mcounts {
+                    if *n > bcounts.get(c).copied().unwrap_or(0) {
+                        *row.entry(c.clone()).or_default() += 1;
+                    }
                 }
             }
         }
@@ -431,11 +467,133 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
             "code_totals": baseline_codes,
         },
         "mutation_study": per_kind,
+        "confusion_matrix": confusion,
         "timing_us": { "mean": mean_us, "median": median_us, "max": max_us,
                        "total_ms": total_ns as f64 / 1.0e6 },
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(0)
+}
+
+/// Diagnostic-code counts for a single workflow file (inference optional).
+fn codes_for(p: &Path, infer: bool) -> BTreeMap<String, usize> {
+    match load(p) {
+        Ok(mut w) => {
+            annot::resolve(&mut w, None, infer);
+            code_counts(&run_pipeline(&w))
+        }
+        Err(_) => BTreeMap::new(),
+    }
+}
+
+/// Real-bug benchmark over (pre-fix, post-fix) pairs. For each `<id>-pre.json` with
+/// a matching `<id>-post.json`, report the codes on each and the codes the fix
+/// removed (fired on pre, gone/reduced on post) --- detection of an independently
+/// introduced-and-fixed defect, free of the mutation study's construct bias.
+fn cmd_eval_pairs(dir: &Path, infer: bool) -> Result<i32> {
+    let mut pairs: Vec<(String, PathBuf, PathBuf)> = Vec::new();
+    for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        let Some(name) = p.file_name().and_then(|s| s.to_str()) else { continue };
+        if let Some(id) = name.strip_suffix("-pre.json") {
+            let post = p.with_file_name(format!("{id}-post.json"));
+            if post.exists() {
+                pairs.push((id.to_string(), p.to_path_buf(), post));
+            }
+        }
+    }
+    let mut caught = 0usize;
+    let mut results = Vec::new();
+    for (id, pre, post) in &pairs {
+        let cp = codes_for(pre, infer);
+        let cq = codes_for(post, infer);
+        let fixed: Vec<String> = cp
+            .iter()
+            .filter(|(c, n)| cq.get(*c).copied().unwrap_or(0) < **n)
+            .map(|(c, _)| c.clone())
+            .collect();
+        if !fixed.is_empty() {
+            caught += 1;
+        }
+        results.push(json!({ "id": id, "codes_pre": cp, "codes_post": cq, "fixed_codes": fixed }));
+    }
+    let report = json!({
+        "pairs": pairs.len(),
+        "caught": caught,
+        "recall": if pairs.is_empty() { 0.0 } else { caught as f64 / pairs.len() as f64 },
+        "results": results,
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
+}
+
+/// Extract the read path `r` from an `SC1101` message (`… reads 'r', a field …`).
+fn extract_read_path(msg: &str) -> Option<String> {
+    let start = msg.find("reads '")? + "reads '".len();
+    let rest = &msg[start..];
+    let end = rest.find('\'')?;
+    Some(rest[..end].to_string())
+}
+
+/// Execution-oracle cross-check: witness Theorem 1 at corpus scale. For each
+/// workflow we seed the typed tier and inject a data-flow miss so `SC1101` fires,
+/// then confirm with an independent per-path interpreter that every flagged field
+/// is absent on all reaching paths. A `Present` verdict would be a counterexample.
+fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    let (mut files, mut findings, mut confirmed, mut present, mut unver, mut nested) =
+        (0usize, 0usize, 0usize, 0usize, 0usize, 0usize);
+
+    for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() || !is_workflow_file(p) {
+            continue;
+        }
+        let base = match load(p) {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
+        files += 1;
+        // typed-tier seed + injected miss so SC1101 actually fires in the wild
+        let fields = mine_top_level_fields(&base);
+        let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
+        if !fields.is_empty() {
+            mw.input_fields = Some(fields);
+        }
+        annot::resolve(&mut mw, sc.as_ref(), infer);
+        let sink = run_pipeline(&mw);
+        for d in sink.diagnostics.iter().filter(|d| d.code == "SC1101") {
+            findings += 1;
+            if d.state.contains('/') {
+                nested += 1; // oracle handles top-level machines only
+                unver += 1;
+                continue;
+            }
+            let Some(pref) = extract_read_path(&d.message) else { unver += 1; continue };
+            match concrete::check_ref(&mw, &d.state, &pref) {
+                concrete::Verdict::ConfirmedAbsent => confirmed += 1,
+                concrete::Verdict::Present => present += 1,
+                concrete::Verdict::Unverifiable => unver += 1,
+            }
+        }
+    }
+
+    let report = json!({
+        "files": files,
+        "sc1101_findings": findings,
+        "oracle": {
+            "confirmed_absent": confirmed,
+            "counterexamples_present": present,
+            "unverifiable": unver,
+            "nested_skipped": nested,
+        },
+        "soundness_witnessed": present == 0,
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(if present == 0 { 0 } else { 1 })
 }
 
 fn cmd_demo(which: &str, sidecar: bool) -> Result<i32> {

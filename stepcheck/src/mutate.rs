@@ -204,7 +204,14 @@ fn mutate_concurrency(w: &mut Workflow, seed: u64) -> bool {
 fn prepend_write(branch: &mut Workflow, sname: &str, table: &str) {
     let mut st = State::new(sname, StateKind::Task);
     st.resource = Some("arn:aws:states:::dynamodb:putItem".into());
-    st.parameters = Some(serde_json::json!({ "TableName": table, "Item": { "id.$": "$.id" } }));
+    // Static item key (no `.$`) so the injected state introduces *only* the
+    // concurrency defect, not an incidental missing-field (SC1101) read.
+    st.parameters = Some(serde_json::json!({ "TableName": table, "Item": { "id": "fixed" } }));
+    // Mark it an overwriting write but explicitly non-persistent, so it isolates
+    // SC5001 without also triggering the uncompensated-persistent check (SC4001) ---
+    // keeping the mutation-study confusion matrix diagonal.
+    st.anno.idempotent = Some(false);
+    st.anno.persistent = Some(false);
     st.next = Some(branch.start_at.clone());
     branch.states.insert(sname.to_string(), st);
     branch.start_at = sname.to_string();

@@ -169,6 +169,98 @@ fn dataflow_sound_on_opaque_input() {
     assert!(!sink.has_code("SC1101"), "opaque input must not be flagged (soundness): {:#?}", sink.diagnostics);
 }
 
+#[test]
+fn dataflow_sound_on_jsonata_produced_field() {
+    // SOUNDNESS REGRESSION: a JSONata state reshapes the document with an `Output`
+    // expression we do not model; a later JSONPath task reads a field that
+    // expression produces. Modelling the JSONata Pass as identity would make
+    // `$.computed` look definitely-absent — a FALSE POSITIVE on valid, deployable
+    // ASL. Treating the JSONata state opaquely (output Top) keeps the read `Maybe`.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"raw":{"x":1}},"ResultPath":"$","Next":"Shape"},
+        "Shape":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Output":"{% { 'computed': $states.input.raw.x } %}","Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"v.$":"$.computed"}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "a JSONata-produced field must not be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_sound_on_whole_jsonata_machine() {
+    // A machine in JSONata mode uses `{% … %}` Arguments, never JSONPath `.$`
+    // reads, so the provenance check must stay silent (and not crash).
+    let src = r#"{"StartAt":"A","QueryLanguage":"JSONata","States":{
+        "A":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+             "Arguments":{"x":"{% $states.input.nope %}"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "JSONata machine must not be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_flags_dead_choice_guard() {
+    // A Pass builds {a:1}; a Choice tests IsPresent on $.b (never produced) -> the
+    // branch can never be taken: a dead guard (SC1110). The IsPresent:true on the
+    // present field $.a must NOT be flagged.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"a":1},"ResultPath":"$","Next":"Pick"},
+        "Pick":{"Type":"Choice","Choices":[
+            {"Variable":"$.b","IsPresent":true,"Next":"Done"},
+            {"Variable":"$.a","IsPresent":true,"Next":"Done"}],"Default":"Done"},
+        "Done":{"Type":"Succeed"}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1110"), "expected a dead-guard warning: {:#?}", sink.diagnostics);
+    assert_eq!(sink.diagnostics.iter().filter(|d| d.code == "SC1110").count(), 1,
+        "only the $.b guard is dead: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_no_dead_guard_on_opaque_input() {
+    // Against the opaque execution input, no guard is provably dead (soundness).
+    let src = r#"{"StartAt":"Pick","States":{
+        "Pick":{"Type":"Choice","Choices":[{"Variable":"$.b","IsPresent":true,"Next":"Done"}],"Default":"Done"},
+        "Done":{"Type":"Succeed"}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1110"), "must not flag a guard against opaque input: {:#?}", sink.diagnostics);
+}
+
+// ----- execution oracle: independent witness of the soundness theorem -------
+
+#[test]
+fn oracle_confirms_native_miss_and_clears_hit() {
+    use crate::concrete::{check_ref, Verdict};
+    // Build {order:{orderId,amount}}; Charge reads $.order.total (absent) and would
+    // also (clean variant) read $.order.amount (present). The oracle, by independent
+    // per-path enumeration, must confirm the miss absent and the hit present.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"order":{"orderId":"o","amount":1}},"ResultPath":"$","Next":"Charge"},
+        "Charge":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                  "Parameters":{"FunctionName":"c","Payload":{"total.$":"$.order.total"}},"End":true}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    assert_eq!(check_ref(&wf, "Charge", "$.order.total"), Verdict::ConfirmedAbsent);
+    assert_eq!(check_ref(&wf, "Charge", "$.order.amount"), Verdict::Present);
+    // and never a false counterexample on the opaque execution input
+    assert_eq!(check_ref(&wf, "Build", "$.anything"), Verdict::Unverifiable);
+}
+
+#[test]
+fn oracle_confirms_typed_merge_miss() {
+    use crate::concrete::{check_ref, Verdict};
+    // Reserve produces reservationId via ResultSelector/ResultPath; Charge reads
+    // reservationCode (a flow-sensitive miss). With the input schema seeded, the
+    // oracle confirms it absent on all paths.
+    let src = r#"{"StartAt":"Reserve","States":{
+        "Reserve":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                   "Parameters":{"FunctionName":"r","Payload":{"orderId.$":"$.orderId"}},
+                   "ResultSelector":{"reservationId.$":"$.Payload.id"},"ResultPath":"$.reservation","Next":"Charge"},
+        "Charge":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                  "Parameters":{"FunctionName":"c","Payload":{"r.$":"$.reservation.reservationCode"}},"End":true}}}"#;
+    let mut wf = asl::parse_str(src, "t").unwrap();
+    wf.input_fields = Some(vec!["orderId".into(), "amount".into()]);
+    assert_eq!(check_ref(&wf, "Charge", "$.reservation.reservationCode"), Verdict::ConfirmedAbsent);
+    assert_eq!(check_ref(&wf, "Charge", "$.reservation.reservationId"), Verdict::Present);
+}
+
 // ----- concurrency interference (SC5001) ------------------------------------
 
 fn concurrency_sink(src: &str) -> diag::DiagnosticSink {
@@ -199,6 +291,37 @@ fn concurrency_clean_on_merging_writes() {
         {"StartAt":"W2","States":{"W2":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:updateItem",
             "Parameters":{"TableName":"Orders","Key":{"id.$":"$.id"}},"End":true}}}]}}}"#;
     assert!(!concurrency_sink(src).has_code("SC5001"), "merging writes must not be flagged");
+}
+
+// ----- effect-aware compensation (SC4010) -----------------------------------
+
+#[test]
+fn compensation_flags_noncompensating_catch() {
+    // A persistent task whose only Catch goes to a Fail never undoes its effect.
+    let src = r#"{"StartAt":"Reserve","States":{
+        "Reserve":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                   "Parameters":{"FunctionName":"ReserveInventory"},
+                   "Catch":[{"ErrorEquals":["States.ALL"],"Next":"Fail"}],"Next":"Done"},
+        "Fail":{"Type":"Fail"},
+        "Done":{"Type":"Succeed"}}}"#;
+    let sink = concurrency_sink(src); // resolves with inference, runs full pipeline
+    assert!(sink.has_code("SC4010"), "expected non-compensating-catch warning: {:#?}", sink.diagnostics);
+    assert!(!sink.has_code("SC4001"), "SC4001 must not fire when a Catch exists");
+}
+
+#[test]
+fn compensation_clean_when_catch_compensates() {
+    // The Catch reaches a Release action -> the effect is compensated, no SC4010.
+    let src = r#"{"StartAt":"Reserve","States":{
+        "Reserve":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                   "Parameters":{"FunctionName":"ReserveInventory"},
+                   "Catch":[{"ErrorEquals":["States.ALL"],"Next":"ReleaseInventory"}],"Next":"Done"},
+        "ReleaseInventory":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                   "Parameters":{"FunctionName":"ReleaseInventory"},"Next":"Fail"},
+        "Fail":{"Type":"Fail"},
+        "Done":{"Type":"Succeed"}}}"#;
+    let sink = concurrency_sink(src);
+    assert!(!sink.has_code("SC4010"), "a compensating catch must not be flagged: {:#?}", sink.diagnostics);
 }
 
 // ----- temporal analysis (SC6001/SC6003) ------------------------------------

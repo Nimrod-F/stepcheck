@@ -41,6 +41,19 @@ impl StateKind {
     }
 }
 
+/// The expression language a state (or whole machine) uses to read and reshape
+/// its document. ASL defaults to JSONPath; a `QueryLanguage: "JSONata"` directive
+/// (at the machine or state level) switches to JSONata, whose `Arguments`/
+/// `Output`/`Assign` constructs reshape the document with arbitrary expressions
+/// the data-flow analysis does not model. We track the mode so the analysis can
+/// treat JSONata states *opaquely* (output `Top`, no reference checks), which is
+/// what keeps the may-present analysis sound on JSONata workflows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryLang {
+    JsonPath,
+    JsonAta,
+}
+
 /// How a state writes its result back into the state document.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResultPath {
@@ -131,6 +144,10 @@ pub struct State {
     pub max_concurrency: Option<i64>,
     /// `ItemSelector`/`Parameters` of a `Map` describing the per-item document.
     pub item_selector: Option<Value>,
+    /// Effective query language of this state (explicit `QueryLanguage`, else the
+    /// machine default, resolved by the frontend). When `JsonAta`, the data-flow
+    /// analysis treats the state opaquely for soundness.
+    pub query_language: QueryLang,
     pub anno: Anno,
 }
 
@@ -160,8 +177,16 @@ impl State {
             heartbeat_seconds: None,
             max_concurrency: None,
             item_selector: None,
+            query_language: QueryLang::JsonPath,
             anno: Anno::default(),
         }
+    }
+
+    /// Whether the analysis must treat this state as opaque (JSONata mode), i.e.
+    /// its document reshaping is not modelled, so its output is `Top` and its
+    /// references are not checked. This is the soundness fallback for JSONata.
+    pub fn is_opaque_query(&self) -> bool {
+        matches!(self.query_language, QueryLang::JsonAta)
     }
 
 
