@@ -99,4 +99,32 @@ for (const f of ['idempotent', 'persistent']) {
   console.log(`  ${f}: accuracy=${decided ? (100 * s.c / decided).toFixed(1) : 0}% on predicted, ` +
     `coverage=${s.t ? (100 * decided / s.t).toFixed(1) : 0}% (labelled=${s.t}, correct=${s.c}, wrong=${s.w}, abstain=${s.a})`);
 }
+
+// Warning precision from the human gold: for each SC3001/SC4001/SC4010 warning on a
+// gold-labelled task, a true positive iff the gold label confirms the inferred risk.
+const prec = { SC3001: { tp: 0, fp: 0 }, SC4001: { tp: 0, fp: 0 }, SC4010: { tp: 0, fp: 0 } };
+for (const [file, tasks] of Object.entries(merged)) {
+  let diags;
+  try { diags = (JSON.parse(execFileSync(BIN, ['check', '--json', '--infer', path.join(ROOT, 'corpus', 'asl', file)], { encoding: 'utf8' })).diagnostics) || []; }
+  catch { continue; }
+  for (const d of diags) {
+    if (!prec[d.code]) continue;
+    const m = d.message.match(/task '(.+?)'/);
+    if (!m) continue;
+    const g = tasks[m[1]];
+    if (!g) continue; // not gold-covered
+    if (d.code === 'SC3001') { if (g.idempotent === null) continue; g.idempotent === false ? prec.SC3001.tp++ : prec.SC3001.fp++; }
+    else { if (g.persistent === null) continue; g.persistent === true ? prec[d.code].tp++ : prec[d.code].fp++; }
+  }
+}
+console.log('\nHuman-gold warning precision (gold-covered findings):');
+let TP = 0, FP = 0;
+for (const c of ['SC3001', 'SC4001', 'SC4010']) {
+  const { tp, fp } = prec[c]; const n = tp + fp;
+  console.log(`  ${c}: ${tp}/${n}${n ? ` = ${(100 * tp / n).toFixed(0)}%` : ''}`);
+  TP += tp; FP += fp;
+}
+console.log(`  SC3001+SC4001 overall: ${prec.SC3001.tp + prec.SC4001.tp}/${prec.SC3001.tp + prec.SC4001.fp + prec.SC4001.tp + prec.SC3001.fp}` +
+  ` = ${(100 * (prec.SC3001.tp + prec.SC4001.tp) / (prec.SC3001.tp + prec.SC3001.fp + prec.SC4001.tp + prec.SC4001.fp)).toFixed(0)}%`);
+
 console.log('\nWrote corpus/gold-labels.human.json — point inference_accuracy.js at it (or keep for the camera-ready table).');
