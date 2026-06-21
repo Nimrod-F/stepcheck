@@ -1,5 +1,4 @@
 {
-  "_README": "Hand-labeled gold standard for inference accuracy. idempotent = repeating the operation causes no additional external effect (reads, idempotent writes by stable key, cancels that converge). persistent = acquires/commits a durable external resource a later failure should compensate; compensators (refund/cancel/release) and notifications are NOT persistent. Unlabelable tasks are null (abstain). 23 workflows: the 13 added 2026-06-21 were labelled by TWO INDEPENDENT HUMAN ANNOTATORS under a written rubric (eval/HUMAN-GOLD-LABELLING.md); Cohen kappa = 1.00 (idempotency) and 1.00 (persistence) over 116 doubly-labelled tasks; the original 10 were hand-labelled by an author. Sources: eval/gold-labels-human-A.json / -B.json, scored by eval/score-human-gold.js.",
   "labels": {
     "sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json": {
       "Get Customer Status": {

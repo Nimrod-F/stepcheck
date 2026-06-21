@@ -1,5 +1,13 @@
 # Human gold-labelling protocol (idempotency / persistence)
 
+> **STATUS: COMPLETED (2026-06-21).** Two independent human annotators labelled the
+> 13 expansion workflows; inter-annotator agreement was perfect (Cohen's
+> κ = 1.00 for both idempotency and persistence over 116 tasks). The reconciled
+> labels are in `corpus/gold-labels.json` (and `gold-labels-human.json`); run
+> `node eval/score-human-gold.js --reconciled` to reproduce κ + accuracy. The
+> protocol below is retained for the record.
+
+
 **Why this exists.** The paper's gold set (`corpus/gold-labels.json`, 23 workflows)
 is a **mix**: an original **hand-labelled** core (10 workflows) plus a **13-workflow
 LLM-assisted expansion** (`eval/gold-expansion-labels.json`, produced by two

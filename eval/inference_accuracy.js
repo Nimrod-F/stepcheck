@@ -24,6 +24,9 @@ for (const [file, tasks] of Object.entries(gold)) {
     const p = byName[name];
     if (!p) { console.error(`WARN: no prediction for ${file} :: ${name}`); continue; }
     for (const [field, acc] of [['idempotent', idem], ['persistent', pers]]) {
+      // Skip tasks the annotators abstained on (null gold): the heuristic cannot
+      // be scored right or wrong against an unknown ground truth.
+      if (g[field] === null || g[field] === undefined) continue;
       acc.total++;
       const pred = p[field];
       if (pred === null || pred === undefined) acc.abstain++;
