@@ -20,10 +20,11 @@ research questions. \tool{} detects the targeted defect classes (100\% recall ov
 injected defects) where a standard schema validator detects none of the retry,
 compensation, concurrency, or temporal defects, and surfaces 33 unbounded-callback
 defects in unmodified workflows; the sound data-flow analysis fires zero false
-positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 86\% and idempotency at 62\% accuracy at zero authoring
-cost against a rubric-labelled gold set (a hand-labelled core plus a released
-LLM-assisted expansion; Section~\ref{sec:threats})---enough to make compensation warnings mostly
-actionable (81\% precision)---all surfaced as correctable warnings, and its typed tier
+positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 87\% and idempotency at 70\% accuracy at zero authoring
+cost against a human-labelled gold set (two independent annotators, $\kappa=1.00$;
+Section~\ref{sec:threats})---enough to make the compensation warnings mostly actionable
+(70\% precision for \code{SC4001}, 100\% for the effect-aware \code{SC4010})---all
+surfaced as correctable warnings, and its typed tier
 recovers two-thirds of injected missing-field defects, the remainder being ASL's
 intrinsic opacity (RQ2); and it verifies a workflow in $\approx$39\,$\mu$s while adding
 zero runtime overhead, with verified workflows running unmodified on real AWS Step

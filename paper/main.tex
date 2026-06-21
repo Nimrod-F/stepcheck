@@ -106,8 +106,8 @@ unbounded-callback defects; and a \textbf{616}-mutant study detects every inject
 \emph{in the six classes it targets} (\textbf{100\%} recall on those classes)---where the
 \texttt{statelint} validator catches none of the
 unsafe retries, missing compensations, concurrency, or temporal defects. Inference
-recovers persistence at 86\% but idempotency at only 62\% against a rubric-labelled
-gold set, so semantic findings are surfaced as warnings; verification costs
+recovers persistence at 87\% and idempotency at 70\% against a human-labelled
+gold set (two independent annotators, $\kappa=1.00$), so semantic findings are surfaced as warnings; verification costs
 $\approx$39\,$\mu$s per workflow; a verified workflow deploys and runs unmodified on
 AWS Step Functions with zero runtime overhead; and the architecture generalizes to a
 second workflow language (CNCF Serverless Workflow) with no change to the analyses.
