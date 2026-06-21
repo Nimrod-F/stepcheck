@@ -59,9 +59,51 @@ fn run_machine(wf: &Workflow, scope: &str, sink: &mut DiagnosticSink) {
                     .with_note(note(st)),
                 );
             }
+
+            // SC4010 (effect-aware): the task DOES have a Catch, but no error path
+            // reaches a compensating action---it merely logs, notifies, or fails, so
+            // the durable effect is never undone. This is the over-acceptance gap in
+            // a plain "has a Catch" rule: a Catch to a logger is not a compensation.
+            if !has_explicit && has_catch
+                && !st.catch.iter().any(|c| reaches_compensator(wf, &c.next))
+            {
+                sink.push(
+                    Diagnostic::warning(
+                        "SC4010",
+                        &qname,
+                        format!(
+                            "persistent task '{name}' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)"
+                        ),
+                    )
+                    .with_note(
+                        "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation",
+                    ),
+                );
+            }
         }
         recurse(st, scope, sink);
     }
+}
+
+/// Whether any task reachable (via normal control flow) from `start` looks like a
+/// compensating/undo action. Used to decide if a Catch path actually compensates.
+fn reaches_compensator(wf: &Workflow, start: &str) -> bool {
+    use std::collections::HashSet;
+    let mut seen = HashSet::new();
+    let mut stack = vec![start.to_string()];
+    while let Some(cur) = stack.pop() {
+        if !seen.insert(cur.clone()) {
+            continue;
+        }
+        let Some(st) = wf.states.get(&cur) else { continue };
+        if st.is_task() && crate::annot::is_compensator(st) {
+            return true;
+        }
+        for s in st.normal_successors() {
+            stack.push(s.to_string());
+        }
+    }
+    false
 }
 
 fn note(st: &State) -> String {

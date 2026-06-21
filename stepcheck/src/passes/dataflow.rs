@@ -274,6 +274,13 @@ fn has_result_processing(st: &State) -> bool {
 
 /// Document shape leaving a state (consumed by its successors).
 fn out_shape(st: &State, in_shape: &Shape) -> Shape {
+    // JSONata states reshape their document with `Output`/`Arguments`/`{% … %}`
+    // expressions we do not model. Producing `Top` over-approximates whatever
+    // they emit, so downstream reads of a JSONata-produced field resolve to
+    // `Maybe` (never `Missing`) and are never flagged — the soundness fallback.
+    if st.is_opaque_query() {
+        return Shape::Top;
+    }
     let eff_in = narrow(in_shape, &st.input_path);
     let combined = if has_result_processing(st) {
         // a Task/Pass/Map/Parallel merges its result into the *raw* state input
@@ -338,6 +345,40 @@ fn refs_of(st: &State) -> Vec<String> {
     out
 }
 
+/// An upper bound on the number of distinct field keys any shape in this machine
+/// can hold: every key a constructor/result/selector mentions, plus the declared
+/// input fields. The may-present lattice's height is bounded by this (a shape
+/// only ever gains keys or lifts to `Top`), which in turn bounds the number of
+/// forward-fixpoint iterations — the termination argument behind the soundness
+/// theorem.
+fn key_universe(wf: &Workflow) -> usize {
+    use std::collections::HashSet;
+    fn harvest(v: &Value, keys: &mut HashSet<String>) {
+        match v {
+            Value::Object(m) => {
+                for (k, val) in m {
+                    keys.insert(k.trim_end_matches(".$").to_string());
+                    harvest(val, keys);
+                }
+            }
+            Value::Array(a) => a.iter().for_each(|val| harvest(val, keys)),
+            _ => {}
+        }
+    }
+    let mut keys: HashSet<String> = HashSet::new();
+    if let Some(f) = &wf.input_fields {
+        keys.extend(f.iter().cloned());
+    }
+    for st in wf.states.values() {
+        for v in [&st.parameters, &st.result, &st.result_selector, &st.item_selector] {
+            if let Some(val) = v {
+                harvest(val, &mut keys);
+            }
+        }
+    }
+    keys.len()
+}
+
 /// Compute the entry shape of every state by forward fixpoint, then check
 /// references, then recurse into nested machines.
 fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut DiagnosticSink) {
@@ -346,8 +387,17 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
     if wf.states.contains_key(&wf.start_at) {
         in_shapes.insert(wf.start_at.clone(), root.clone());
     }
-    let cap = wf.states.len() * 8 + 16;
-    for _ in 0..cap {
+    // Forward fixpoint. Each state's shape only ever grows (a join unions keys
+    // or lifts to `Top`) and the key universe is finite, so the ascending chain
+    // stabilises; we iterate to a genuine fixpoint. The number of rounds is
+    // bounded by `states * (key_universe + 2)` — at most one strict increase per
+    // state per height level — which we assert. Should the bound ever be exceeded
+    // (a bug), we do *not* report from the unconverged (under-approximated) state
+    // shapes, since those could be smaller than the fixpoint and yield a false
+    // positive; this keeps the no-false-positive guarantee unconditional.
+    let bound = wf.states.len().saturating_mul(key_universe(wf) + 2) + 2;
+    let mut rounds = 0usize;
+    let converged = loop {
         let mut changed = false;
         for (name, st) in &wf.states {
             let Some(cur_in) = in_shapes.get(name).cloned() else { continue };
@@ -366,13 +416,24 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
                 }
             }
         }
+        rounds += 1;
         if !changed {
-            break;
+            break true;
         }
-    }
+        if rounds > bound {
+            debug_assert!(false, "data-flow fixpoint exceeded its finite-height bound");
+            break false;
+        }
+    };
 
-    // Check references against each state's effective input.
+    // Check references against each state's effective input (only at the fixpoint).
+    if converged {
     for (name, st) in &wf.states {
+        // A JSONata state's references are `{% … %}` expressions, not JSONPath
+        // `.$` reads; we do not interpret them, so we never flag them (soundness).
+        if st.is_opaque_query() {
+            continue;
+        }
         let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
         let eff_in = narrow(&in_shape, &st.input_path);
         for r in refs_of(st) {
@@ -400,6 +461,36 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
         }
     }
 
+    // SC1110 (path-sensitive dead guard): a Choice rule whose match REQUIRES a
+    // field that provenance proves is definitely absent here can never be taken,
+    // so the branch is dead. Sound: we flag only on a definitely-absent operand
+    // under a presence-requiring comparator, never on `Top`/`Maybe`.
+    for (name, st) in &wf.states {
+        if st.kind != StateKind::Choice || st.is_opaque_query() {
+            continue;
+        }
+        let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
+        let eff_in = narrow(&in_shape, &st.input_path);
+        for rule in &st.choices {
+            if let Some(var) = dead_guard_field(&rule.condition, &eff_in) {
+                sink.push(
+                    Diagnostic::warning(
+                        "SC1110",
+                        &qualify(scope, name),
+                        format!(
+                            "Choice branch to '{}' guards on '{var}', a field no execution reaching '{name}' can have produced---the branch is unreachable",
+                            rule.next
+                        ),
+                    )
+                    .with_note(
+                        "dead guard: provenance shows the tested field is never present here; the comparison is always false",
+                    ),
+                );
+            }
+        }
+    }
+    } // end `if converged`
+
     // Recurse into nested machines with the right seed.
     for (name, st) in &wf.states {
         let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
@@ -417,6 +508,62 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
             // Each Parallel branch receives a copy of the state's effective input.
             analyze_machine(br, eff_in.clone(), &qualify(scope, &format!("{name}[Branch{i}]")), sink);
         }
+    }
+}
+
+/// Whether satisfying this leaf comparator requires the `Variable` field to be
+/// *present*. The only operator a genuinely absent field satisfies is
+/// `IsPresent: false`; every other comparator (value tests, `IsNull`, the type
+/// predicates, `IsPresent: true`) returns false on an absent field.
+fn requires_presence(obj: &serde_json::Map<String, Value>) -> bool {
+    for (k, v) in obj {
+        if k == "Variable" || k == "Next" || k == "Comment" {
+            continue;
+        }
+        if k == "IsPresent" {
+            return v.as_bool() != Some(false);
+        }
+        return true; // any other comparator needs the field present
+    }
+    false
+}
+
+/// If a Choice condition can never be true *because* one of its operands is a
+/// definitely-absent field, return that field path. Handles `And` (dead if any
+/// conjunct is dead) and `Or` (dead only if every disjunct is dead); it is
+/// conservative on `Not` (never flags), keeping the finding sound.
+fn dead_guard_field(cond: &Value, shape: &Shape) -> Option<String> {
+    let obj = cond.as_object()?;
+    if let Some(Value::Array(subs)) = obj.get("And") {
+        return subs.iter().find_map(|s| dead_guard_field(s, shape));
+    }
+    if let Some(Value::Array(subs)) = obj.get("Or") {
+        if subs.is_empty() {
+            return None;
+        }
+        let mut witness = None;
+        for s in subs {
+            match dead_guard_field(s, shape) {
+                Some(p) => witness = Some(p),
+                None => return None,
+            }
+        }
+        return witness;
+    }
+    if obj.contains_key("Not") {
+        return None;
+    }
+    let var = obj.get("Variable")?.as_str()?;
+    if !requires_presence(obj) || !var.starts_with('$') || var.starts_with("$$") {
+        return None;
+    }
+    let segs = parse_path(var)?;
+    if segs.is_empty() {
+        return None;
+    }
+    match lookup(shape, &segs) {
+        Presence::Missing => Some(var.to_string()),
+        _ => None,
     }
 }
 

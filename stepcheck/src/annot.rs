@@ -217,6 +217,23 @@ const NOTIFY_KW: &[&str] = &[
     "notify", "alert", "publish", "putevents", ":sns:", ":ses:", "sendemail", "emit",
 ];
 
+// Undo / compensating actions: what a Saga runs on an error path to roll back a
+// prior persistent effect. Used by the effect-aware compensation check (SC4010)
+// to decide whether a Catch path actually compensates rather than just logging or
+// failing. Evaluated only on error-handler-reachable tasks, so the broad verbs
+// (delete/terminate) read as cleanup there.
+const UNDO_KW: &[&str] = &[
+    "refund", "cancel", "release", "rollback", "compensat", "undo", "revert",
+    "restore", "deprovision", "deregister", "terminate", "cleanup", "delete",
+    "remove", "abort", "void", "reverse",
+];
+
+/// Whether a task looks like a compensating/undo action (name/resource heuristic).
+pub fn is_compensator(st: &State) -> bool {
+    let sig = task_signal(st);
+    UNDO_KW.iter().any(|k| sig.contains(k))
+}
+
 fn matches(sig: &str, kws: &[&str]) -> Option<String> {
     kws.iter().find(|k| sig.contains(**k)).map(|k| k.to_string())
 }
