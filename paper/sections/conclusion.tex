@@ -4,10 +4,10 @@
 Serverless workflow orchestration has become a backbone of cloud-native systems, yet
 its workflows are untyped configuration whose correctness is checked only when they
 run---and the tooling developers have stops at JSONPath \emph{syntax}. We presented
-\tool, a static verifier whose centrepiece is the first \emph{sound} data-flow analysis
-of the Amazon States Language: a flow-sensitive abstract interpretation over a
-may-present lattice of document shapes that catches missing-field references with no
-false positives and no annotations. Around it \tool{} adds seven further checks---%
+\tool, a static verifier whose centrepiece is the first \emph{sound}, shape-level
+data-flow analysis for a deployed serverless workflow language: a flow-sensitive
+abstract interpretation over a may-present lattice of document shapes that catches
+missing-field references with a proved no-false-positive guarantee and no annotations. Around it \tool{} adds seven further checks---%
 structural, typed contracts, typestate, retry safety, concurrency interference,
 retry/timeout budget, and Saga compensation---two of them for classes no \asl{} tool had
 addressed, all compiling back to executable \asl{}. The key to analysing the workflows
@@ -19,9 +19,10 @@ Our evaluation on 193 real Step Functions workflows (plus 66 CNCF) supports the 
 research questions. \tool{} detects the targeted defect classes (100\% recall over 616
 injected defects) where a standard schema validator detects none of the retry,
 compensation, concurrency, or temporal defects, and surfaces 33 unbounded-callback
-defects in unmodified workflows; the data-flow and concurrency analyses fire zero false
-positives in the wild (RQ1). It recovers persistence at 86\% and idempotency at 62\% accuracy at zero authoring
-cost against an agreement-checked gold set---enough to make compensation warnings mostly
+defects in unmodified workflows; the sound data-flow analysis fires zero false
+positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 86\% and idempotency at 62\% accuracy at zero authoring
+cost against a rubric-labelled gold set (a hand-labelled core plus a released
+LLM-assisted expansion; Section~\ref{sec:threats})---enough to make compensation warnings mostly
 actionable (81\% precision)---all surfaced as correctable warnings, and its typed tier
 recovers two-thirds of injected missing-field defects, the remainder being ASL's
 intrinsic opacity (RQ2); and it verifies a workflow in $\approx$39\,$\mu$s while adding
@@ -35,4 +36,5 @@ platforms developers already use. Future work includes further frontends (SAM, C
 richer effect/ownership information to sharpen the compensation and concurrency analyses,
 a precise element-level shape for \texttt{Map}/\texttt{Parallel} item contexts, and a
 labelled-precision study of the concurrency and temporal warnings. We release \tool, the
-corpus, and the evaluation harness to support replication and reuse.
+corpus, the gold labels and labelling rubric, and the evaluation harness to support
+replication and reuse, with an anonymized artifact link provided for review.

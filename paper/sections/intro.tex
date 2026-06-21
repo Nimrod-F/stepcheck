@@ -51,14 +51,19 @@ fully compatible with AWS Step Functions. Its intellectual centrepiece is a
 \texttt{ResultPath} $\to$ \texttt{OutputPath}). Cast as an abstract interpretation
 over a \emph{may-present} lattice of document shapes, it tracks which fields a state's
 document can hold and reports a reference to a definitely-absent field---with
-\emph{no false positives by construction}. This moves the contract check from
+\emph{no false positives}, a property we establish as a soundness theorem
+(Section~\ref{sec:approach:dataflow}). This moves the contract check from
 JSONPath \emph{syntax} (what every existing validator does) to field
 \emph{provenance}, catching the ``\texttt{amount} vs.\ \texttt{total}'' bug with zero
-annotations. \tool{} is organised around two further ideas. First, a \emph{two-layer}
-model: native checks (structural well-formedness, data-flow provenance,
-concurrency interference, temporal budget) are sound and need no input, while
-semantic checks (typestate, retry safety, compensation, typed contracts) consume a
-lightweight \emph{annotation} layer. Second, because most workflows carry no
+annotations. In service-oriented terms, \tool{} is an \emph{orchestration-level
+integration verifier}: it checks that the data and control contracts between
+orchestrated services hold \emph{before} deployment, on the platform developers
+already use. \tool{} is organised around two further ideas. First, a \emph{two-layer}
+model: \emph{native} checks need no input---of these, structural well-formedness and
+data-flow provenance are \emph{sound} (no false positives), while
+concurrency-interference and temporal-budget are deliberately \emph{conservative}
+warnings; \emph{semantic} checks (typestate, retry safety, compensation, typed
+contracts) consume a lightweight \emph{annotation} layer. Second, because most workflows carry no
 annotations, the missing semantics are \emph{inferred} from naming and resource
 conventions, giving a zero-effort default that developers can override. Verified
 workflows are compiled back to executable \asl, so \tool{} adds no runtime component
@@ -69,9 +74,17 @@ authored with full static guarantees.
 \begin{itemize}
   \item \textbf{A sound data-flow / field-provenance analysis for the Amazon States
         Language}, formalized as an abstract interpretation over a may-present lattice
-        with a no-false-positive guarantee---to our knowledge the first static analysis
-        of \asl{} data flow beyond JSONPath syntax. It has a native tier (no
-        annotations) and a typed tier (declared input schema) and subsumes the
+        with a no-false-positive guarantee that we prove
+        (Theorem~\ref{thm:soundness}). To our knowledge it is the first \emph{sound,
+        shape-level} data-flow analysis for a deployed serverless workflow language,
+        and the first static analysis of \asl{} data flow of any kind beyond JSONPath
+        syntax; it is distinguished from the data-flow-anomaly tradition in
+        business-process modelling (Section~\ref{sec:related}) by tracking concrete
+        \emph{nested JSON document shapes} through \asl's exact I/O pipeline---rather
+        than coarse create/read abstractions of a hand-built net---and by running on,
+        and recompiling to, the executable artifact. It has a native tier (no
+        annotations) and a typed tier (declared input schema, a sound static
+        consumer-driven contract) and subsumes the
         syntactic binding checks (Sections~\ref{sec:approach:dataflow},
         \ref{sec:analyses}).
   \item \textbf{Two further analyses for classes no \asl{} tool addresses}:
@@ -84,16 +97,17 @@ authored with full static guarantees.
         naming/resource conventions, together with the structural, typestate,
         retry-safety, and compensation checks---eight passes in all
         (Sections~\ref{sec:approach}--\ref{sec:analyses}).
-  \item \tool, an open, modular Rust implementation (3.7k LOC, eight passes) with
+  \item \tool, an open, modular Rust implementation (4.4k LOC, eight passes) with
         pluggable frontends (raw \asl, a typed DSL, the CNCF Serverless Workflow DSL), a
         diagnostics engine, an \asl{} emitter, and a mutation-based error-injection tool
         (Section~\ref{sec:impl}).
   \item An evaluation on \textbf{193 real} workflows (plus 66 CNCF): the data-flow
         analysis fires \emph{zero} false positives in the wild (soundness), the new
         analyses surface genuine in-the-wild defects, a \textbf{616}-mutant study
-        detects every injected defect (100\% recall) where \texttt{statelint} catches
+        detects every injected defect \emph{in the six targeted classes} (100\% recall
+        on those classes) where \texttt{statelint} catches
         none of the retry, compensation, concurrency, or temporal classes, plus
-        inference accuracy and warning precision against an agreement-checked gold set, a
+        inference accuracy and warning precision against a rubric-labelled gold set, a
         typed-tier data-flow recall study, sub-millisecond cost, and a real AWS
         round-trip (Section~\ref{sec:eval}).
 \end{itemize}

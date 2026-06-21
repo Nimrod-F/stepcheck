@@ -2,7 +2,7 @@
 \label{sec:impl}
 
 \tool{} is implemented in Rust as a single command-line tool, \texttt{stepcheck}
-(3{,}692 lines). We chose Rust deliberately: a standalone
+(4{,}394 lines). We chose Rust deliberately: a standalone
 analyzer with a \texttt{serde}-based parser is what makes it possible to ingest the
 \emph{existing} \asl{} JSON found in real repositories ---rather than only workflows
 authored in a new embedded language--- and it yields a single dependency-light binary
@@ -46,19 +46,34 @@ control-flow fixpoint), the rest a few dozen lines each. The
 DSL frontend's code-generator and the basis of the AWS round-trip
 (Section~\ref{sec:eval})---deploying its output surfaced (and we fixed) a real bug where
 an explicit \texttt{End} was emitted on \texttt{Succeed}/\texttt{Fail} states, which
-Step Functions rejects.
+Step Functions rejects. The emitter faithfully reproduces control flow, retries,
+catches, and per-state timeouts; it is currently \emph{lossy} for a workflow's pure
+I/O-processing fields (it does not re-emit \texttt{InputPath}/\texttt{OutputPath}/%
+\texttt{ResultSelector} or the machine-level \texttt{TimeoutSeconds}). The round-trip
+deploys a DSL-authored workflow that uses none of those fields, so the deployed machine
+is behaviourally equivalent; full-fidelity emission for arbitrary ingested \asl{} is a
+small extension we note rather than claim.
+
+\paragraph{Execution oracle.}
+An independent \emph{execution oracle} (\texttt{concrete.rs}) re-interprets a workflow
+concretely---enumerating the document along each acyclic path, with opaque task results
+modelled explicitly---and cross-checks every data-flow finding against this second,
+code-disjoint implementation (Section~\ref{sec:eval:dataflow}). It witnesses the
+soundness theorem by agreement between two independent algorithms.
 
 \paragraph{CLI and error injection.}
 \texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{scan},
-\texttt{stats}, \texttt{eval}, \texttt{mutate}, and \texttt{demo} (the last emits the
-built-in typed-DSL example to \asl{}). The \texttt{mutate} command injects exactly one
+\texttt{stats}, \texttt{eval}, \texttt{oracle}, \texttt{eval-pairs}, \texttt{mutate}, and
+\texttt{demo} (the last emits the built-in typed-DSL example to \asl{}). The
+\texttt{eval-pairs} command drives the real-bug benchmark (pre-fix/post-fix replay);
+\texttt{oracle} runs the soundness cross-check above. The \texttt{mutate} command injects exactly one
 defect of a chosen class into a workflow---a broken JSONPath binding, a reference
 redirected to an absent field (data-flow), a broad retry on a non-idempotent task, a
 removed compensation, a dangling transition, two \texttt{Parallel} branches made to
 write one resource, or a heartbeat~$\geq$~timeout---and re-emits deployable \asl{}; it
 drives the mutation study of Section~\ref{sec:eval}.
 
-The \textbf{3{,}692} lines divide as: workflow IR 298; three frontends (\asl{}
-parse/emit, typed DSL, CNCF) 729; annotations\,+\,inference 258; the eight analysis
-passes\,+\,manager 1{,}426; diagnostics 115; mutation engine 309; and
-CLI\,+\,statistics\,+\,evaluation harness 557.
+The \textbf{4{,}394} lines divide as: workflow IR 323; three frontends (\asl{}
+parse/emit, typed DSL, CNCF) 766; annotations\,+\,inference 275; the eight analysis
+passes\,+\,manager 1{,}615; diagnostics 115; the execution oracle 269; mutation engine
+316; and CLI\,+\,statistics\,+\,evaluation\,+\,oracle harness 715.
