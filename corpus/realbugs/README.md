@@ -21,21 +21,24 @@ fix-looking commit that edits an ASL file). No token needed for the default mode
 Then `cargo run --release -- eval-pairs corpus/realbugs --infer` and **adjudicate**
 each candidate (does the fix really match the removed codes?).
 
-**Result (2026-06-21):** across 58 mined pairs, StepCheck flags a fix-removed defect
-on 4, and all 4 are confirmed genuine defects in its targeted classes (see
-`realbugs.json` for the adjudication):
+**Result (2026-06-21):** across 39 mined pairs, StepCheck flags a fix-removed defect
+on 7; manual adjudication confirms **6 genuine** (the 7th is a count artifact — the
+fix deleted the flagged task — and is not credited). See `realbugs.json`:
 
-| code | repo | bug |
-|------|------|-----|
-| SC1101 | aws-samples/aws-batch-runtime-monitoring | `$.Execution.Input` (single `$`) reads a doc field that never exists (meant `$$` context) |
-| SC1101 | allenheltondev/serverless-ai-fitness | reads `$.profile.Item` / `$.userId`, never produced |
-| SC1110 | allenheltondev/serverless-ai-fitness | Choice guards on `$.profile.subscription.level` (never produced) → dead subscriber branch |
-| SC6001 | manikanta5827/leave-management | callback with no timeout → can hang forever |
+| code | repo | bug | validator-catchable? |
+|------|------|-----|---------|
+| SC1101 | aws-samples/aws-batch-runtime-monitoring | `$.Execution.Input` (single `$`) reads a doc field that never exists (meant `$$` context) | no |
+| SC1101 | allenheltondev/serverless-ai-fitness | reads `$.profile.Item` / `$.userId`, never produced | no |
+| SC1110 | allenheltondev/serverless-ai-fitness | Choice guards on `$.profile.subscription.level` (never produced) → dead subscriber branch | no |
+| SC6001 | manikanta5827/leave-management | callback with no timeout → can hang forever | no |
+| SC0002 | sparameswaran/airway-shipment-orchestrator | transition to undefined state `GoWithSupplier` | yes (structural) |
+| SC0003/4/5 | nicktodd/video-translation-stepfunctions | `"End": "True"` (string, not boolean) → dead-end + unreachable | yes (structural) |
 
-The other 54 pairs are value/config fixes outside StepCheck's remit (it correctly
-stays silent on them). Curated pairs kept here; re-run the miner to grow the set.
-Curated AWS-sample-only mining yields ~0 (samples are clean) — the catches above
-come from production repos surfaced via `--discover`.
+Four of the six are in classes no schema validator (`statelint` etc.) can express.
+The other 32 pairs are value/config fixes outside StepCheck's remit (it correctly
+stays silent). Curated pairs kept here; re-run the miner to grow the set. AWS-sample-only
+mining yields ~0 (samples are clean) — the semantic catches come from production repos
+surfaced via `--discover`.
 
 ## Note on the included pair
 

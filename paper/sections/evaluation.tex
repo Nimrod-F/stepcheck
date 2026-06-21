@@ -83,7 +83,7 @@ only \code{SC5001})---and the only off-diagonal entries are genuine structural
 \emph{consequences} of an edit (redirecting a transition also orphans its old target,
 \code{SC0003}), not misfires of unrelated checks. To complement this synthetic study with
 \emph{independently}-introduced defects, we also mine real fix-commit pairs and replay
-\tool{} on them (\texttt{stepcheck eval-pairs}); this finds four genuine in-the-wild
+\tool{} on them (\texttt{stepcheck eval-pairs}); this finds six genuine in-the-wild
 defects, reported in Section~\ref{sec:eval:realbugs}. The next subsection first contrasts
 the mutation results with what a standard validator detects on the same mutants.
 
@@ -182,10 +182,11 @@ The mutation study measures reliability on \emph{injected} defects; to complemen
 \emph{independently}-introduced ones, we mined fix-commit pairs from public Step Functions
 repositories (\texttt{eval/mine\_realbugs.js}: commits whose message looks like a fix and
 whose diff edits an \asl{} definition; we extract the file \emph{before} and \emph{after}
-the commit) and replayed \tool{} on each with \texttt{stepcheck eval-pairs}. On \textbf{4 of
-58} mined pairs \tool{} reports a defect on the pre-fix version that the fix removes, and we
-manually confirmed \emph{all four} as genuine defects in its targeted classes, across three
-independent repositories (one an official AWS sample):
+the commit) and replayed \tool{} on each with \texttt{stepcheck eval-pairs}. On \textbf{7 of
+39} mined pairs \tool{} reports a defect on the pre-fix version that the fix removes; manual
+adjudication confirms \textbf{6} as genuine defects (the seventh is a \emph{count artifact}
+---the fix deleted the flagged task rather than adding compensation---which we do not
+credit). The six span five repositories (one an official AWS sample):
 \begin{itemize}\setlength{\itemsep}{1pt}
   \item \textbf{\code{SC1101}} (\texttt{aws-batch-runtime-monitoring}): a task reads
         \texttt{\$.Execution.Input}---a single-\texttt{\$} path selecting a \emph{document}
@@ -201,14 +202,23 @@ independent repositories (one an official AWS sample):
   \item \textbf{\code{SC6001}} (\texttt{leave-management}): a callback task has no
         \texttt{TimeoutSeconds}/\texttt{HeartbeatSeconds} and can hang indefinitely; the fix
         adds \texttt{TimeoutSeconds}.
+  \item \textbf{\code{SC0002}} (\texttt{airway-shipment-orchestrator}): a transition targets
+        an undefined state; the fix adds it.
+  \item \textbf{\code{SC0003}/\code{SC0004}/\code{SC0005}} (\texttt{video-translation}): a
+        state declares \texttt{"End": "True"}---the string, not the boolean---so it is not
+        recognised as terminal, leaving a dead-end and unreachable states; the fix sets
+        \texttt{"End": true}.
 \end{itemize}
-On the remaining 54 pairs---predominantly value/config corrections (a bucket name, an API
-endpoint, a parameter) outside \tool's remit---it reports no fix-removed defect, and on
-every pre/post pair the flagged code is \emph{absent} from the post-fix version (no residual
-false positive for the fix). Small as it is, this is a genuine in-the-wild result on the
-\emph{deployed} artifact: the centrepiece provenance analysis, the new dead-guard check, and
-the temporal check each catch a real, independently-fixed defect. We release the miner and
-the adjudicated benchmark (\texttt{corpus/realbugs/}) so it can be grown.
+\textbf{Four of the six---the \code{SC1101}, \code{SC1110}, and \code{SC6001} catches---are
+in classes no schema validator can express}; the other two are structural (a dangling
+transition and a string-typed \texttt{End}) that \texttt{statelint} would also reject. On
+the remaining 32 pairs---predominantly value/config corrections (a bucket name, an API
+endpoint, a parameter) outside \tool's remit---it reports no fix-removed defect, and the
+flagged code is \emph{absent} from every post-fix version (no residual false positive). This
+is a genuine in-the-wild result on the \emph{deployed} artifact: the centrepiece provenance
+analysis, the new dead-guard check, and the temporal and structural checks each catch a
+real, independently-fixed defect. We release the miner and the adjudicated benchmark
+(\texttt{corpus/realbugs/}) so it can be grown.
 
 \subsection{Inference accuracy (RQ2)}
 \label{sec:eval:infer}

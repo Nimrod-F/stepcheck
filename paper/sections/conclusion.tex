@@ -19,7 +19,7 @@ Our evaluation on 193 real Step Functions workflows (plus 66 CNCF) supports the 
 research questions. \tool{} detects the targeted defect classes (100\% recall over 616
 injected defects) where a standard schema validator detects none of the retry,
 compensation, concurrency, or temporal defects, surfaces 33 unbounded-callback
-defects in unmodified workflows, and catches four genuine defects in mined real-world
+defects in unmodified workflows, and catches six genuine defects in mined real-world
 fix commits; the sound data-flow analysis fires zero false
 positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 87\% and idempotency at 70\% accuracy at zero authoring
 cost against a human-labelled gold set (two independent annotators, $\kappa=1.00$;
