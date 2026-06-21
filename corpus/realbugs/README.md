@@ -21,15 +21,21 @@ fix-looking commit that edits an ASL file). No token needed for the default mode
 Then `cargo run --release -- eval-pairs corpus/realbugs --infer` and **adjudicate**
 each candidate (does the fix really match the removed codes?).
 
-**Finding so far (2026-06-21):** mining the curated `aws-samples` repos yields fix
-commits that are overwhelmingly *value/config* corrections (update a bucket /
-API endpoint / parameter, set `ConsistentRead`, fix an ARN link) --- i.e. outside
-StepCheck's targeted defect classes, so it catches ~0 of them. This corroborates
-that curated samples are largely free of the deeper defects; a positive real-bug
-result needs mining *production* repositories (or targeting commit messages that
-name `NoChoiceMatched` / `States.Runtime` / a missing field). The miner + harness
-are released so this can be done at scale; we report it as tooling + future work,
-not a results table.
+**Result (2026-06-21):** across 58 mined pairs, StepCheck flags a fix-removed defect
+on 4, and all 4 are confirmed genuine defects in its targeted classes (see
+`realbugs.json` for the adjudication):
+
+| code | repo | bug |
+|------|------|-----|
+| SC1101 | aws-samples/aws-batch-runtime-monitoring | `$.Execution.Input` (single `$`) reads a doc field that never exists (meant `$$` context) |
+| SC1101 | allenheltondev/serverless-ai-fitness | reads `$.profile.Item` / `$.userId`, never produced |
+| SC1110 | allenheltondev/serverless-ai-fitness | Choice guards on `$.profile.subscription.level` (never produced) → dead subscriber branch |
+| SC6001 | manikanta5827/leave-management | callback with no timeout → can hang forever |
+
+The other 54 pairs are value/config fixes outside StepCheck's remit (it correctly
+stays silent on them). Curated pairs kept here; re-run the miner to grow the set.
+Curated AWS-sample-only mining yields ~0 (samples are clean) — the catches above
+come from production repos surfaced via `--discover`.
 
 ## Note on the included pair
 
