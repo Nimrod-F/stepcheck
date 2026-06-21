@@ -103,7 +103,8 @@ authored with full static guarantees.
         (Section~\ref{sec:impl}).
   \item An evaluation on \textbf{193 real} workflows (plus 66 CNCF): the data-flow
         analysis fires \emph{zero} false positives in the wild (soundness), the new
-        analyses surface genuine in-the-wild defects, a \textbf{616}-mutant study
+        analyses surface genuine in-the-wild defects (including \textbf{four real bugs}
+        caught in mined fix commits across three public repositories), a \textbf{616}-mutant study
         detects every injected defect \emph{in the six targeted classes} (100\% recall
         on those classes) where \texttt{statelint} catches
         none of the retry, compensation, concurrency, or temporal classes, plus
