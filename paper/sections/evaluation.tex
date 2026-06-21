@@ -82,11 +82,10 @@ own class (the retry mutant trips \code{SC3001} and nothing else; the concurrenc
 only \code{SC5001})---and the only off-diagonal entries are genuine structural
 \emph{consequences} of an edit (redirecting a transition also orphans its old target,
 \code{SC0003}), not misfires of unrelated checks. To complement this synthetic study with
-\emph{independently}-introduced defects, we also release a real-bug benchmark harness
-(\texttt{stepcheck eval-pairs}) that replays \tool{} on mined pre-fix/post-fix workflow
-pairs and reports the codes a fix removes; assembling a labelled set of such pairs is in
-progress. The next subsection contrasts the mutation results with what a standard
-validator detects on the same mutants.
+\emph{independently}-introduced defects, we also mine real fix-commit pairs and replay
+\tool{} on them (\texttt{stepcheck eval-pairs}); this finds four genuine in-the-wild
+defects, reported in Section~\ref{sec:eval:realbugs}. The next subsection first contrasts
+the mutation results with what a standard validator detects on the same mutants.
 
 \subsection{Comparison to a standard validator (RQ1)}
 \label{sec:eval:baseline}
@@ -175,6 +174,41 @@ remainder are exactly what richer typed outputs (a \texttt{ResultSelector}, or C
 declared output schemas, Section~\ref{sec:eval:cncf}) push back. The baseline produces no
 spurious \code{SC1101} under the closed-world seed either, so the typed tier inherits the
 native tier's precision.
+
+\subsection{Real defects in the wild (RQ1)}
+\label{sec:eval:realbugs}
+
+The mutation study measures reliability on \emph{injected} defects; to complement it with
+\emph{independently}-introduced ones, we mined fix-commit pairs from public Step Functions
+repositories (\texttt{eval/mine\_realbugs.js}: commits whose message looks like a fix and
+whose diff edits an \asl{} definition; we extract the file \emph{before} and \emph{after}
+the commit) and replayed \tool{} on each with \texttt{stepcheck eval-pairs}. On \textbf{4 of
+58} mined pairs \tool{} reports a defect on the pre-fix version that the fix removes, and we
+manually confirmed \emph{all four} as genuine defects in its targeted classes, across three
+independent repositories (one an official AWS sample):
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item \textbf{\code{SC1101}} (\texttt{aws-batch-runtime-monitoring}): a task reads
+        \texttt{\$.Execution.Input}---a single-\texttt{\$} path selecting a \emph{document}
+        field no state produces, where the author meant the context object
+        \texttt{\$\$.Execution.Input}; the fix routes the value through a real field.
+  \item \textbf{\code{SC1101}} (\texttt{serverless-ai-fitness}): two tasks read
+        \texttt{\$.profile.Item}/\texttt{\$.userId}, fields not produced at those states;
+        the fix refactors the user-data flow onto produced fields.
+  \item \textbf{\code{SC1110}} (\texttt{serverless-ai-fitness}): a \texttt{Choice} guards on
+        \texttt{\$.profile.subscription.level}, a field never produced---so the subscriber
+        branch is unreachable and subscribers were never routed; the fix corrects the path.
+        Our path-sensitive dead-guard check thus finds a real \emph{logic} bug.
+  \item \textbf{\code{SC6001}} (\texttt{leave-management}): a callback task has no
+        \texttt{TimeoutSeconds}/\texttt{HeartbeatSeconds} and can hang indefinitely; the fix
+        adds \texttt{TimeoutSeconds}.
+\end{itemize}
+On the remaining 54 pairs---predominantly value/config corrections (a bucket name, an API
+endpoint, a parameter) outside \tool's remit---it reports no fix-removed defect, and on
+every pre/post pair the flagged code is \emph{absent} from the post-fix version (no residual
+false positive for the fix). Small as it is, this is a genuine in-the-wild result on the
+\emph{deployed} artifact: the centrepiece provenance analysis, the new dead-guard check, and
+the temporal check each catch a real, independently-fixed defect. We release the miner and
+the adjudicated benchmark (\texttt{corpus/realbugs/}) so it can be grown.
 
 \subsection{Inference accuracy (RQ2)}
 \label{sec:eval:infer}
