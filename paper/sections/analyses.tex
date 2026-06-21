@@ -27,11 +27,15 @@ Code & Pass & Meaning \\
   predecessor does not produce \\
 \code{SC1101} & data-flow & reference to a field no execution can have produced
   (provenance; sound) \\
+\code{SC1110} & data-flow & dead Choice guard: a branch tests a field provenance
+  proves absent here (path-sensitive; sound) \\
 \code{SC2001--2002} & typestate & out-of-order composition; undeclared
   business-protocol transition \\
 \code{SC3001}$^{\dagger}$ & retry & non-idempotent task retried on a broad error class \\
 \code{SC4001--4002}$^{\dagger}$ & compensation & persistent task with no
   compensation/handling; compensation names a missing state \\
+\code{SC4010}$^{\dagger}$ & compensation & persistent task whose only error path
+  never compensates (effect-aware \texttt{Catch}) \\
 \code{SC5001--5002} & concurrency & \texttt{Parallel} branches / concurrent \texttt{Map}
   iterations write the same resource \\
 \code{SC6001--6003} & temporal & unbounded callback; retry budget exceeds machine
@@ -63,7 +67,13 @@ goes strictly beyond all of these and beyond what \texttt{statelint}/%
 shape is closed and the analysis recovers the full \texttt{amount}/\texttt{total} class
 (Section~\ref{sec:bg:defects}); \tool{} additionally retains an adjacent-task
 field-subset check (\code{SC1010}) as a cheap complement when only per-task schemas, not
-a workflow input schema, are declared.
+a workflow input schema, are declared. The same shapes support a \emph{path-sensitive}
+finding, \code{SC1110}: a \texttt{Choice} branch whose match requires a field that is
+definitely absent in the state's shape (e.g.\ \texttt{IsPresent} or a value comparator on
+a never-produced field) can never be taken, so the branch is dead. It is sound for the
+same reason as \code{SC1101}---we flag only on a definitely-absent operand, never on
+\texttt{Top}---and is the first step of refining the data-flow lattice with the
+information \texttt{Choice} predicates carry.
 
 \paragraph{Typestate (\code{SC2xxx}).}
 Using \texttt{state\_in}/\texttt{state\_out} labels, the pass checks that adjacent tasks
@@ -80,7 +90,13 @@ idempotency resolves to \emph{non-idempotent}. Retries restricted to transient e
 \paragraph{Compensation completeness (\code{SC4xxx}).}
 A \emph{persistent} task needs either a declared compensation or a \texttt{Catch} path;
 one with neither leaves its effect uncompensated (\code{SC4001}), and a compensation
-naming a non-existent state is \code{SC4002}.
+naming a non-existent state is \code{SC4002}. A bare ``has a \texttt{Catch}'' rule
+over-accepts, however: a \texttt{Catch} to a logger or a \texttt{Fail} does not undo the
+effect. The \emph{effect-aware} check \code{SC4010} closes this gap---it walks each
+\texttt{Catch} target's reachable tasks and flags a persistent task whose only error path
+never reaches a compensating action (\emph{refund}/\emph{cancel}/\emph{release}/%
+\emph{rollback}\,\dots). Unlike \code{SC1101}/\code{SC5xxx}, this fires in the wild
+(Section~\ref{sec:eval:wild}); it is a warning, since the classification is name-based.
 
 \paragraph{Concurrency interference (\code{SC5xxx}).}
 \texttt{Parallel} branches and \texttt{Map} iterations each receive their own copy of

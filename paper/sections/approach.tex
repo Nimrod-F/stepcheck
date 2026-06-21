@@ -4,14 +4,17 @@
 \subsection{A two-layer analysis model}
 
 \tool{} separates what can be checked from \asl{} alone from what needs recovered
-semantics. \emph{Native} analyses (Layer~A) are sound and require no annotations:
-structural well-formedness; the \emph{data-flow provenance} analysis of
+semantics. \emph{Native} analyses (Layer~A) require no annotations and divide by
+confidence. \emph{Two are sound} (no false positives): structural well-formedness, and
+the \emph{data-flow provenance} analysis of
 Section~\ref{sec:approach:dataflow} (which subsumes the \asl{}-semantic binding checks
 ---a \texttt{waitForTaskToken} task that never passes its token, \texttt{\$\$.Map}
-misuse, invalid JSONPath payloads---and adds field-availability reasoning); the
+misuse, invalid JSONPath payloads---and adds field-availability reasoning). \emph{Two
+more are native but deliberately conservative warnings}: the
 \emph{concurrency-interference} check (\texttt{Parallel}/\texttt{Map} branches that
-write a shared resource); and the \emph{retry/timeout-budget} check (unbounded
-callbacks, retries that overrun a timeout, heartbeat/timeout mis-configuration).
+write a shared resource) and the \emph{retry/timeout-budget} check (unbounded
+callbacks, retries that overrun a timeout, heartbeat/timeout mis-configuration), which
+under-approximate to avoid false alarms rather than claiming soundness.
 \emph{Semantic} analyses (Layer~B) ---typestate, retry safety, compensation, and
 typed contract compatibility--- consume an \emph{annotation} layer that records the
 task semantics \asl{} omits. (Concurrency and retry safety also \emph{read} the
@@ -22,8 +25,10 @@ frontend), and \emph{inference} that supplies defaults from naming and resource
 conventions. Findings derived from inferred facts are reported at \emph{warning}
 severity, while findings derived from declared facts are \emph{errors}; this single
 rule keeps confidence visible throughout the tool's output. We are deliberate about
-what ``verification'' means at each layer: the native checks are \emph{sound} and need
-no input, whereas the semantic checks are only as strong as the semantics they are
+what ``verification'' means at each layer: the \emph{sound} native checks (structural
+well-formedness and data-flow provenance) need no input and carry a no-false-positive
+guarantee; the conservative native checks (concurrency, temporal budget) raise
+heuristic warnings; whereas the semantic checks are only as strong as the semantics they are
 given---with declared annotations they are precise errors, and in the zero-annotation
 default they degrade gracefully to best-effort, inference-driven \emph{warnings}
 (typestate, having no labels to act on, simply stays silent). \tool{} is thus a sound
@@ -84,9 +89,14 @@ re-root by descent (a missing or non-trivial selection yields $\top$);
 keys are the constructor's keys (a \texttt{.\$} leaf reads an opaque value, hence
 $\top$); the opaque task result is $\top$ unless a \texttt{ResultSelector} pins its
 keys; \texttt{ResultPath} places the result into the raw input, preserving siblings
-($\$$ replaces, \texttt{null} discards). A standard forward fixpoint over the
+($\$$ replaces, \texttt{null} discards). A state in \emph{JSONata} mode (or one using
+the JSONata \texttt{Arguments}/\texttt{Output} constructs) reshapes its document with
+expressions outside our JSONPath fragment, so it yields $\top$ and its references are
+not checked---trading precision for soundness on JSONata workflows. A forward fixpoint over the
 control-flow graph---joining at merge points and along \texttt{Catch} edges (which
-carry an opaque error object)---computes an entry shape for every state. We then check
+carry an opaque error object), and converging in a number of rounds bounded by the
+machine's finite key universe (Theorem~\ref{thm:soundness})---computes an entry shape
+for every state. We then check
 exactly the references the \asl{} runtime \emph{evaluates and aborts on when absent}:
 the `.\$' constructors of \texttt{Parameters}/\texttt{ItemSelector} and a \texttt{Map}'s
 \texttt{ItemsPath}. We deliberately do \emph{not} check \texttt{Choice} operands: a
@@ -95,19 +105,45 @@ the `.\$' constructors of \texttt{Parameters}/\texttt{ItemSelector} and a \textt
 execution---flagging it would be unsound.
 
 \paragraph{Soundness.}
-The analysis reports \code{SC1101} for a reference only when its path is definitely
-absent in the state's entry shape. Because every transfer function over-approximates
-the set of may-present paths and $\top$ absorbs all uncertainty, this yields:
+Let $\gamma(\sigma)$ denote the set of JSON documents a shape $\sigma$ admits:
+$\gamma(\top)$ is every document, and $\gamma(\mathrm{Obj}\,r)$ is the documents whose
+top-level keys lie within $\mathrm{dom}(r)$, each value $v$ at key $k$ lying in
+$\gamma(r(k))$. The analysis reports \code{SC1101} for a reference only when its path is
+\emph{definitely absent} in the state's entry shape. Each transfer over-approximates,
+which gives the central guarantee.
 
-\begin{quote}\itshape
-If \tool{} reports \code{SC1101} for path $p$ at state $s$, then in every concrete
-execution that reaches $s$, $p$ is absent from the state document---so the reference
-fails at run time.
-\end{quote}
+\begin{theorem}[No false positives]\label{thm:soundness}
+If \tool{} reports \code{SC1101} for a path $p$ at a state $s$, then in every concrete
+execution that reaches $s$, $p$ is absent from the state document, so the \asl{}
+runtime fails the reference. Equivalently, the analysis never flags a reference some
+execution could satisfy.
+\end{theorem}
 
-\noindent Equivalently, the analysis has \emph{no false positives}: it never flags a
-reference that some execution could satisfy. We corroborate this empirically---zero
-\code{SC1101} on 193 unmodified workflows (Section~\ref{sec:eval:dataflow}). The
+\begin{proof}[sketch]
+Every stage transfer $f^\sharp$ is \emph{sound} for $\gamma$, i.e.\
+$f(d)\in\gamma(f^\sharp(\sigma))$ for all $d\in\gamma(\sigma)$: a \texttt{.\$}
+constructor binds its key to $\top$; the opaque task result and any JSONata-mode state
+yield $\top$; \texttt{ResultPath} writes that result while preserving siblings;
+\texttt{InputPath}/\texttt{OutputPath} descend. The join is the key-union, sound for
+$\gamma$ since $\gamma(\sigma_1)\cup\gamma(\sigma_2)\subseteq\gamma(\sigma_1\sqcup
+\sigma_2)$. By induction over the control-flow graph---taking the join over all
+incoming normal \emph{and} \texttt{Catch} edges---the computed entry shape $\sigma_s$
+satisfies $d\in\gamma(\sigma_s)$ for every document $d$ of every execution reaching $s$.
+If \code{SC1101} fires, $p$ descends $\sigma_s$ to a missing key without meeting $\top$,
+so by the definition of $\gamma$ no $d\in\gamma(\sigma_s)$ contains $p$; hence $p$ is
+absent on every reaching execution. \emph{Termination:} shapes form an ascending chain
+(a join only adds keys or lifts to $\top$) in a lattice whose height is bounded by the
+machine's finite key universe $\kappa$ (keys occur only in the finitely many
+constructor/result literals and the declared input), so the iteration reaches a least
+fixpoint within $|S|\cdot(\kappa+2)$ rounds for $|S|$ states; the implementation
+enforces this bound and reports only at the fixpoint.
+\end{proof}
+
+\noindent The guarantee is thus established, not merely asserted; we additionally
+corroborate it empirically---zero \code{SC1101} on 193 unmodified workflows, and an
+independent per-path \emph{execution oracle} (a second interpreter that shares no code
+with the analysis) confirms all 84 injected-defect findings absent on every reaching
+path, with zero counterexamples (Section~\ref{sec:eval:dataflow}). The
 analysis has two tiers that mirror the tool's two layers. The \textbf{native} tier seeds
 the start document as $\top$ (the execution input is arbitrary), so findings arise only
 where the workflow itself constructs the data it later reads---a \texttt{Pass}
