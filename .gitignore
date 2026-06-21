@@ -31,3 +31,6 @@ Thumbs.db
 # draw.io backup / temp files
 *.bkp
 .$*
+
+# real-bug miner work dir (transient clones)
+eval/.realbugs-work/

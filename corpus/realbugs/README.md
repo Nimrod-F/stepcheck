@@ -13,13 +13,23 @@ built to match a check).
 
 ## How to populate it with REAL bugs
 
-Mine fix commits that touch a Step Functions / ASL definition from public repos
-(GitHub/CDK/SAM/serverless-framework). Heuristics for candidate commits: a diff
-that edits an `*.asl.json` / state-machine definition and a message containing
-`fix`, `typo`, `wrong field`, `missing`, `NoChoiceMatched`, `States.Runtime`,
-`Default`, `heartbeat`, `timeout`. For each, save the file *before* the fix as
-`<id>-pre.json` and *after* as `<id>-post.json`, then run the harness and
-adjudicate the `fixed_codes`.
+Use the miner: `node eval/mine_realbugs.js` (clones a built-in list of public
+Step Functions repos with `--no-checkout` and extracts pre/post ASL for every
+fix-looking commit that edits an ASL file). No token needed for the default mode;
+`--discover` (GitHub code search for more repos) needs a read-only public
+`GITHUB_TOKEN`. Flags: `--repos owner/a,owner/b`, `--max N`, `--since YYYY-MM-DD`.
+Then `cargo run --release -- eval-pairs corpus/realbugs --infer` and **adjudicate**
+each candidate (does the fix really match the removed codes?).
+
+**Finding so far (2026-06-21):** mining the curated `aws-samples` repos yields fix
+commits that are overwhelmingly *value/config* corrections (update a bucket /
+API endpoint / parameter, set `ConsistentRead`, fix an ARN link) --- i.e. outside
+StepCheck's targeted defect classes, so it catches ~0 of them. This corroborates
+that curated samples are largely free of the deeper defects; a positive real-bug
+result needs mining *production* repositories (or targeting commit messages that
+name `NoChoiceMatched` / `States.Runtime` / a missing field). The miner + harness
+are released so this can be done at scale; we report it as tooling + future work,
+not a results table.
 
 ## Note on the included pair
 
