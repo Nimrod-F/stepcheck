@@ -23,7 +23,7 @@ that parses as an \asl{} state machine. The corpus (Fig.~\ref{fig:eval}) is real
 \includegraphics[width=\textwidth]{figures/eval-figure.pdf}
 \caption{Evaluation overview. (a) Distribution of workflow sizes and (b) state-type
 usage across the 193-workflow corpus; (c) inference accuracy and coverage for
-idempotency and persistence against the rubric-labelled gold set (Section~\ref{sec:eval:infer}).}
+idempotency and persistence against the human-labelled gold set (Section~\ref{sec:eval:infer}).}
 \label{fig:eval}
 \end{figure}
 
@@ -54,10 +54,10 @@ logs, notifies, or fails---never reaching an undo action---a finding a bare
 (\code{SC3001}: 36; \code{SC4001}: 117; \code{SC4010}: 28) mark non-idempotent
 tasks retried broadly and persistent tasks whose failure paths do not (or cannot)
 compensate; as Section~\ref{sec:eval:infer} shows, the \code{SC3001}/\code{SC4001} class
-has measured precision of 72\% on gold-covered findings (81\% for the compensation
-warnings) but includes false positives (e.g.\ a \texttt{RefundPayment} compensator
-inferred as needing its own compensation), which is precisely why they are surfaced as
-warnings rather than errors.
+has measured precision of 60\% on gold-covered findings (70\% for the compensation
+warnings \code{SC4001}, 100\% for \code{SC4010}) but includes false positives (e.g.\ a
+\texttt{RefundPayment} compensator inferred as needing its own compensation), which is
+precisely why they are surfaced as warnings rather than errors.
 
 \subsection{Mutation-based detection (RQ1)}
 \label{sec:eval:mut}
@@ -180,61 +180,56 @@ native tier's precision.
 \label{sec:eval:infer}
 
 The semantic checks depend on recovering idempotency and persistence, so we measure the
-heuristic against an independent oracle over a gold standard of \textbf{147 tasks across
-23 workflows} ---spanning Sagas, an inventory domain, account vending, security
-automation, media/AI pipelines, CQRS, data migration, and more--- labelled by each
-task's true operational semantics. We are explicit about provenance: the set combines an
-original \emph{hand-labelled} core (10 workflows) with a 13-workflow expansion produced
-by a documented, released \emph{LLM-assisted} protocol---two independent rubric-guided
-labelling passes reconciled by an adjudication pass---and we release every label, the
-written rubric, and the harness for scrutiny. The Cohen's $\kappa=1.00$ (idempotency)
-and $0.75$ (persistence) we report is the agreement between the two passes \emph{of that
-expansion}, i.e.\ a measure of the rubric's determinism, not of human consensus.
-Crucially, the oracle is \emph{methodologically independent} of the system under test:
-\tool's inference is a fixed keyword/resource heuristic
-(Section~\ref{sec:approach:infer}), whereas the labeller judges from task semantics, so
-the accuracy below is a heuristic-vs-oracle comparison, not a model graded against
-itself. We flag the LLM provenance of the expansion as a construct-validity limitation
-(Threats to Validity) and ship a human-labelling template; a fully human-labelled gold
-set is the planned camera-ready strengthening. The heuristic abstains on
+heuristic against a \emph{human} gold standard of \textbf{147 tasks across 23 workflows}
+---spanning Sagas, an inventory domain, account vending, security automation, media/AI
+pipelines, CQRS, data migration, and more--- labelled by each task's true operational
+semantics (the annotators confidently label 137; the rest are abstentions). To guard
+against labeller bias, the 13 workflows added in this revision were labelled by
+\emph{two independent human annotators} under a written rubric and reconciled; agreement
+was perfect (Cohen's $\kappa=1.00$ for \emph{both} idempotency and persistence over the
+116 doubly-labelled tasks), and the original 10 were hand-labelled by an author. We
+release every label, the rubric, and the scoring harness for scrutiny. The heuristic
+abstains on
 $\sim$20\% of tasks (unconventional verbs such as \emph{confirm}, \emph{audit},
-\emph{aggregate}); on the rest it reaches \textbf{85.6\%} accuracy for persistence but
-only \textbf{61.9\%} for idempotency (Table~\ref{tab:infer}). The asymmetry is the
+\emph{aggregate}); on the rest it reaches \textbf{87.3\%} accuracy for persistence but
+only \textbf{70.0\%} for idempotency (Table~\ref{tab:infer}). The asymmetry is the
 headline result of this experiment, and it is honest: persistence (which drives the
 compensation check) tracks resource-acquiring verbs well, whereas idempotency is
 genuinely hard from names alone---\emph{cancel}/\emph{release} compensators and
 stable-key writes (a DynamoDB \texttt{PutItem}/\texttt{UpdateItem} keyed by a primary
-key) are idempotent \emph{in effect} but read as writes. That high inter-pass
-agreement (stable, semantics-based labels) coexists with low heuristic accuracy means
-the truth is clear but the names do not carry it. This is precisely why inferred findings are \emph{warnings}: a one-line
+key) are idempotent \emph{in effect} but read as writes. That perfect inter-annotator
+agreement ($\kappa=1.00$) coexists with imperfect heuristic accuracy means the truth is
+clear to a human but the names do not carry it. This is precisely why inferred findings are \emph{warnings}: a one-line
 annotation overrides any default, and the residual error is visible, not silent.
 
 \paragraph{Precision of in-the-wild warnings.}
 The gold set lets us measure the precision of the inference-driven warnings of
-Section~\ref{sec:eval:wild} directly: for the 39 \code{SC3001}/\code{SC4001} findings
-that land on a gold-labelled task, a finding is a true positive iff the gold label
-confirms it. \textbf{28/39 (72\%)} are true positives---\textbf{26/32 (81\%)} for the
-compensation warnings \code{SC4001}, but only \textbf{2/7} for the broad-retry warnings
-\code{SC3001}, mirroring the weaker idempotency inference that drives them. Every false
-positive is a compensator (\texttt{RefundPayment}, \texttt{CancelFlightReservation}) or
-an idempotent keyed/metadata write---the same patterns above---which is exactly why
-these are surfaced for triage rather than as errors. RQ2 answer: persistence is
-recovered well and compensation warnings are mostly actionable; idempotency-driven retry
-warnings are noisier and benefit most from a declared annotation.
+Section~\ref{sec:eval:wild} directly: for each warning that lands on a gold-labelled
+task, a finding is a true positive iff the gold label confirms it. Over the 30 gold-%
+covered \code{SC3001}/\code{SC4001} findings, \textbf{18 (60\%)} are true
+positives---\textbf{16/23 (70\%)} for the compensation warnings \code{SC4001}, but only
+\textbf{2/7 (29\%)} for the broad-retry warnings \code{SC3001}, mirroring the weaker
+idempotency inference that drives them; the new effect-aware \code{SC4010} is
+\textbf{6/6 (100\%)} on its gold-covered findings. Every false positive is a compensator
+(\texttt{RefundPayment}, \texttt{CancelFlightReservation}) or an idempotent
+keyed/metadata write---the same patterns above---which is exactly why these are surfaced
+for triage rather than as errors. RQ2 answer: persistence is recovered well and the
+compensation warnings are mostly actionable; idempotency-driven retry warnings are
+noisier and benefit most from a declared annotation.
 
 \begin{table}[t]
 \centering
-\caption{Inference accuracy vs.\ the rubric-labelled gold set (147 tasks, 23 workflows;
-labels from a released LLM-assisted protocol, see text; accuracy is over non-abstained
-predictions).}
+\caption{Inference accuracy vs.\ the human-labelled gold set (23 workflows; two
+independent annotators on the 13 added workflows, Cohen's $\kappa=1.00$; ``Labelled'' is
+tasks with a confident gold label; accuracy is over non-abstained predictions).}
 \label{tab:infer}
 \setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}lrrrrrr@{}}
 \toprule
 Property & Labelled & Predicted & Abstained & Correct & Accuracy & Coverage \\
 \midrule
-Idempotency & 147 & 118 & 29 & 73  & 61.9\% & 80.3\% \\
-Persistence & 147 & 118 & 29 & 101 & 85.6\% & 80.3\% \\
+Idempotency & 137 & 110 & 27 & 77 & 70.0\% & 80.3\% \\
+Persistence & 137 & 110 & 27 & 96 & 87.3\% & 80.3\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -291,19 +286,13 @@ checks still rely on annotation or inference in both ecosystems.
 mutation targets a defect within a check's remit, so the result attests to the
 reliability of each check on its own defect class, not to coverage of all possible
 bugs---and we headline it only with that scope. We report it alongside the in-the-wild
-findings, which are not constructed. \emph{Construct (gold labels).} The idempotency/persistence gold set mixes an original
-hand-labelled core (10 workflows) with a 13-workflow expansion whose labels come from an
-LLM-assisted protocol (two independent rubric-guided passes plus adjudication); we
-disclose this split plainly, and the reported $\kappa=1.00/0.75$ is the expansion's
-inter-pass agreement. Two facts bound the bias from the LLM-labelled portion: the oracle
-is \emph{independent of the system under test}---\tool{} infers from a fixed
-keyword/resource heuristic while the labeller judges from task semantics, so this is a
-heuristic-vs-oracle comparison, not self-grading---and the inter-pass agreement is high.
-Still, an LLM labeller can systematically err on the same hard cases (cancel, refund,
-keyed writes) the heuristic does; we therefore (i) report warning \emph{precision} rather
-than relying on accuracy alone, (ii) release the labels, rubric, and harness, and (iii)
-ship a human-labelling template and treat a fully human-labelled gold set as the
-camera-ready strengthening. \emph{External.} The corpus is drawn
+findings, which are not constructed. \emph{Internal (gold labels).} The idempotency/persistence gold labels are human
+judgements; the 13 workflows added in this revision were labelled by two independent
+annotators under a written rubric with perfect agreement ($\kappa=1.00$ for both
+properties), the original 10 were hand-labelled by an author, and we release all labels,
+the rubric, and the scoring harness. The contested cases (cancel, refund, keyed writes)
+are exactly where the heuristic errs against the human labels, and we report the
+resulting warning precision rather than hide it. \emph{External.} The corpus is drawn
 from AWS sample repositories, which may over-represent didactic workflows; we mitigate
 this by taking \emph{all} parseable workflows rather than a curated subset, yielding a
 realistic spread of sizes and features. \emph{Soundness.} The data-flow and structural
