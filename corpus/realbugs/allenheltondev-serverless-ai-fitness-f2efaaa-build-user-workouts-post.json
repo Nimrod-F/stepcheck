@@ -1,0 +1,599 @@
+{
+  "Comment": "Generates all workouts for users in a given week",
+  "StartAt": "Triggered From Event?",
+  "States": {
+    "Triggered From Event?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.detail.userId",
+          "IsPresent": true,
+          "Next": "Move userId Up"
+        },
+        {
+          "Variable": "$.userId",
+          "IsPresent": true,
+          "Next": "Load User Settings"
+        }
+      ],
+      "Default": "userId Not Present"
+    },
+    "userId Not Present": {
+      "Type": "Fail",
+      "Error": "userIdMissing"
+    },
+    "Move userId Up": {
+      "Type": "Pass",
+      "Parameters": {
+        "userId.$": "$.detail.userId"
+      },
+      "Next": "Load User Settings"
+    },
+    "Load User Settings": {
+      "Type": "Task",
+      "Resource": "${DynamoDbGetItem}",
+      "Parameters": {
+        "TableName": "${TableName}",
+        "Key": {
+          "pk": {
+            "S.$": "$.userId"
+          },
+          "sk": {
+            "S": "settings"
+          }
+        }
+      },
+      "Next": "Load User Profile",
+      "ResultPath": "$.settings"
+    },
+    "Load User Profile": {
+      "Type": "Task",
+      "Resource": "${DynamoDbGetItem}",
+      "Parameters": {
+        "TableName": "${TableName}",
+        "Key": {
+          "pk": {
+            "S.$": "$.userId"
+          },
+          "sk": {
+            "S": "user"
+          }
+        }
+      },
+      "Next": "Generate Workout Prompts",
+      "ResultPath": "$.profile"
+    },
+    "Generate Workout Prompts": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "Parameters": {
+        "FunctionName": "${GetUserWorkoutPrompts}",
+        "Payload": {
+          "profile.$": "$.profile.Item",
+          "settings.$": "$.settings.Item",
+          "unmarshall": true
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "ResultPath": "$.workouts",
+      "Next": "Generate Workouts"
+    },
+    "Generate Workouts": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Is Subscriber?",
+        "States": {
+          "Is Subscriber?": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "And": [
+                  {
+                    "Variable": "$.user.subscription.M.level.S",
+                    "IsPresent": true
+                  },
+                  {
+                    "Not": {
+                      "Variable": "$.user.subscription.M.level.S",
+                      "StringEquals": "free"
+                    }
+                  }
+                ],
+                "Next": "Ask ChatGPT To Create Workout"
+              }
+            ],
+            "Default": "Get Existing Workout"
+          },
+          "Get Existing Workout": {
+            "Type": "Task",
+            "Resource": "${LambdaInvoke}",
+            "Parameters": {
+              "FunctionName": "${GetRandomWorkoutOfType}",
+              "Payload": {
+                "muscleGroup.$": "$.workout.muscleGroup",
+                "difficulty.$": "$.workout.difficulty"
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "Next": "Found Matching Workout?",
+            "ResultPath": "$.foundWorkout"
+          },
+          "Found Matching Workout?": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.foundWorkout.Payload.pk",
+                "IsPresent": true,
+                "Next": "Format Existing Workout Object"
+              }
+            ],
+            "Default": "No Found Workout"
+          },
+          "No Found Workout": {
+            "Type": "Pass",
+            "End": true
+          },
+          "Format Existing Workout Object": {
+            "Type": "Pass",
+            "Parameters": {
+              "user.$": "$.user",
+              "date.$": "$.workout.date",
+              "notificationDate.$": "$.workout.notificationDate",
+              "canSendNotification.$": "$.workout.canSendNotification",
+              "muscleGroup.$": "$.foundWorkout.Payload.muscleGroup",
+              "equipment.$": "$.foundWorkout.Payload.equipment",
+              "workoutType.$": "$.foundWorkout.Payload.type",
+              "workoutId.$": "$.foundWorkout.Payload.pk",
+              "estimatedTime.$": "$.foundWorkout.Payload.estimatedTime",
+              "difficulty.$": "$.foundWorkout.Payload.difficulty",
+              "isNewWorkout": false
+            },
+            "Next": "Should Send Notification?"
+          },
+          "Ask ChatGPT To Create Workout": {
+            "Type": "Task",
+            "Resource": "${LambdaInvoke}",
+            "Parameters": {
+              "FunctionName": "${AskChatGPT}",
+              "Payload": {
+                "systemContext": "You are an expert fitness trainer with a strong desire to help people reach their goals. Your expertise is creative yet effective workouts that hit the time the user wants.",
+                "query.$": "$.workout.prompt",
+                "schema": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "type": "object",
+                  "properties": {
+                    "mainSet": {
+                      "type": "object",
+                      "required": [
+                        "numSets",
+                        "setType",
+                        "sets"
+                      ],
+                      "properties": {
+                        "numSets": {
+                          "type": "integer",
+                          "description": "The number of times to perform each set",
+                          "minimum": 1
+                        },
+                        "setType": {
+                          "type": "string",
+                          "enum": [
+                            "circuit",
+                            "supersets",
+                            "special workout",
+                            "standard",
+                            "AMRAP",
+                            "EMOM"
+                          ]
+                        },
+                        "sets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "exercises"
+                            ],
+                            "properties": {
+                              "numReps": {
+                                "type": "integer",
+                                "description": "The number of reps to perform on all exercises in the set. Mutually exclusive with duration.",
+                                "minimum": 1
+                              },
+                              "duration": {
+                                "type": "integer",
+                                "description": "The duration in seconds to perform on all exercises in the set. Mutually exclusive with numReps."
+                              },
+                              "exercises": {
+                                "type": "array",
+                                "description": "Defines all the exercises to perform in a set",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "description": "Name of the exercise"
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "description": "Describes how to perform the exercise"
+                                    },
+                                    "numReps": {
+                                      "type": "integer",
+                                      "description": "Used to indicate how many reps to do of this specific exercise. Used if all exercises in the set do not have the same number of reps, otherwise omitted."
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "timeBased": {
+                          "type": "object",
+                          "description": "Properties specific to time-based workouts like AMRAP and EMOM",
+                          "properties": {
+                            "totalTime": {
+                              "type": "integer",
+                              "description": "Total time in seconds for the workout"
+                            },
+                            "intervalTime": {
+                              "type": "integer",
+                              "description": "Time in seconds for EMOM intervals"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "warmup": {
+                      "type": "object",
+                      "description": "Exercises to perform to warmup for the main set",
+                      "properties": {
+                        "exercises": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "Name of the exercise"
+                              },
+                              "numReps": {
+                                "type": "integer",
+                                "description": "Number of reps to perform"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "numReps"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "abs": {
+                      "type": "object",
+                      "description": "Ab exercises to perform after the main set",
+                      "properties": {
+                        "numSets": {
+                          "type": "integer",
+                          "description": "The number of sets to complete",
+                          "minimum": 1
+                        },
+                        "exercises": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "Name of the exercise"
+                              },
+                              "numReps": {
+                                "type": "integer",
+                                "description": "Number of reps to perform"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "numReps"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "numSets",
+                        "exercises"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "ResultPath": "$.chatgpt",
+            "Next": "Format New Workout Object",
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "RateLimitExceeded"
+                ],
+                "ResultPath": null,
+                "Next": "Get Existing Workout"
+              }
+            ]
+          },
+          "Format New Workout Object": {
+            "Type": "Pass",
+            "Next": "Should Send Notification?",
+            "Parameters": {
+              "user.$": "$.user",
+              "date.$": "$.workout.date",
+              "notificationDate.$": "$.workout.notificationDate",
+              "canSendNotification.$": "$.workout.canSendNotification",
+              "muscleGroup.$": "$.workout.muscleGroup",
+              "equipment.$": "$.workout.equipment",
+              "workoutType.$": "$.workout.workoutType",
+              "workout.$": "$.chatgpt.Payload.response",
+              "workoutId.$": "States.UUID()",
+              "estimatedTime.$": "$.workout.targetTime",
+              "difficulty.$": "$.workout.difficulty",
+              "isNewWorkout": true
+            }
+          },
+          "Should Send Notification?": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "And": [
+                  {
+                    "Variable": "$.user.contact",
+                    "IsPresent": true
+                  },
+                  {
+                    "Variable": "$.user.contact.M.type",
+                    "IsPresent": true
+                  },
+                  {
+                    "Variable": "$.user.contact.M.type.S",
+                    "StringEquals": "email"
+                  },
+                  {
+                    "Variable": "$.canSendNotification",
+                    "IsPresent": true
+                  },
+                  {
+                    "Variable": "$.canSendNotification",
+                    "BooleanEquals": true
+                  }
+                ],
+                "Next": "Does Schedule Already Exist?"
+              }
+            ],
+            "Default": "Save Workout to User"
+          },
+          "Does Schedule Already Exist?": {
+            "Type": "Task",
+            "Next": "Update Schedule",
+            "Parameters": {
+              "Name.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)",
+              "GroupName": "aifitness"
+            },
+            "Resource": "${SchedulerGetSchedule}",
+            "ResultPath": null,
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "Scheduler.ResourceNotFoundException"
+                ],
+                "Next": "Create One-Time Schedule",
+                "ResultPath": null
+              }
+            ]
+          },
+          "Update Schedule": {
+            "Type": "Task",
+            "Next": "Save Workout to User",
+            "Parameters": {
+              "FlexibleTimeWindow": {
+                "Mode": "OFF"
+              },
+              "GroupName": "aifitness",
+              "Name.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)",
+              "ScheduleExpression.$": "States.Format('at({})', $.notificationDate)",
+              "ScheduleExpressionTimezone.$": "$.user.contact.M.timezone.S",
+              "Target": {
+                "Arn": "${SendWorkoutNotification}",
+                "RoleArn": "${SendWorkoutNotificationRole}",
+                "Input": {                 
+                  "contact": {
+                    "type.$": "$.user.contact.M.type.S",
+                    "value.$": "$.user.contact.M.email.S"
+                  },
+                  "workoutId.$": "$.workoutId",
+                  "date.$": "$.date",
+                  "scheduleName.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)"
+                }
+              }
+            },
+            "Resource": "${SchedulerUpdateSchedule}",
+            "ResultPath": null
+          },
+          "Create One-Time Schedule": {
+            "Type": "Task",
+            "Next": "Save Workout to User",
+            "Parameters": {
+              "FlexibleTimeWindow": {
+                "Mode": "OFF"
+              },
+              "GroupName": "aifitness",
+              "Name.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)",
+              "ScheduleExpression.$": "States.Format('at({})', $.notificationDate)",
+              "ScheduleExpressionTimezone.$": "$.user.contact.M.timezone.S",
+              "Target": {
+                "Arn": "${SendWorkoutNotification}",
+                "RoleArn": "${SendWorkoutNotificationRole}",
+                "Input": {                 
+                  "contact": {
+                    "type.$": "$.user.contact.M.type.S",
+                    "value.$": "$.user.contact.M.email.S"
+                  },
+                  "workoutId.$": "$.workoutId",
+                  "date.$": "$.date",
+                  "scheduleName.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)"
+                }
+              }
+            },
+            "Resource": "${SchedulerCreateSchedule}",
+            "ResultPath": "$.schedule"
+          },
+          "Save Workout to User": {
+            "Type": "Task",
+            "Resource": "${LambdaInvoke}",
+            "Parameters": {
+              "FunctionName": "${SaveToDynamoDB}",
+              "Payload": {
+                "item": {
+                  "pk.$": "States.Format('{}#{}', $.user.pk.S, $.date)",
+                  "sk": "workout",
+                  "facet.$": "$.user.pk.S",
+                  "facetSortKey.$": "States.Format('workout#{}', $.date)",
+                  "date.$": "$.date",
+                  "muscleGroup.$": "$.muscleGroup",
+                  "equipment.$": "$.equipment",
+                  "workoutType.$": "$.workoutType",
+                  "scheduleName.$": "States.Format('WORKOUT-{}-{}', $.user.pk.S, $.date)",
+                  "workoutId.$": "$.workoutId"
+                }
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "ResultPath": null,
+            "Next": "Save to Encyclopedia?"
+          },
+          "Save to Encyclopedia?": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "And": [
+                  {
+                    "Variable": "$.isNewWorkout",
+                    "IsPresent": true
+                  },
+                  {
+                    "Variable": "$.isNewWorkout",
+                    "BooleanEquals": true
+                  }
+                ],
+                "Next": "Save Workout to Encyclopedia"
+              }
+            ],
+            "Default": "Do Not Save"
+          },
+          "Do Not Save": {
+            "Type": "Pass",
+            "End": true
+          },
+          "Save Workout to Encyclopedia": {
+            "Type": "Task",
+            "Resource": "${LambdaInvoke}",
+            "Parameters": {
+              "FunctionName": "${SaveToDynamoDB}",
+              "Payload": {
+                "tableName": "${WorkoutTable}",
+                "item": {
+                  "pk.$": "$.workoutId",
+                  "sk": "workout",
+                  "listType": "workout",
+                  "listSort.$": "States.Format('{}#{}', $.muscleGroup, $.difficulty)",
+                  "muscleGroup.$": "$.muscleGroup",
+                  "equipment.$": "$.equipment",
+                  "type.$": "$.workoutType",
+                  "estimatedTime.$": "$.estimatedTime",
+                  "difficulty.$": "$.difficulty",
+                  "rating": 0,
+                  "workout.$": "$.workout"
+                }
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "ResultPath": null,
+            "End": true
+          }
+        }
+      },
+      "ItemsPath": "$.workouts.Payload",
+      "ItemSelector": {
+        "user.$": "$.profile.Item",
+        "workout.$": "$$.Map.Item.Value"
+      },
+      "End": true
+    }
+  }
+}

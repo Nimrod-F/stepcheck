@@ -1,0 +1,12 @@
+{
+  "gold_expanded": {"workflows": 23, "tasks_matched": 147,
+    "idempotency": {"predicted": 118, "abstained": 29, "correct": 73, "accuracy": 61.9, "coverage": 80.3},
+    "persistence": {"predicted": 118, "abstained": 29, "correct": 101, "accuracy": 85.6, "coverage": 80.3},
+    "agreement": {"idempotency_kappa": 1.00, "persistence_kappa": 0.745, "pairs": 116}},
+  "in_the_wild_precision_vs_gold": {"covered_findings": 39, "tp": 28, "fp": 11, "precision": 71.8,
+    "SC4001": {"covered": 32, "tp": 26, "precision": 81.2},
+    "SC3001": {"covered": 7, "tp": 2, "precision": 28.6},
+    "dominant_fp": "compensators (refund/cancel) and idempotent keyed/metadata writes"},
+  "statelint": {"in_wild_flagged_files": 113, "in_wild_problems": 499, "schema_shape_problems": 410,
+    "mutation": {"structural": [166,166], "contract": [141,140], "retry": [103,0], "compensation": [19,0]}}
+}

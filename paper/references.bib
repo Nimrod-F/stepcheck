@@ -108,6 +108,14 @@
   note         = {Accessed 2026-06-17}
 }
 
+@misc{awsStatelint,
+  author       = {{Amazon Web Services Labs}},
+  title        = {statelint: A validator for {Amazon} States Language documents},
+  year         = {2024},
+  howpublished = {\url{https://github.com/awslabs/statelint}},
+  note         = {Apache-2.0; v0.8.0. Accessed 2026-06-18}
+}
+
 @article{kulkarni2025characterizing,
   author  = {Kulkarni, Varad and Reddy, Nikhil and Khare, Tuhin and Prasad, Abhinandan S. and Babu, Chitra and Simmhan, Yogesh},
   title   = {Characterizing {FaaS} Workflows on Public Clouds: The Good, the Bad and the Ugly},
@@ -416,4 +424,95 @@
   journal = {arXiv preprint},
   year    = {2025},
   note    = {arXiv:2510.03902}
+}
+
+@inproceedings{cousot1977,
+  author    = {Cousot, Patrick and Cousot, Radhia},
+  title     = {Abstract Interpretation: A Unified Lattice Model for Static
+               Analysis of Programs by Construction or Approximation of Fixpoints},
+  booktitle = {Proceedings of the 4th ACM SIGACT-SIGPLAN Symposium on Principles
+               of Programming Languages (POPL)},
+  pages     = {238--252},
+  year      = {1977},
+  publisher = {ACM}
+}
+
+@article{soethout2019psac,
+  author  = {Soethout, Tim and van der Storm, Tijs and Vinju, Jurgen J.},
+  title   = {Path-Sensitive Atomic Commit: Local Coordination Avoidance for
+             Distributed Transactions},
+  journal = {The Art, Science, and Engineering of Programming},
+  volume  = {4},
+  number  = {1},
+  year    = {2020}
+}
+
+% =====================================================================
+% Theme I --- Workflow/BPM data-flow anomaly analysis & idempotence
+%             (added 2026-06-21 for the ICSOC revision; positions the
+%              data-flow contribution against prior workflow data-flow work)
+% trcka2009antipatterns and petricek2016types VERIFIED via Semantic
+% Scholar 2026-06-21; sun2006dataflow / ding2023flux high-confidence;
+% moser2009bpel and vonstackelberg2014bpmn: VERIFY exact venue/authors
+% before camera-ready.
+% =====================================================================
+
+@article{sun2006dataflow,
+  author  = {Sun, Sherry X. and Zhao, J. Leon and Nunamaker, Jay F. and Sheng, Olivia R. Liu},
+  title   = {Formulating the Data-Flow Perspective for Business Process Management},
+  journal = {Information Systems Research},
+  volume  = {17},
+  number  = {4},
+  pages   = {374--391},
+  year    = {2006},
+  doi     = {10.1287/isre.1060.0105}
+}
+
+@inproceedings{trcka2009antipatterns,
+  author    = {Trcka, Nikola and van der Aalst, Wil M. P. and Sidorova, Natalia},
+  title     = {Data-Flow Anti-patterns: Discovering Data-Flow Errors in Workflows},
+  booktitle = {Int. Conf. on Advanced Information Systems Engineering (CAiSE)},
+  series    = {LNCS},
+  volume    = {5565},
+  pages     = {425--439},
+  year      = {2009},
+  doi       = {10.1007/978-3-642-02144-2_34}
+}
+
+@inproceedings{ding2023flux,
+  author    = {Ding, Haoran and Wang, Zhaoguo and Shen, Zhuohao and Chen, Rong and Chen, Haibo},
+  title     = {Automated Verification of Idempotence for Stateful Serverless Applications},
+  booktitle = {USENIX Symp. on Operating Systems Design and Implementation (OSDI)},
+  year      = {2023}
+}
+
+@inproceedings{petricek2016types,
+  author    = {Petricek, Tomas and Guerra, Gustavo and Syme, Don},
+  title     = {Types from Data: Making Structured Data First-Class Citizens in {F\#}},
+  booktitle = {ACM SIGPLAN Conf. on Programming Language Design and Implementation (PLDI)},
+  pages     = {477--490},
+  year      = {2016},
+  doi       = {10.1145/2908080.2908115}
+}
+
+@INPROCEEDINGS{moser2009bpel,
+  author={Moser, Simon and Martens, Axel and Gorlach, Katharina and Amme, Wolfram and Godlinski, Artur},
+  booktitle={IEEE International Conference on Services Computing (SCC 2007)}, 
+  title={Advanced Verification of Distributed WS-BPEL Business Processes Incorporating CSSA-based Data Flow Analysis}, 
+  year={2007},
+  volume={},
+  number={},
+  pages={98-105},
+  keywords={Data analysis;Web services;Application software;Aggregates;Controllability;Data mining;Protocols;Formal verification;Testing;Debugging},
+  doi={10.1109/SCC.2007.22}}
+
+
+@article{vonstackelberg2014bpmn,
+  author  = {von Stackelberg, Silvia and Putze, Susanne and M{\"u}lle, Jutta and B{\"o}hm, Klemens},
+  title   = {Detecting Data-Flow Errors in {BPMN} 2.0},
+  journal = {Open Journal of Information Systems (OJIS)},
+  volume  = {1},
+  number  = {2},
+  year    = {2014},
+  note    = {bibliographic details to be re-verified before camera-ready}
 }

@@ -4,7 +4,7 @@
 Cloud-native applications increasingly decompose business logic into independently
 deployable functions that are coordinated by managed \emph{workflow orchestration}
 services. Among these, AWS Step Functions has become one of the most widely
-adopted platforms in industry~\cite{garciaLopez2018faas,wen2021empirical,kulkarni2025characterizing}.
+adopted platforms in industry~\cite{wen2021empirical,kulkarni2025characterizing}.
 A Step Functions workflow is a state machine written in the \emph{Amazon States
 Language} (\asl), a JSON configuration format that describes task invocations,
 branching, parallelism, retries, and error handling, and that executes on top of
@@ -12,23 +12,27 @@ AWS Lambda and dozens of service integrations~\cite{awsStepFunctions}.
 
 While orchestration platforms simplify \emph{running} distributed workflows, they
 provide little support for \emph{reasoning about workflow correctness before
-deployment}. An \asl{} state machine is an untyped artifact: the platform validates
-its JSON schema and the existence of transitions, but not whether the data produced
-by one task matches what the next consumes, whether tasks are invoked in a valid
-business order, whether an automatically retried task is safe to repeat, or whether
-a long-running transaction can roll back the effects it has already committed. As a
-consequence, four recurring classes of defect surface only at run time:
-
-\begin{description}
-  \item[Contract mismatches.] A task reads a field its predecessor never produces
-    (e.g.\ \texttt{ChargeCard} expects \texttt{total} but receives \texttt{amount}).
-  \item[Protocol (typestate) violations.] An edit reorders the machine so a task runs
-    out of business order (shipping before payment)---valid JSON, invalid protocol.
-  \item[Unsafe retries.] A retry policy re-invokes a non-idempotent operation after a
-    partial success, duplicating its effect~\cite{mohammad2025resilient}.
-  \item[Missing compensation.] A persistent operation reserves a resource the workflow
-    cannot release when a later step fails---an incomplete Saga~\cite{garciaMolina1987sagas}.
-\end{description}
+deployment}. An \asl{} state machine is an untyped artifact, and the tooling
+developers have---\texttt{statelint}~\cite{awsStatelint}, \texttt{asl-validator}, and
+AWS's own \texttt{ValidateStateMachineDefinition}---validates the JSON schema, the
+existence of transitions, and the \emph{syntax} of JSONPath expressions (``does this
+look like a path?''). None of them reasons about whether the field a path \emph{names}
+can ever have been produced by an upstream state, whether tasks are invoked in a valid
+business order, whether an automatically retried task is safe to repeat, whether
+concurrent branches contend on the same resource, or whether a long-running
+transaction can roll back the effects it has committed. As a consequence, six
+recurring classes of defect surface only at run time (detailed in
+Section~\ref{sec:bg:defects}): \emph{contract / data-flow mismatches} (a task reads a
+field no predecessor produces---the running ``\texttt{amount} vs.\ \texttt{total}''
+bug); \emph{protocol/typestate violations} (a task runs out of business
+order---shipping before payment); \emph{unsafe retries} (a retry re-invokes a
+non-idempotent operation, duplicating its effect~\cite{mohammad2025resilient});
+\emph{concurrency interference} (two \texttt{Parallel} branches, or concurrent
+\texttt{Map} iterations, write the same external resource); \emph{temporal-budget
+faults} (a \texttt{waitForTaskToken} callback that can hang indefinitely, or retries
+that cannot complete within a timeout); and \emph{missing compensation} (a persistent
+operation cannot be rolled back when a later step fails---an incomplete
+Saga~\cite{garciaMolina1987sagas}).
 
 A central obstacle to checking these properties is that \asl{} \emph{omits the very
 information the checks require}. \asl{} has no notion of a task's input or output
@@ -40,43 +44,79 @@ workflows already written in \asl{} cannot benefit, and re-platforming is rarely
 option.
 
 \paragraph{Approach.}
-We present \tool, a static verifier that brings four complementary checks to
-serverless workflows \emph{before deployment} while remaining fully compatible with
-AWS Step Functions. \tool{} is organised around two ideas. First, a \emph{two-layer}
-analysis model: a set of \emph{native} checks operate soundly on raw \asl{} with no
-extra input (structural well-formedness and \asl{}-semantic data-binding checks),
-while a set of \emph{semantic} checks (typestate, retry safety, compensation) draw
-on a lightweight \emph{annotation} layer. Second, because most existing workflows
-carry no annotations, the missing semantics are \emph{inferred} from task names and
-resource bindings by a documented, configurable heuristic, giving a zero-effort
-default analysis that developers can override or refine. Verified workflows are
-compiled back to executable \asl, so \tool{} introduces no runtime component and no
-lock-in. A typed builder frontend additionally lets greenfield workflows be authored
-with full static guarantees and the same compilation target.
+We present \tool, a static verifier that runs \emph{before deployment} while remaining
+fully compatible with AWS Step Functions. Its intellectual centrepiece is a
+\emph{sound, flow-sensitive data-flow analysis} of the \asl{} I/O-processing pipeline
+(\texttt{InputPath} $\to$ \texttt{Parameters} $\to$ \texttt{ResultSelector} $\to$
+\texttt{ResultPath} $\to$ \texttt{OutputPath}). Cast as an abstract interpretation
+over a \emph{may-present} lattice of document shapes, it tracks which fields a state's
+document can hold and reports a reference to a definitely-absent field---with
+\emph{no false positives}, a property we establish as a soundness theorem
+(Section~\ref{sec:approach:dataflow}). This moves the contract check from
+JSONPath \emph{syntax} (what every existing validator does) to field
+\emph{provenance}, catching the ``\texttt{amount} vs.\ \texttt{total}'' bug with zero
+annotations. In service-oriented terms, \tool{} is an \emph{orchestration-level
+integration verifier}: it checks that the data and control contracts between
+orchestrated services hold \emph{before} deployment, on the platform developers
+already use. \tool{} is organised around two further ideas. First, a \emph{two-layer}
+model: \emph{native} checks need no input---of these, structural well-formedness and
+data-flow provenance are \emph{sound} (no false positives), while
+concurrency-interference and temporal-budget are deliberately \emph{conservative}
+warnings; \emph{semantic} checks (typestate, retry safety, compensation, typed
+contracts) consume a lightweight \emph{annotation} layer. Second, because most workflows carry no
+annotations, the missing semantics are \emph{inferred} from naming and resource
+conventions, giving a zero-effort default that developers can override. Verified
+workflows are compiled back to executable \asl, so \tool{} adds no runtime component
+and no lock-in; a typed builder frontend additionally lets greenfield workflows be
+authored with full static guarantees.
 
 \paragraph{Contributions.}
 \begin{itemize}
-  \item A practical model and four static analyses ---contract/data-flow, typestate,
-        retry safety, compensation completeness--- for serverless workflows, framed
-        operationally rather than through heavy formalism
+  \item \textbf{A sound data-flow / field-provenance analysis for the Amazon States
+        Language}, formalized as an abstract interpretation over a may-present lattice
+        with a no-false-positive guarantee that we prove
+        (Theorem~\ref{thm:soundness}). To our knowledge it is the first \emph{sound,
+        shape-level} data-flow analysis for a deployed serverless workflow language,
+        and the first static analysis of \asl{} data flow of any kind beyond JSONPath
+        syntax; it is distinguished from the data-flow-anomaly tradition in
+        business-process modelling (Section~\ref{sec:related}) by tracking concrete
+        \emph{nested JSON document shapes} through \asl's exact I/O pipeline---rather
+        than coarse create/read abstractions of a hand-built net---and by running on,
+        and recompiling to, the executable artifact. It has a native tier (no
+        annotations) and a typed tier (declared input schema, a sound static
+        consumer-driven contract) and subsumes the
+        syntactic binding checks (Sections~\ref{sec:approach:dataflow},
+        \ref{sec:analyses}).
+  \item \textbf{Two further analyses for classes no \asl{} tool addresses}:
+        \emph{concurrency interference} (\texttt{Parallel}/\texttt{Map} branches that
+        write the same external resource) and a \emph{retry/timeout-budget} (temporal)
+        analysis (unbounded callbacks, retries that cannot complete within a timeout,
+        heartbeat/timeout mis-configuration).
+  \item A two-layer design that verifies \emph{existing} \asl{} by pairing sound native
+        checks with an annotation layer whose defaults are inferred from
+        naming/resource conventions, together with the structural, typestate,
+        retry-safety, and compensation checks---eight passes in all
         (Sections~\ref{sec:approach}--\ref{sec:analyses}).
-  \item A two-layer design that verifies \emph{existing} \asl{} workflows by pairing
-        sound native checks with an annotation layer whose defaults are inferred
-        from naming/resource conventions (Section~\ref{sec:approach}).
-  \item \tool, an open, modular implementation in Rust (2.6k LOC) with pluggable
-        frontends (raw \asl, a typed DSL, and the CNCF Serverless Workflow DSL) and
-        analysis passes, a diagnostics engine, an \asl{} emitter, and a mutation-based
-        error-injection tool (Section~\ref{sec:impl}).
-  \item An evaluation on \textbf{193 real} Step Functions workflows mined from public
-        AWS repositories: in-the-wild findings, a 429-mutant detection study (100\%
-        recall), inference accuracy against a hand-labelled gold set (83--91\%),
-        sub-millisecond verification cost, and a real AWS round-trip
-        (Section~\ref{sec:eval}).
+  \item \tool, an open, modular Rust implementation (4.4k LOC, eight passes) with
+        pluggable frontends (raw \asl, a typed DSL, the CNCF Serverless Workflow DSL), a
+        diagnostics engine, an \asl{} emitter, and a mutation-based error-injection tool
+        (Section~\ref{sec:impl}).
+  \item An evaluation on \textbf{193 real} workflows (plus 66 CNCF): the data-flow
+        analysis fires \emph{zero} false positives in the wild (soundness), the new
+        analyses surface genuine in-the-wild defects (including \textbf{six real bugs}
+        caught in mined fix commits across five public repositories), a \textbf{616}-mutant study
+        detects every injected defect \emph{in the six targeted classes} (100\% recall
+        on those classes) where \texttt{statelint} catches
+        none of the retry, compensation, concurrency, or temporal classes, plus
+        inference accuracy and warning precision against a human-labelled gold set, a
+        typed-tier data-flow recall study, sub-millisecond cost, and a real AWS
+        round-trip (Section~\ref{sec:eval}).
 \end{itemize}
 
 \paragraph{Research questions.}
-\textbf{RQ1:} Can a static verifier detect the four defect classes in serverless
-workflows before deployment? \textbf{RQ2:} Can the semantics \asl{} omits be
-recovered cheaply enough to analyse existing workflows? \textbf{RQ3:} What is the
-cost of verification and what runtime overhead does it impose? We answer these in
-Section~\ref{sec:eval}.
+\textbf{RQ1:} Can a static verifier detect these defect classes in serverless
+workflows before deployment---and how does it compare to the validator developers
+already use? \textbf{RQ2:} Is the data-flow analysis sound in practice, and can the
+semantics \asl{} omits be recovered cheaply enough to analyse existing workflows?
+\textbf{RQ3:} What is the cost of verification and what runtime overhead does it
+impose? We answer these in Section~\ref{sec:eval}.

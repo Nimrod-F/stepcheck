@@ -1,7 +1,7 @@
 \section{Evaluation}
 \label{sec:eval}
 
-We evaluate \tool{} on real serverless workflows, asking: can it detect the four
+We evaluate \tool{} on real serverless workflows, asking: can it detect the six
 defect classes before deployment (RQ1); can it recover the semantics \asl{} omits
 cheaply enough to analyse existing workflows (RQ2); and what does verification cost,
 at build and run time (RQ3)? Every number below is produced by the released tool over
@@ -10,22 +10,20 @@ a committed corpus and is reproducible with the commands shown.
 \subsection{Setup and corpus (RQ1)}
 \label{sec:eval:corpus}
 
-We mined \textbf{193} Step Functions workflows from two public AWS repositories,
-\texttt{aws-samples/}\allowbreak\texttt{aws-step\-func\-tions-examples} and
-\texttt{aws-samples/}\allowbreak\texttt{step-func\-tions-workflows-collection}, taking every file that
-parses as an \asl{} state machine. The corpus (Fig.~\ref{fig:eval}) is realistic
-and diverse: 1{,}355 states in total, a median of 6 states per workflow (max 33;
-Fig.~\ref{fig:eval}a), and broad use of \texttt{Choice} (166), \texttt{Map} (64),
-\texttt{Parallel} (33; Fig.~\ref{fig:eval}b), retries (84 workflows), and catch handlers
-(51 workflows). All experiments ran on a commodity laptop with a release build of
-\tool{} (Rust~1.96).
+We mined \textbf{193} Step Functions workflows from two public AWS repositories
+(\texttt{aws-samples/}\allowbreak\texttt{aws-stepfunctions-examples} and
+\texttt{step-functions-}\allowbreak\texttt{workflows-collection}), taking every file
+that parses as an \asl{} state machine. The corpus (Fig.~\ref{fig:eval}) is realistic and diverse:
+1{,}355 states, median 6 per workflow (max 33), and broad use of \texttt{Choice} (166),
+\texttt{Map} (64), \texttt{Parallel} (33), retries (84 workflows), and catch handlers
+(51). All experiments ran on a commodity laptop (Rust~1.96 release build).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/eval-figure.pdf}
 \caption{Evaluation overview. (a) Distribution of workflow sizes and (b) state-type
 usage across the 193-workflow corpus; (c) inference accuracy and coverage for
-idempotency and persistence against the hand-labelled gold set (Section~\ref{sec:eval:infer}).}
+idempotency and persistence against the human-labelled gold set (Section~\ref{sec:eval:infer}).}
 \label{fig:eval}
 \end{figure}
 
@@ -33,38 +31,33 @@ idempotency and persistence against the hand-labelled gold set (Section~\ref{sec
 \label{sec:eval:wild}
 
 Run unmodified over the corpus (with inference enabled), \tool{} flags
-\textbf{86 of 193} workflows. We separate \emph{sound native} findings, which need no
-annotations and which we manually confirmed, from \emph{inference-driven} findings,
-which are warnings requiring triage (Table~\ref{tab:wild}). Among the native
-findings, nine workflows contain a \texttt{Choice} with no \texttt{Default}
-(\code{SC0007})---a recognised cause of \texttt{States.NoChoiceMatched} run-time
-failures---and one is genuinely malformed (\code{SC0010}): an aws-samples example
-nests a top-level \texttt{QueryLanguage} directive \emph{inside} its \texttt{States}
-block, where Step Functions would reject it. The inference-driven warnings
-(\code{SC3001}: 36; \code{SC4001}: 117) mark non-idempotent tasks retried broadly and
-persistent tasks lacking a compensation path; as Section~\ref{sec:eval:infer} shows,
-these are high-recall but include false positives (e.g.\ a \texttt{RefundPayment}
-compensator inferred as needing its own compensation), which is precisely why they
-are surfaced as warnings rather than errors.
-
-\begin{table}[t]
-\centering
-\caption{In-the-wild findings over 193 unmodified workflows
-(\texttt{stepcheck eval corpus/asl --infer}).}
-\label{tab:wild}
-\setlength{\tabcolsep}{6pt}
-\begin{tabular}{@{}llrl@{}}
-\toprule
-Tier & Code & Count & Finding \\
-\midrule
-\multirow{2}{*}{Sound (native)} & \code{SC0007} & 9 & \texttt{Choice} without \texttt{Default} \\
-                                & \code{SC0010} & 1 & malformed state (misplaced directive) \\
-\midrule
-\multirow{2}{*}{Inferred (triage)} & \code{SC3001} & 36 & broad retry on (inferred) non-idempotent task \\
-                                   & \code{SC4001} & 117 & (inferred) persistent task without compensation \\
-\bottomrule
-\end{tabular}
-\end{table}
+\textbf{95 of 193} workflows. We separate \emph{sound native} findings, which need no
+annotations, from \emph{inference-driven} findings, which are warnings requiring triage.
+Among the native findings, nine workflows contain a \texttt{Choice} with no
+\texttt{Default} (\code{SC0007})---a recognised cause of \texttt{States.NoChoiceMatched}
+run-time failures---and one is genuinely malformed (\code{SC0010}): an aws-samples
+example nests a top-level \texttt{QueryLanguage} directive \emph{inside} its
+\texttt{States} block, where Step Functions would reject it. The temporal analysis adds
+\textbf{33} findings, all \code{SC6001}: unbounded \texttt{waitForTaskToken}
+callbacks---human-approval and payment/shipping steps with no timeout or heartbeat, a
+real anti-pattern AWS documents against. The data-flow (\code{SC1101}, \code{SC1110}) and concurrency
+(\code{SC5xxx}) analyses fire on \emph{none} of the 193: \code{SC1101} because the
+analysis is sound and these samples are correct (Section~\ref{sec:eval:dataflow}),
+\code{SC1110} because no corpus workflow guards a \texttt{Choice} on a field it never
+produces, and \code{SC5xxx} because its conservative overwriting-write rule finds no
+genuine last-writer-wins race among the corpus's (correctly keyed or commuting)
+concurrent writes---all precision results, with detection power shown by the mutation
+study below. The effect-aware compensation check \emph{does} surface a new class in the
+wild: \code{SC4010} flags \textbf{28} persistent tasks whose only \texttt{Catch} merely
+logs, notifies, or fails---never reaching an undo action---a finding a bare
+``has-a-\texttt{Catch}'' rule misses entirely. The inference-driven warnings
+(\code{SC3001}: 36; \code{SC4001}: 117; \code{SC4010}: 28) mark non-idempotent
+tasks retried broadly and persistent tasks whose failure paths do not (or cannot)
+compensate; as Section~\ref{sec:eval:infer} shows, the \code{SC3001}/\code{SC4001} class
+has measured precision of 60\% on gold-covered findings (70\% for the compensation
+warnings \code{SC4001}, 100\% for \code{SC4010}) but includes false positives (e.g.\ a
+\texttt{RefundPayment} compensator inferred as needing its own compensation), which is
+precisely why they are surfaced as warnings rather than errors.
 
 \subsection{Mutation-based detection (RQ1)}
 \label{sec:eval:mut}
@@ -74,59 +67,213 @@ power by \emph{error injection}. For each defect class we inject exactly one def
 per applicable workflow with \texttt{stepcheck mutate} and re-verify; a defect counts
 as \emph{detected} only if the expected diagnostic's count strictly increases over the
 unmutated baseline (so we measure detection of the \emph{injected} defect, not
-pre-existing findings). Across \textbf{429} mutants spanning the four classes,
-\tool{} achieves \textbf{100\% recall} (Table~\ref{tab:mut}), and it never reports the
-expected defect on the corresponding originals. We stress that this measures
+pre-existing findings). Across \textbf{616} mutants spanning six classes---the four
+above plus a shared-resource \texttt{Parallel} write (\code{SC5001}) and a
+heartbeat\,$\geq$\,timeout (\code{SC6003})---\tool{} achieves \textbf{100\% recall}
+(Table~\ref{tab:baseline}, \tool{} column), and it never reports the expected defect on
+the corresponding originals. (The data-flow class is studied separately in
+Section~\ref{sec:eval:dataflow} because, unlike the others, its detection depends on a
+known document shape rather than firing on raw \asl{}.) We stress that this measures
 \emph{reliability of each check on the defect class it targets}, not detection of
-arbitrary bugs; the mutations are constructed to fall within each check's remit.
+arbitrary bugs; the mutations are constructed to fall within each check's remit. To show
+the checks are \emph{specific} and not merely trigger-happy, the harness also emits a
+per-operator confusion matrix: it is near-diagonal---each semantic check fires only on its
+own class (the retry mutant trips \code{SC3001} and nothing else; the concurrency mutant
+only \code{SC5001})---and the only off-diagonal entries are genuine structural
+\emph{consequences} of an edit (redirecting a transition also orphans its old target,
+\code{SC0003}), not misfires of unrelated checks. To complement this synthetic study with
+\emph{independently}-introduced defects, we also mine real fix-commit pairs and replay
+\tool{} on them (\texttt{stepcheck eval-pairs}); this finds six genuine in-the-wild
+defects, reported in Section~\ref{sec:eval:realbugs}. The next subsection first contrasts
+the mutation results with what a standard validator detects on the same mutants.
+
+\subsection{Comparison to a standard validator (RQ1)}
+\label{sec:eval:baseline}
+
+The natural baseline is the validation a Step Functions developer already has.
+\texttt{statelint}~\cite{awsStatelint} (the AWS Labs reference linter; we ran v0.8.0)
+checks an \asl{} definition against the J2119/\asl{} schema plus structural rules.
+We ran it on the same corpus and the same 616 mutants, scoring a mutant
+\emph{detected} only when statelint emits a new problem that names the injected fault
+(Table~\ref{tab:baseline}). The two tools \emph{agree} on the defects statelint can
+express: it flags every dangling transition (166/166) and---because a broken JSONPath
+binding violates the schema---almost every broken \emph{binding} (140/141). But it
+detects \textbf{0} unsafe retries, \textbf{0} missing compensations, \textbf{0}
+concurrency-interference defects, and \textbf{0} temporal-budget defects: a broad
+\texttt{States.ALL} retry, an absent \texttt{Catch}, two branches writing one table, and
+a heartbeat that exceeds a timeout are all schema-valid, so a validator without a notion
+of idempotency, persistence, resources, or a temporal budget cannot see them. (A naive
+count-of-problems metric would appear to ``detect'' many of these---the injected retry's
+float \texttt{IntervalSeconds} once tripped statelint's integer pedantry, a removed
+\texttt{Catch} orphans its handler state---but none of those complaints is the analysis
+in question, so we do not credit them.) In the wild the asymmetry is starker still:
+statelint flags 113/193 workflows with 499 problems, \textbf{410 of them} schema-shape
+nits (e.g.\ \texttt{BackoffRate}/\texttt{IntervalSeconds} number typing) and none
+touching the six semantic classes, whereas \tool{}'s findings are all semantically
+meaningful. \tool{} is thus complementary to and strictly more discriminating than
+schema validation on the properties that motivate it.
 
 \begin{table}[t]
 \centering
-\caption{Mutation study: injected defects detected (delta over baseline).}
-\label{tab:mut}
+\caption{Injected-defect detection over 616 mutants (delta over baseline):
+\tool{} vs.\ \texttt{statelint}. A mutant counts as detected only when the tool emits
+a new problem naming the injected fault.}
+\label{tab:baseline}
 \setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-Defect class & Check & Applicable & Detected & Recall \\
+Defect class & Check & Applicable & \tool{} & \texttt{statelint} \\
 \midrule
-Broken data binding & \code{SC1003} & 141 & 141 & 100\% \\
-Unsafe retry & \code{SC3001} & 103 & 103 & 100\% \\
-Missing compensation & \code{SC4001} & 19 & 19 & 100\% \\
-Dangling transition & \code{SC0002} & 166 & 166 & 100\% \\
+Dangling transition       & \code{SC0002} & 166 & 166 (100\%) & 166 (100\%) \\
+Broken data binding       & \code{SC1003} & 141 & 141 (100\%) & 140 (99\%) \\
+Unsafe retry              & \code{SC3001} & 103 & 103 (100\%) & \textbf{0 (0\%)} \\
+Missing compensation      & \code{SC4001} & 19  & 19 (100\%)  & \textbf{0 (0\%)} \\
+Concurrency interference  & \code{SC5001} & 21  & 21 (100\%)  & \textbf{0 (0\%)} \\
+Temporal (heartbeat/timeout) & \code{SC6003} & 166 & 166 (100\%) & \textbf{0 (0\%)} \\
 \midrule
-\textbf{Total} & & \textbf{429} & \textbf{429} & \textbf{100\%} \\
+\textbf{Total}            &               & \textbf{616} & \textbf{616 (100\%)} & \textbf{306 (50\%)} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\subsection{Data-flow provenance: soundness, power, and reach (RQ1/RQ2)}
+\label{sec:eval:dataflow}
+
+The data-flow analysis (Section~\ref{sec:approach:dataflow}) is the paper's central new
+check, and its claim is \emph{soundness}---no false positives---so we evaluate it on its
+own terms. \emph{Precision.} Run over all 193 unmodified workflows, \code{SC1101} fires
+\textbf{zero} times. These are mostly correct sample workflows, and the analysis is
+conservative by construction; firing on none of them is the expected, desired outcome and
+empirically corroborates the soundness statement of Section~\ref{sec:approach:dataflow}.
+\emph{Independent oracle.} To validate soundness beyond the absence of findings, we
+cross-check with a per-path \emph{execution oracle} (\texttt{stepcheck oracle}): a second
+interpreter that shares no code with the analysis, enumerates the concrete document along
+every acyclic path to a state, and confirms a flagged field is genuinely absent on all of
+them. Over the \textbf{84} injected missing-field defects the typed tier detects (below),
+the oracle confirms \emph{every one} absent on all reaching paths with \textbf{zero}
+counterexamples---agreement between two independent algorithms, which is strong evidence
+the transfer functions and join are sound.
+\emph{Power.} That the check is not vacuous we show on worked demonstrators (released in
+the corpus). On a \emph{native} example---no annotations---where a \texttt{Pass} builds
+\texttt{\{order:\{orderId,amount\}\}} and a later task reads \texttt{\$.order.total},
+\tool{} reports \code{SC1101} on raw \asl{}; \texttt{statelint} and \texttt{asl-validator}
+accept it (the path is valid). On a \emph{typed} example with a three-field input schema,
+it reports two \code{SC1101}: a schema miss (\texttt{\$.total} for \texttt{amount}) and a
+\emph{flow-sensitive} miss---\texttt{\$.reservation.reservationCode} where an upstream
+\texttt{ResultSelector}/\texttt{ResultPath} merge produced \texttt{reservationId}---a
+defect an adjacent-task field-subset check cannot see because the field is created two
+states earlier. \emph{Reach.} To measure detection at corpus scale we run the typed tier:
+each workflow's start document is seeded as a closed record of the top-level fields it
+references, and we inject a missing-field defect per workflow (redirecting a reference to
+an absent field). \tool{} detects \textbf{84 of 126 (67\%)}; the undetected third are
+references that sit \emph{downstream of an opaque task result}, where the document shape
+has soundly collapsed to $\top$ and no missing-field claim is possible. This number is
+therefore not a reliability gap but a measurement of ASL's intrinsic opacity: roughly
+two-thirds of field references on real workflows are statically recoverable, and the
+remainder are exactly what richer typed outputs (a \texttt{ResultSelector}, or CNCF's
+declared output schemas, Section~\ref{sec:eval:cncf}) push back. The baseline produces no
+spurious \code{SC1101} under the closed-world seed either, so the typed tier inherits the
+native tier's precision.
+
+\subsection{Real defects in the wild (RQ1)}
+\label{sec:eval:realbugs}
+
+The mutation study measures reliability on \emph{injected} defects; to complement it with
+\emph{independently}-introduced ones, we mined fix-commit pairs from public Step Functions
+repositories (\texttt{eval/mine\_realbugs.js}: commits whose message looks like a fix and
+whose diff edits an \asl{} definition; we extract the file \emph{before} and \emph{after}
+the commit) and replayed \tool{} on each with \texttt{stepcheck eval-pairs}. On \textbf{7 of
+39} mined pairs \tool{} reports a defect on the pre-fix version that the fix removes; manual
+adjudication confirms \textbf{6} as genuine defects (the seventh is a \emph{count artifact}
+---the fix deleted the flagged task rather than adding compensation---which we do not
+credit). The six span five repositories (one an official AWS sample):
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item \textbf{\code{SC1101}} (\texttt{aws-batch-runtime-monitoring}): a task reads
+        \texttt{\$.Execution.Input}---a single-\texttt{\$} path selecting a \emph{document}
+        field no state produces, where the author meant the context object
+        \texttt{\$\$.Execution.Input}; the fix routes the value through a real field.
+  \item \textbf{\code{SC1101}} (\texttt{serverless-ai-fitness}): two tasks read
+        \texttt{\$.profile.Item}/\texttt{\$.userId}, fields not produced at those states;
+        the fix refactors the user-data flow onto produced fields.
+  \item \textbf{\code{SC1110}} (\texttt{serverless-ai-fitness}): a \texttt{Choice} guards on
+        \texttt{\$.profile.subscription.level}, a field never produced---so the subscriber
+        branch is unreachable and subscribers were never routed; the fix corrects the path.
+        Our path-sensitive dead-guard check thus finds a real \emph{logic} bug.
+  \item \textbf{\code{SC6001}} (\texttt{leave-management}): a callback task has no
+        \texttt{TimeoutSeconds}/\texttt{HeartbeatSeconds} and can hang indefinitely; the fix
+        adds \texttt{TimeoutSeconds}.
+  \item \textbf{\code{SC0002}} (\texttt{airway-shipment-orchestrator}): a transition targets
+        an undefined state; the fix adds it.
+  \item \textbf{\code{SC0003}/\code{SC0004}/\code{SC0005}} (\texttt{video-translation}): a
+        state declares \texttt{"End": "True"}---the string, not the boolean---so it is not
+        recognised as terminal, leaving a dead-end and unreachable states; the fix sets
+        \texttt{"End": true}.
+\end{itemize}
+\textbf{Four of the six---the \code{SC1101}, \code{SC1110}, and \code{SC6001} catches---are
+in classes no schema validator can express}; the other two are structural (a dangling
+transition and a string-typed \texttt{End}) that \texttt{statelint} would also reject. On
+the remaining 32 pairs---predominantly value/config corrections (a bucket name, an API
+endpoint, a parameter) outside \tool's remit---it reports no fix-removed defect, and the
+flagged code is \emph{absent} from every post-fix version (no residual false positive). This
+is a genuine in-the-wild result on the \emph{deployed} artifact: the centrepiece provenance
+analysis, the new dead-guard check, and the temporal and structural checks each catch a
+real, independently-fixed defect. We release the miner and the adjudicated benchmark
+(\texttt{corpus/realbugs/}) so it can be grown.
+
 \subsection{Inference accuracy (RQ2)}
 \label{sec:eval:infer}
 
-The semantic checks depend on recovering idempotency and persistence. We hand-labelled
-a gold standard of \textbf{44 tasks} across 10 workflows (spanning a Saga, an
-inventory domain, account vending, data quality, and text processing), labelling each
-task by its true operational semantics, and compared the inference to it
-(Table~\ref{tab:infer}). The heuristic abstains on $\sim$20\% of tasks (unconventional
-verbs such as \emph{confirm}, \emph{audit}, \emph{aggregate}); on the tasks it does
-classify it reaches \textbf{82.9\%} accuracy for idempotency and \textbf{91.4\%} for
-persistence (Fig.~\ref{fig:eval}c). Its errors are instructive and bounded: \emph{cancel} operations
-(idempotent in effect) are flagged non-idempotent, and a \emph{refund} compensator is
-flagged persistent. Because inference only supplies \emph{defaults}, a one-line
-annotation corrects any such case, and all inferred findings are warnings. This
-answers RQ2: useful semantics are recovered at zero authoring cost, with residual
-error made visible and cheaply correctable.
+The semantic checks depend on recovering idempotency and persistence, so we measure the
+heuristic against a \emph{human} gold standard of \textbf{147 tasks across 23 workflows}
+---spanning Sagas, an inventory domain, account vending, security automation, media/AI
+pipelines, CQRS, data migration, and more--- labelled by each task's true operational
+semantics (the annotators confidently label 137; the rest are abstentions). To guard
+against labeller bias, the 13 workflows added in this revision were labelled by
+\emph{two independent human annotators} under a written rubric and reconciled; agreement
+was perfect (Cohen's $\kappa=1.00$ for \emph{both} idempotency and persistence over the
+116 doubly-labelled tasks), and the original 10 were hand-labelled by an author. We
+release every label, the rubric, and the scoring harness for scrutiny. The heuristic
+abstains on
+$\sim$20\% of tasks (unconventional verbs such as \emph{confirm}, \emph{audit},
+\emph{aggregate}); on the rest it reaches \textbf{87.3\%} accuracy for persistence but
+only \textbf{70.0\%} for idempotency (Table~\ref{tab:infer}). The asymmetry is the
+headline result of this experiment, and it is honest: persistence (which drives the
+compensation check) tracks resource-acquiring verbs well, whereas idempotency is
+genuinely hard from names alone---\emph{cancel}/\emph{release} compensators and
+stable-key writes (a DynamoDB \texttt{PutItem}/\texttt{UpdateItem} keyed by a primary
+key) are idempotent \emph{in effect} but read as writes. That perfect inter-annotator
+agreement ($\kappa=1.00$) coexists with imperfect heuristic accuracy means the truth is
+clear to a human but the names do not carry it. This is precisely why inferred findings are \emph{warnings}: a one-line
+annotation overrides any default, and the residual error is visible, not silent.
+
+\paragraph{Precision of in-the-wild warnings.}
+The gold set lets us measure the precision of the inference-driven warnings of
+Section~\ref{sec:eval:wild} directly: for each warning that lands on a gold-labelled
+task, a finding is a true positive iff the gold label confirms it. Over the 30 gold-%
+covered \code{SC3001}/\code{SC4001} findings, \textbf{18 (60\%)} are true
+positives---\textbf{16/23 (70\%)} for the compensation warnings \code{SC4001}, but only
+\textbf{2/7 (29\%)} for the broad-retry warnings \code{SC3001}, mirroring the weaker
+idempotency inference that drives them; the new effect-aware \code{SC4010} is
+\textbf{6/6 (100\%)} on its gold-covered findings. Every false positive is a compensator
+(\texttt{RefundPayment}, \texttt{CancelFlightReservation}) or an idempotent
+keyed/metadata write---the same patterns above---which is exactly why these are surfaced
+for triage rather than as errors. RQ2 answer: persistence is recovered well and the
+compensation warnings are mostly actionable; idempotency-driven retry warnings are
+noisier and benefit most from a declared annotation.
 
 \begin{table}[t]
 \centering
-\caption{Inference accuracy vs.\ a hand-labelled gold set (44 tasks, 10 workflows).}
+\caption{Inference accuracy vs.\ the human-labelled gold set (23 workflows; two
+independent annotators on the 13 added workflows, Cohen's $\kappa=1.00$; ``Labelled'' is
+tasks with a confident gold label; accuracy is over non-abstained predictions).}
 \label{tab:infer}
 \setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}lrrrrrr@{}}
 \toprule
 Property & Labelled & Predicted & Abstained & Correct & Accuracy & Coverage \\
 \midrule
-Idempotency & 44 & 35 & 9 & 29 & 82.9\% & 79.5\% \\
-Persistence & 44 & 35 & 9 & 32 & 91.4\% & 79.5\% \\
+Idempotency & 137 & 110 & 27 & 77 & 70.0\% & 80.3\% \\
+Persistence & 137 & 110 & 27 & 96 & 87.3\% & 80.3\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -134,68 +281,74 @@ Persistence & 44 & 35 & 9 & 32 & 91.4\% & 79.5\% \\
 \subsection{Verification cost and runtime overhead (RQ3)}
 \label{sec:eval:cost}
 
-Verification is cheap. Averaged over the corpus, the five passes take \textbf{18.7}\,$\mu$s
-per workflow (median 14.9\,$\mu$s, max 111.8\,$\mu$s); the entire 193-workflow corpus
-verifies in \textbf{3.6\,ms}. Because all analysis happens before deployment and the
-output is ordinary \asl{}, the \emph{runtime} overhead introduced by \tool{} is
-\textbf{zero}: the generated workflow executes on the standard Step Functions runtime
-with no added middleware, sidecar, or instrumentation. This distinguishes \tool{}
-from runtime approaches to fault tolerance and transactions~\cite{zhang2020beldi,burckhardt2021durable}.
+Verification is cheap: the eight passes---including the data-flow fixpoint---average
+$\approx$\textbf{39}\,$\mu$s/workflow (median $\approx$25\,$\mu$s, max $\approx$1.1\,ms);
+the whole corpus verifies in $\approx$\textbf{7.5\,ms}. The three new analyses roughly
+doubled the per-workflow cost over the five-pass version yet kept it firmly
+sub-millisecond on all but one workflow. Because all
+analysis is ahead-of-deployment and the output is ordinary \asl{}, the \emph{runtime}
+overhead is \textbf{zero}---no middleware, sidecar, or instrumentation---unlike runtime
+fault-tolerance and transaction approaches~\cite{zhang2020beldi,burckhardt2021durable}.
 
 \subsection{Conciseness and AWS round-trip}
 \label{sec:eval:roundtrip}
 
-The typed DSL is also more concise than the \asl{} it generates: the order workflow
-is 20 declarative DSL statements that expand to a 121-line \asl{} definition while
-additionally encoding five record schemas, a four-edge protocol, and per-task
-idempotency, persistence, and compensation---semantics \asl{} cannot express.
-
-Finally, to confirm the compatibility claim end-to-end, we deployed the DSL-verified
-order workflow to real AWS Step Functions. The emitted \asl{} was deployed
-\emph{unmodified} (only binding \texttt{FunctionName} to a deployed Lambda ARN) as an
-Express state machine and executed synchronously; the execution reached
-\texttt{SUCCEEDED} with the input propagating through all four task steps to the
-terminal state, billed at 500\,ms / 64\,MB. The temporary resources were then removed.
-A verified \tool{} workflow thus runs on the unmodified industrial platform.
+The typed DSL is also concise: 20 declarative statements expand to a 119-line \asl{}
+definition while additionally encoding five schemas, a four-edge protocol, and per-task
+idempotency/persistence/compensation that \asl{} cannot express. To confirm
+compatibility end-to-end, we deployed the DSL-verified order workflow to real AWS Step
+Functions \emph{unmodified} (only binding \texttt{FunctionName} to a Lambda ARN) as an
+Express machine: it reached \texttt{SUCCEEDED}, the input propagating through all four
+steps, billed 500\,ms\,/\,64\,MB; the resources were then torn down. A verified \tool{}
+workflow runs on the unmodified industrial platform.
 
 \subsection{Cross-format generalization: CNCF Serverless Workflow}
 \label{sec:eval:cncf}
 
-To test that the approach generalizes beyond AWS, we added a third frontend for the
-vendor-neutral CNCF Serverless Workflow DSL~\cite{cncfServerlessWorkflow} and ran it on
-\textbf{66} example workflows from the specification's repository. The frontend lowers
-the DSL's tasks (\texttt{call}/\texttt{do}/\texttt{fork}/\texttt{for}/\texttt{switch}/
-\texttt{try}/\texttt{listen}/\dots) to the \emph{same} IR \emph{without changing the IR
-or any analysis pass}, and parses all 66 workflows with no failures. The structural,
-typestate, retry-safety, and compensation analyses apply unchanged; only the
-\asl-specific data-binding checks (\code{SC1001}--\code{SC1003}) stay silent---correctly,
-since the CNCF DSL uses runtime expressions rather than JSONPath. A mutation study on
-this corpus detects every injected defect for which the class has an injection site
-(retry 4/4, structural 9/9); contract- and compensation-class mutations have no sites in
-these mostly single-task feature demos.
-
-Crucially, the CNCF DSL can declare JSON Schemas for task input and output. Where it
-does, the typed contract check (\code{SC1010}) runs at \emph{full precision with no
-inference}: a reordered, schema-annotated order workflow is rejected with three
-\code{SC1010} errors derived directly from the declared schemas (e.g.\ \texttt{shipOrder}
-requires \texttt{paymentId}, which its new predecessor does not produce)---the same
-defect the inference layer only approximates on raw \asl, here established exactly. The
-asymmetry is informative: CNCF makes data contracts explicit, closing that gap natively,
-but---like \asl---leaves idempotency and compensation implicit, so those checks still
-rely on annotation or inference in both ecosystems.
+To test generalization beyond AWS, we added a third frontend for the vendor-neutral
+CNCF Serverless Workflow DSL~\cite{cncfServerlessWorkflow} and ran it on \textbf{66}
+example workflows from the specification's repository. The frontend lowers the DSL's
+tasks (\texttt{call}/\texttt{do}/\texttt{fork}/\texttt{switch}/\texttt{try}/\dots) to the
+\emph{same} IR \emph{without changing the IR or any analysis pass}, and parses all 66
+with no failures. The structural, typestate, retry-safety, compensation, concurrency,
+and temporal analyses apply unchanged; only the \asl-specific JSONPath references the
+data-flow pass mines stay silent---correctly, since CNCF uses runtime expressions, not
+JSONPath, so \code{SC1101} and the binding checks (\code{SC1001}--\code{SC1003}) do not
+fire. A mutation study detects every injected defect with an injection site (retry 4/4,
+structural 9/9, concurrency 1/1, temporal 50/50). Crucially, CNCF can declare JSON
+Schemas, so where it does the typed contract check (\code{SC1010}) runs at \emph{full
+precision with no inference}: a reordered schema-annotated order workflow is rejected with
+three \code{SC1010} errors from the declared schemas---the same defect inference only
+approximates on raw \asl, here exact. The asymmetry is informative: CNCF makes data
+contracts explicit but, like \asl, leaves idempotency and compensation implicit, so those
+checks still rely on annotation or inference in both ecosystems.
 
 \subsection{Threats to validity}
+\label{sec:threats}
 
-\emph{Construct.} The mutation study reports 100\% recall by design: each mutation
-targets a defect within a check's remit, so the result attests to the reliability of
-each check, not to coverage of all possible bugs. We report it alongside the
-in-the-wild findings, which are not constructed. \emph{Internal.} Gold labels for
-idempotency/persistence are judgements; we documented our labelling criteria and
-release the labels for scrutiny, and the contested cases (cancel, refund) are exactly
-where the paper claims inference is imperfect. \emph{External.} The corpus is drawn
+\emph{Construct.} The mutation study reports 100\% recall \emph{by design}: each
+mutation targets a defect within a check's remit, so the result attests to the
+reliability of each check on its own defect class, not to coverage of all possible
+bugs---and we headline it only with that scope. We report it alongside the in-the-wild
+findings, which are not constructed. \emph{Internal (gold labels).} The idempotency/persistence gold labels are human
+judgements; the 13 workflows added in this revision were labelled by two independent
+annotators under a written rubric with perfect agreement ($\kappa=1.00$ for both
+properties), the original 10 were hand-labelled by an author, and we release all labels,
+the rubric, and the scoring harness. The contested cases (cancel, refund, keyed writes)
+are exactly where the heuristic errs against the human labels, and we report the
+resulting warning precision rather than hide it. \emph{External.} The corpus is drawn
 from AWS sample repositories, which may over-represent didactic workflows; we mitigate
 this by taking \emph{all} parseable workflows rather than a curated subset, yielding a
-realistic spread of sizes and features. \emph{Soundness.} The native contract checks
-are conservative (they flag only definite faults); typestate and typed-contract
-precision depend on annotation quality, which is why \tool{} reports inferred findings
-as warnings.
+realistic spread of sizes and features. \emph{Soundness.} The data-flow and structural
+checks are conservative (they flag only definite faults), corroborated by zero
+\code{SC1101} false positives on the corpus; typestate and typed-contract precision
+depend on annotation quality, which is why \tool{} reports inferred findings as
+warnings. The concurrency and temporal-budget analyses are \emph{warnings}: the
+concurrency check is deliberately conservative (only last-writer-wins overwrites, never
+commuting or item-keyed writes), which is why it raises zero in-the-wild false positives
+while still detecting every injected race; a missing callback timeout (\code{SC6001})
+may occasionally be acceptable for a short-lived task, so it too prompts review rather
+than asserting a bug. The budget check \code{SC6002} did not fire in the wild (no corpus
+workflow declares a machine timeout tight enough to be overrun); we keep it as a
+defensive check and leave a labelled-precision study of the warning classes to future
+work.

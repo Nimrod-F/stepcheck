@@ -87,6 +87,9 @@ Final count: **44 references** (40 citable works + 4 official web resources).
 ### Official web resources (cited as @misc with accessed date 2026-06-17)
 awsStepFunctions, cncfServerlessWorkflow, temporal, cadence — standard,
 stable documentation/spec URLs. Included per task requirement.
+awsStatelint — AWS Labs `statelint` GitHub repo (Apache-2.0), the reference
+ASL validator used as the evaluation baseline (Section 6); v0.8.0 installed
+from RubyGems and run over the corpus + mutants. Added 2026-06-19.
 
 ---
 
@@ -139,3 +142,16 @@ None. Every candidate either (a) verified to a correct identifier, (b) had its
 wrong identifier corrected to a verified one, or (c) was deliberately dropped for
 relevance/quality/redundancy (with the underlying paper's real status noted
 above). No citation in the final `references.bib` is unverified.
+
+---
+
+## Addendum 2026-06-19 (data-flow / concurrency / temporal revision)
+
+The paper was extended with a sound data-flow analysis (abstract interpretation) and
+concurrency/temporal analyses; the title changed accordingly. Two references were
+added (BibTeX still exit 0):
+
+| Cite-key | Identifier | Note |
+|---|---|---|
+| cousot1977 | doi:10.1145/512950.512973 | VERIFIED — Cousot & Cousot, "Abstract Interpretation", POPL 1977, pp. 238-252; the canonical reference for the data-flow analysis framing. |
+| soethout2019psac | arXiv:1908.05940 / Programming Journal 4(1), 2020 | VERIFIED — same real paper previously logged as `soethout2019atomic` (then trimmed); re-added to ground the concurrency-interference related work. Title: "Path-Sensitive Atomic Commit", Soethout, van der Storm, Vinju. |

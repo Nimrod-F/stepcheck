@@ -56,8 +56,8 @@
 
 \begin{document}
 
-\title{Safe Serverless Workflow Orchestration through\\ Typestate Verification, Retry Safety, and\\ Compensation Checking}
-\titlerunning{Safe Serverless Workflow Orchestration}
+\title{Sound Data-Flow Verification for Safe\\ Serverless Workflow Orchestration:\\ Provenance, Typestate, Concurrency, and Compensation}
+\titlerunning{Sound Data-Flow Verification for Serverless Workflows}
 
 \author{Anonymous Author(s)}
 \authorrunning{Anonymous}
@@ -69,30 +69,56 @@
 Serverless workflow orchestration platforms such as AWS Step Functions coordinate
 fleets of functions and managed services, but their workflows are written as
 untyped JSON state machines (the Amazon States Language, \asl) whose correctness is
-checked only at run time. Incompatible task interfaces, out-of-order business
-transitions, unsafe retries of non-idempotent operations, and missing
-compensations therefore surface as production incidents rather than build errors.
-We present \tool, a static verifier that brings four complementary checks
----data-contract compatibility, typestate (business-protocol) conformance, retry
-safety, and Saga compensation completeness--- to workflows \emph{before}
-deployment, and compiles verified workflows back to executable \asl{}. Because
-real \asl{} omits the semantics these checks need (task types, idempotency,
-compensation), \tool{} pairs sound native analyses with a lightweight annotation
-layer whose defaults are \emph{inferred} from task names and resource bindings,
-so existing workflows can be analysed with zero up-front effort and refined
-incrementally. \tool{} is implemented in Rust as a modular frontend/pass pipeline
-(2.6k LOC) and evaluated on a corpus of \textbf{193} real Step Functions
-workflows mined from public AWS repositories. The native checks flag genuine
-defects in the wild; a mutation study injecting 429 defects of four classes is
-detected with 100\% recall; name-based inference reaches 83--91\% accuracy
-against a hand-labelled gold set; verification costs 19\,$\mu$s per workflow on
-average; a verified workflow deploys and executes unmodified on AWS Step
-Functions with zero runtime overhead; and the architecture generalizes to a second
-workflow language (CNCF Serverless Workflow) with no change to the analyses.
+checked only at run time. The validators developers have today---\texttt{statelint},
+\texttt{asl-validator}, and AWS's own \texttt{ValidateStateMachineDefinition}---check
+JSONPath \emph{syntax}, not whether the field a path names can ever have been
+\emph{produced}, whether tasks run in a valid business order, whether a retried
+operation is safe to repeat, whether concurrent branches contend on a resource, or
+whether a retry can complete within its timeout. We present \tool, a static verifier
+whose centrepiece is, to our knowledge, the first \emph{sound}, flow-sensitive
+\emph{shape}-level data-flow (field-provenance) analysis for a deployed serverless
+workflow language: an abstract interpretation of the \asl{} I/O-processing pipeline
+over a may-present lattice of document shapes that reports a missing-field reference
+only when it is guaranteed to fail at run time. We prove this no-false-positive
+property as a soundness theorem; it recovers the classic ``\texttt{amount} vs.\
+\texttt{total}'' contract bug with zero annotations. Where the data-flow-anomaly
+checkers studied for abstract business-process models reason over coarse
+create/read element abstractions of hand-built nets, our analysis tracks concrete
+nested JSON document shapes and runs on---and recompiles to---the real deployed
+artifact; cast in service terms, its typed tier is a sound static
+\emph{consumer-driven-contract} check across orchestrated services.
+Around it \tool{} adds seven further checks---structural well-formedness, typed
+contracts, typestate, retry-safety, \emph{concurrency-interference},
+\emph{retry/timeout-budget}, and Saga-compensation---two of them, concurrency and
+temporal budget, addressing classes no \asl{} tool reasons about. We are deliberate
+about \emph{which} checks are sound: only the data-flow and structural analyses carry
+a no-false-positive guarantee, while the semantic checks (typestate, retry,
+compensation) and the concurrency/temporal checks are conservative, annotation- or
+heuristic-driven \emph{warnings}. Because raw \asl{} omits task semantics, \tool{} pairs the sound
+native analyses with a lightweight annotation layer whose defaults are \emph{inferred}
+from naming and resource conventions, so existing workflows are analysed at zero
+up-front cost and refined incrementally. Implemented in Rust as a modular
+frontend/pass pipeline (4.4k LOC, eight passes), \tool{} is evaluated on \textbf{193}
+real Step Functions workflows: the sound data-flow analysis fires zero false
+positives in the wild (corroborating its soundness theorem) and the conservative
+concurrency analysis likewise fires none; the temporal analysis surfaces 33
+unbounded-callback defects; on independently mined fix-commit pairs from public
+repositories \tool{} catches \textbf{six genuine defects} the commits fixed (missing-field,
+dead-guard, unbounded-callback, and malformed-structure bugs across five real
+repositories, four in classes no validator can express); and a
+\textbf{616}-mutant study detects every injected defect
+\emph{in the six classes it targets} (\textbf{100\%} recall on those classes)---where the
+\texttt{statelint} validator catches none of the
+unsafe retries, missing compensations, concurrency, or temporal defects. Inference
+recovers persistence at 87\% and idempotency at 70\% against a human-labelled
+gold set (two independent annotators, $\kappa=1.00$), so semantic findings are surfaced as warnings; verification costs
+$\approx$39\,$\mu$s per workflow; a verified workflow deploys and runs unmodified on
+AWS Step Functions with zero runtime overhead; and the architecture generalizes to a
+second workflow language (CNCF Serverless Workflow) with no change to the analyses.
 
-\keywords{Serverless computing \and Workflow orchestration \and AWS Step Functions
-\and Static verification \and Typestate \and Saga transactions \and Domain-specific
-languages.}
+\keywords{Serverless computing \and Service orchestration \and Workflow orchestration
+\and AWS Step Functions \and Static verification \and Data-flow analysis \and Abstract
+interpretation \and Consumer-driven contracts \and Typestate \and Saga transactions.}
 \end{abstract}
 
 \input{sections/intro}

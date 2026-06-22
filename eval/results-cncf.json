@@ -35,12 +35,24 @@
       "applicable": 9,
       "detected": 9,
       "recall": 1.0
+    },
+    "Concurrency": {
+      "expected_code": "SC5001",
+      "applicable": 1,
+      "detected": 1,
+      "recall": 1.0
+    },
+    "Temporal": {
+      "expected_code": "SC6003",
+      "applicable": 50,
+      "detected": 50,
+      "recall": 1.0
     }
   },
   "timing_us": {
-    "mean": 3.8636363636363633,
-    "median": 2.1,
-    "max": 39.4,
-    "total_ms": 0.255
+    "mean": 10.918181818181818,
+    "median": 8.1,
+    "max": 70.0,
+    "total_ms": 0.7206
   }
 }

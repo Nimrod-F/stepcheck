@@ -9,9 +9,12 @@ use crate::diag::DiagnosticSink;
 use crate::ir::Workflow;
 
 pub mod compensation;
+pub mod concurrency;
 pub mod contract;
+pub mod dataflow;
 pub mod retry;
 pub mod structural;
+pub mod temporal;
 pub mod typestate;
 
 /// A single static analysis over the workflow IR.
@@ -28,10 +31,13 @@ pub trait Pass {
 pub fn default_pipeline() -> Vec<Box<dyn Pass>> {
     vec![
         Box::new(structural::StructuralPass),
+        Box::new(dataflow::DataFlowPass),
         Box::new(contract::ContractPass),
         Box::new(typestate::TypestatePass),
         Box::new(retry::RetrySafetyPass),
         Box::new(compensation::CompensationPass),
+        Box::new(concurrency::ConcurrencyPass),
+        Box::new(temporal::TemporalPass),
     ]
 }
 

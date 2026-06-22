@@ -1,0 +1,29 @@
+{
+  "Comment": "Typed-tier demonstrator. With a declared input schema the start document is a closed record; the analysis tracks fields flow-sensitively through the ResultSelector/ResultPath merge. Here every reference resolves, so StepCheck is silent.",
+  "StartAt": "ReserveInventory",
+  "States": {
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ReserveInventory",
+        "Payload": { "orderId.$": "$.orderId" }
+      },
+      "ResultSelector": { "reservationId.$": "$.Payload.id" },
+      "ResultPath": "$.reservation",
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "ChargeCard",
+        "Payload": {
+          "amount.$": "$.amount",
+          "reservation.$": "$.reservation.reservationId"
+        }
+      },
+      "End": true
+    }
+  }
+}

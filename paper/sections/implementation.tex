@@ -2,7 +2,7 @@
 \label{sec:impl}
 
 \tool{} is implemented in Rust as a single command-line tool, \texttt{stepcheck}
-(2{,}359 lines; Table~\ref{tab:loc}). We chose Rust deliberately: a standalone
+(4{,}394 lines). We chose Rust deliberately: a standalone
 analyzer with a \texttt{serde}-based parser is what makes it possible to ingest the
 \emph{existing} \asl{} JSON found in real repositories ---rather than only workflows
 authored in a new embedded language--- and it yields a single dependency-light binary
@@ -10,15 +10,12 @@ with predictable, sub-millisecond performance.
 
 \subsection{A modular frontend/pass pipeline}
 
-The architecture's extensibility rests on two traits (Listing~\ref{lst:traits}). A
-\texttt{Frontend} lowers a surface syntax to the workflow IR; a \texttt{Pass} reads
-only the IR and writes diagnostics. Adding an input format is a new \texttt{Frontend};
-adding a check is a new \texttt{Pass}; everything else is unchanged. We exercised this
-directly: the tool ships three frontends---the typed DSL, raw \asl, and the CNCF
-Serverless Workflow DSL~\cite{cncfServerlessWorkflow}---and the last was added
-\emph{without changing the IR or any analysis pass}
-(Section~\ref{sec:eval:cncf}), turning the extensibility claim into a demonstrated
-property.
+Extensibility rests on two traits (Listing~\ref{lst:traits}): a \texttt{Frontend}
+lowers a surface syntax to the IR, a \texttt{Pass} reads only the IR and writes
+diagnostics. Adding an input format is a new \texttt{Frontend}; a check, a new
+\texttt{Pass}. We exercised this directly---the tool ships three frontends (typed DSL,
+raw \asl, CNCF~\cite{cncfServerlessWorkflow}), the last added \emph{without changing the
+IR or any pass} (Section~\ref{sec:eval:cncf}).
 
 \begin{lstlisting}[style=rust,caption={The two extension points.},label={lst:traits}]
 pub trait Frontend { fn load(&self, src: &str) -> Result<Workflow>; }
@@ -31,61 +28,52 @@ pub trait Pass {
 
 \subsection{Components}
 
-\paragraph{Workflow IR.}
-A format-agnostic graph of states (\texttt{Task}, \texttt{Choice}, \texttt{Parallel},
-\texttt{Map}, \texttt{Wait}, \texttt{Pass}, \texttt{Succeed}, \texttt{Fail}) with
-control flow, JSONPath data-flow fields, retry/catch policies, nested sub-machines,
-and a slot for resolved annotations.
-
-\paragraph{\asl{} frontend.}
-To tolerate the diversity of real \asl{}---intrinsic functions, \texttt{.\$}
-parameters, the \texttt{\$\$} context object, SAM \texttt{\$\{\}} placeholders,
-classic \texttt{Iterator} vs.\ distributed \texttt{ItemProcessor}, and recent JSONata
-features--- the frontend lowers from a generic \texttt{serde\_json} value rather than
-rigid structs, so unknown fields never cause a hard failure. It parses all 193 corpus
-workflows without error.
-
-\paragraph{Annotation resolution and inference.}
-Loads a TOML sidecar, resolves schema names to field sets, and fills the remaining
-gaps with the naming/resource heuristic of Section~\ref{sec:approach:infer}.
-
-\paragraph{Passes and diagnostics.}
-The five analyses of Section~\ref{sec:analyses}, plus a diagnostics engine that
-renders findings for a terminal or as JSON.
-
-\paragraph{\asl{} emitter and round-trip.}
-Lowers a verified IR back to \asl{} JSON for deployment. The emitter is the
+The \textbf{workflow IR} is a format-agnostic graph of states
+(\texttt{Task}, \texttt{Choice}, \texttt{Parallel}, \texttt{Map}, \texttt{Wait},
+\texttt{Pass}, \texttt{Succeed}, \texttt{Fail}) with control flow, JSONPath data-flow
+fields, retry/catch policies, nested sub-machines, and a slot for resolved annotations.
+The \textbf{\asl{} frontend} lowers from a generic \texttt{serde\_json} value rather than
+rigid structs---so the diversity of real \asl{} (intrinsics, \texttt{.\$} parameters,
+the \texttt{\$\$} context, SAM \texttt{\$\{\}} placeholders, classic \texttt{Iterator}
+vs.\ distributed \texttt{ItemProcessor}, JSONata) never causes a hard failure---and
+parses all 193 corpus workflows without error. \textbf{Annotation resolution} loads a
+TOML sidecar, resolves schema names to field sets, and fills gaps with the heuristic of
+Section~\ref{sec:approach:infer}. The \textbf{passes and diagnostics} implement the eight
+analyses plus an engine that renders findings for a terminal or as JSON; the data-flow
+pass is the largest at $\approx$400 lines (the shape lattice, transfer functions, and
+control-flow fixpoint), the rest a few dozen lines each. The
+\textbf{\asl{} emitter} lowers a verified IR back to deployable \asl{} JSON; it is the
 DSL frontend's code-generator and the basis of the AWS round-trip
-(Section~\ref{sec:eval}); deploying its output to AWS surfaced ---and we
-fixed--- a real bug where an explicit \texttt{End} was emitted on \texttt{Succeed}/
-\texttt{Fail} states, which Step Functions rejects.
+(Section~\ref{sec:eval})---deploying its output surfaced (and we fixed) a real bug where
+an explicit \texttt{End} was emitted on \texttt{Succeed}/\texttt{Fail} states, which
+Step Functions rejects. The emitter faithfully reproduces control flow, retries,
+catches, and per-state timeouts; it is currently \emph{lossy} for a workflow's pure
+I/O-processing fields (it does not re-emit \texttt{InputPath}/\texttt{OutputPath}/%
+\texttt{ResultSelector} or the machine-level \texttt{TimeoutSeconds}). The round-trip
+deploys a DSL-authored workflow that uses none of those fields, so the deployed machine
+is behaviourally equivalent; full-fidelity emission for arbitrary ingested \asl{} is a
+small extension we note rather than claim.
+
+\paragraph{Execution oracle.}
+An independent \emph{execution oracle} (\texttt{concrete.rs}) re-interprets a workflow
+concretely---enumerating the document along each acyclic path, with opaque task results
+modelled explicitly---and cross-checks every data-flow finding against this second,
+code-disjoint implementation (Section~\ref{sec:eval:dataflow}). It witnesses the
+soundness theorem by agreement between two independent algorithms.
 
 \paragraph{CLI and error injection.}
-\texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{stats},
-\texttt{eval}, \texttt{emit}, and \texttt{mutate}. The \texttt{mutate} command injects
-exactly one defect of a chosen class into a workflow (a broken JSONPath binding, a
-broad retry on a non-idempotent task, a removed compensation, or a dangling
-transition) and re-emits deployable \asl{}; it drives the mutation study of
-Section~\ref{sec:eval}.
+\texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{scan},
+\texttt{stats}, \texttt{eval}, \texttt{oracle}, \texttt{eval-pairs}, \texttt{mutate}, and
+\texttt{demo} (the last emits the built-in typed-DSL example to \asl{}). The
+\texttt{eval-pairs} command drives the real-bug benchmark (pre-fix/post-fix replay);
+\texttt{oracle} runs the soundness cross-check above. The \texttt{mutate} command injects exactly one
+defect of a chosen class into a workflow---a broken JSONPath binding, a reference
+redirected to an absent field (data-flow), a broad retry on a non-idempotent task, a
+removed compensation, a dangling transition, two \texttt{Parallel} branches made to
+write one resource, or a heartbeat~$\geq$~timeout---and re-emits deployable \asl{}; it
+drives the mutation study of Section~\ref{sec:eval}.
 
-\begin{table}[t]
-\centering
-\caption{Implementation size (lines of Rust).}
-\label{tab:loc}
-\setlength{\tabcolsep}{6pt}
-\begin{tabular}{@{}lr@{}}
-\toprule
-Component & LOC \\
-\midrule
-Workflow IR & 277 \\
-Frontends (\asl{} parse/emit, typed DSL, CNCF Serverless Workflow) & 664 \\
-Annotations + inference & 251 \\
-Analysis passes (5 + manager) & 650 \\
-Diagnostics & 115 \\
-Mutation engine & 184 \\
-CLI + statistics + evaluation harness & 490 \\
-\midrule
-\textbf{Total} & \textbf{2{,}631} \\
-\bottomrule
-\end{tabular}
-\end{table}
+The \textbf{4{,}394} lines divide as: workflow IR 323; three frontends (\asl{}
+parse/emit, typed DSL, CNCF) 766; annotations\,+\,inference 275; the eight analysis
+passes\,+\,manager 1{,}615; diagnostics 115; the execution oracle 269; mutation engine
+316; and CLI\,+\,statistics\,+\,evaluation\,+\,oracle harness 715.

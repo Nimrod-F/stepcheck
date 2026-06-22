@@ -3,28 +3,40 @@
 
 Serverless workflow orchestration has become a backbone of cloud-native systems, yet
 its workflows are untyped configuration whose correctness is checked only when they
-run. We presented \tool, a static verifier that catches four classes of orchestration
-defect ---contract mismatches, out-of-order business transitions, unsafe retries, and
-missing compensations--- \emph{before} deployment, and compiles verified workflows
-back to executable Amazon States Language. The key to analysing the workflows that
-already exist is a two-layer model: sound native checks that need nothing beyond
+run---and the tooling developers have stops at JSONPath \emph{syntax}. We presented
+\tool, a static verifier whose centrepiece is the first \emph{sound}, shape-level
+data-flow analysis for a deployed serverless workflow language: a flow-sensitive
+abstract interpretation over a may-present lattice of document shapes that catches
+missing-field references with a proved no-false-positive guarantee and no annotations. Around it \tool{} adds seven further checks---%
+structural, typed contracts, typestate, retry safety, concurrency interference,
+retry/timeout budget, and Saga compensation---two of them for classes no \asl{} tool had
+addressed, all compiling back to executable \asl{}. The key to analysing the workflows
+that already exist is a two-layer model: sound native checks that need nothing beyond
 \asl, paired with a lightweight annotation layer whose defaults are inferred from the
 naming and resource conventions that pervade real workflows.
 
-Our evaluation on 193 real Step Functions workflows supports the three research
-questions. \tool{} detects the targeted defect classes (100\% recall over 429
-injected defects) and surfaces genuine issues in unmodified workflows (RQ1); it
-recovers idempotency and persistence at zero authoring cost with 83--91\% accuracy and
-visible, correctable residual error (RQ2); and it verifies a workflow in 19\,$\mu$s on
-average while adding zero runtime overhead, with verified workflows running unmodified
-on real AWS Step Functions (RQ3).
+Our evaluation on 193 real Step Functions workflows (plus 66 CNCF) supports the three
+research questions. \tool{} detects the targeted defect classes (100\% recall over 616
+injected defects) where a standard schema validator detects none of the retry,
+compensation, concurrency, or temporal defects, surfaces 33 unbounded-callback
+defects in unmodified workflows, and catches six genuine defects in mined real-world
+fix commits; the sound data-flow analysis fires zero false
+positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 87\% and idempotency at 70\% accuracy at zero authoring
+cost against a human-labelled gold set (two independent annotators, $\kappa=1.00$;
+Section~\ref{sec:threats})---enough to make the compensation warnings mostly actionable
+(70\% precision for \code{SC4001}, 100\% for the effect-aware \code{SC4010})---all
+surfaced as correctable warnings, and its typed tier
+recovers two-thirds of injected missing-field defects, the remainder being ASL's
+intrinsic opacity (RQ2); and it verifies a workflow in $\approx$39\,$\mu$s while adding
+zero runtime overhead, with verified workflows running unmodified on real AWS Step
+Functions (RQ3).
 
 The broader message mirrors the history of type systems: just as static typing moved
-classes of error from run time to compile time, lightweight static verification can do
-the same for serverless orchestration, on the industrial platforms developers already
-use. Several directions remain. We have already shown the architecture generalizes by
-adding a CNCF Serverless Workflow frontend with no change to the analyses; further
-frontends (SAM, CDK) would widen reach; richer effect and ownership information would sharpen the
-contract and compensation analyses; and a precise data-flow analysis of \texttt{Map}
-and \texttt{Parallel} item contexts would extend native contract checking. We release
-\tool, the corpus, and the evaluation harness to support replication and reuse.
+classes of error from run time to compile time, lightweight static verification---rooted
+in a sound data-flow core---can do the same for serverless orchestration, on the
+platforms developers already use. Future work includes further frontends (SAM, CDK),
+richer effect/ownership information to sharpen the compensation and concurrency analyses,
+a precise element-level shape for \texttt{Map}/\texttt{Parallel} item contexts, and a
+labelled-precision study of the concurrency and temporal warnings. We release \tool, the
+corpus, the gold labels and labelling rubric, and the evaluation harness to support
+replication and reuse, with an anonymized artifact link provided for review.

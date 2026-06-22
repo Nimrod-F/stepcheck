@@ -156,3 +156,39 @@ pub fn order_example(bad: bool) -> (Workflow, Sidecar) {
         .fail("OrderFailed")
         .build()
 }
+
+/// A second, unrelated workflow authored entirely in the DSL: a travel-booking
+/// saga (reserve flight, reserve hotel, charge traveler). `bad == true` charges
+/// the traveler before the hotel is reserved, which the typestate (SC2001) and
+/// typed-contract (SC1010) checks reject. Demonstrates that the DSL is a general
+/// authoring surface, not a single hard-coded example.
+pub fn travel_example(bad: bool) -> (Workflow, Sidecar) {
+    let (after_flight, after_hotel, after_charge) = if bad {
+        // Flight -> Charge -> Hotel -> Done  (charge before the hotel exists)
+        ("ChargeTraveler", "TravelDone", "ReserveHotel")
+    } else {
+        // Flight -> Hotel -> Charge -> Done
+        ("ReserveHotel", "ChargeTraveler", "TravelDone")
+    };
+
+    Builder::new("travel-booking", "ReserveFlight")
+        .schema("TravelRequest", &["customerId", "dates"])
+        .schema("FlightReserved", &["bookingId", "flightId"])
+        .schema("HotelReserved", &["bookingId", "flightId", "hotelId"])
+        .schema("TravelPaid", &["bookingId", "paymentId"])
+        .protocol("TravelRequest", "FlightReserved")
+        .protocol("FlightReserved", "HotelReserved")
+        .protocol("HotelReserved", "TravelPaid")
+        // forward tasks
+        .task("ReserveFlight", "TravelRequest", "FlightReserved", false, true, Some("CancelFlight"), Some(after_flight), Some("CancelFlight"))
+        .task("ReserveHotel", "FlightReserved", "HotelReserved", false, true, Some("CancelHotel"), Some(after_hotel), Some("CancelHotel"))
+        .task("ChargeTraveler", "HotelReserved", "TravelPaid", false, true, Some("RefundTraveler"), Some(after_charge), Some("RefundTraveler"))
+        // compensators
+        .compensator("CancelFlight", "TravelFailed")
+        .compensator("CancelHotel", "TravelFailed")
+        .compensator("RefundTraveler", "TravelFailed")
+        // terminals
+        .succeed("TravelDone")
+        .fail("TravelFailed")
+        .build()
+}

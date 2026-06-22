@@ -1,0 +1,58 @@
+{
+  "_README": "Adjudicated real-bug benchmark: pre-fix/post-fix ASL pairs mined from public Step Functions repos (eval/mine_realbugs.js). A catch counts only when StepCheck flags a defect on the pre-fix version that the fix genuinely resolves (not a count drop from deleting the flagged state). Run: stepcheck eval-pairs corpus/realbugs --infer.",
+  "mined_pairs": 39,
+  "flagged_by_stepcheck": 7,
+  "confirmed_genuine": 6,
+  "rejected_as_artifact": 1,
+  "confirmed_real_bugs": [
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-123d1d4-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "code": "SC1101", "differentiated": true,
+      "bug": "Reads '$.Execution.Input' (single '$' selects a document field 'Execution' no state produces; the execution input is the context object '$$.Execution.Input'). The '.$' read fails at run time.",
+      "fix": "Adds 'OriginalEvent.$': '$' upstream and reads '$.OriginalEvent'."
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-ec868b6-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "code": "SC1101", "differentiated": true,
+      "bug": "Two tasks read '$.profile.Item' and '$.userId', fields not produced at those states.",
+      "fix": "Refactors the user-data flow onto produced fields ($.user, $.user.pk.S)."
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-f2efaaa-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "code": "SC1110", "differentiated": true,
+      "bug": "A Choice guards on '$.profile.subscription.level', a field never produced -> the subscriber branch is unreachable (dead guard); subscribers were never routed.",
+      "fix": "Corrects the guard to the produced path '$.user.subscription.M.level.S'."
+    },
+    {
+      "id": "manikanta5827-leave-management-9672f84-leave-approval-sm",
+      "repo": "manikanta5827/leave-management",
+      "code": "SC6001", "differentiated": true,
+      "bug": "A callback task 'Router' has neither TimeoutSeconds nor HeartbeatSeconds and can wait indefinitely.",
+      "fix": "Adds 'TimeoutSeconds': 60."
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-6f1ef2b-sawbprocessing_step_function",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "code": "SC0002", "differentiated": false,
+      "bug": "A transition targets an undefined state 'GoWithSupplier' (invalid ASL).",
+      "fix": "Adds the missing state."
+    },
+    {
+      "id": "nicktodd-video-translation-stepfunctions-d97e248-video-transcode",
+      "repo": "nicktodd/video-translation-stepfunctions",
+      "code": "SC0003/SC0004/SC0005", "differentiated": false,
+      "bug": "A state declares 'End': 'True' (a STRING, not the boolean true), so it is not recognised as terminal -> dead-end (SC0004), unreachable states (SC0003), and no reachable terminal (SC0005).",
+      "fix": "Sets 'End': true and rewires the missing transitions."
+    }
+  ],
+  "rejected": [
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-97ffd0f-sawbprocessing_step_function",
+      "code": "SC4001",
+      "reason": "SC4001 count dropped only because the fix DELETED a persistent task, not because compensation was added (the post version even introduces a new SC0002). A count decrease, not a resolved defect -> not credited."
+    }
+  ]
+}

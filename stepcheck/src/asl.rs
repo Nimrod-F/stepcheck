@@ -10,14 +10,43 @@ use serde_json::Value;
 
 pub fn parse_str(src: &str, name: &str) -> Result<Workflow> {
     let v: Value = serde_json::from_str(src).context("invalid JSON")?;
-    lower_machine(&v, name)
+    lower_machine(&v, name, QueryLang::JsonPath)
 }
 
 fn s(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(|x| x.as_str()).map(|x| x.to_string())
 }
 
-fn lower_machine(v: &Value, name: &str) -> Result<Workflow> {
+/// Resolve a `QueryLanguage` directive against an inherited default.
+fn query_lang(v: &Value, parent: QueryLang) -> QueryLang {
+    match s(v, "QueryLanguage").as_deref() {
+        Some("JSONata") => QueryLang::JsonAta,
+        Some("JSONPath") => QueryLang::JsonPath,
+        _ => parent,
+    }
+}
+
+/// Whether a state object uses JSONata constructs (`Arguments`/`Output`, or any
+/// `{% … %}` expression), independently of an explicit `QueryLanguage` directive.
+/// Such states reshape their document with expressions we do not model, so the
+/// analysis must treat them opaquely to stay sound.
+fn has_jsonata_constructs(v: &Value) -> bool {
+    if v.get("Arguments").is_some() || v.get("Output").is_some() {
+        return true;
+    }
+    fn scan(v: &Value) -> bool {
+        match v {
+            Value::String(s) => s.contains("{%"),
+            Value::Object(m) => m.values().any(scan),
+            Value::Array(a) => a.iter().any(scan),
+            _ => false,
+        }
+    }
+    scan(v)
+}
+
+fn lower_machine(v: &Value, name: &str, parent_ql: QueryLang) -> Result<Workflow> {
+    let machine_ql = query_lang(v, parent_ql);
     let start_at = s(v, "StartAt").ok_or_else(|| anyhow!("missing StartAt in {name}"))?;
     let states_obj = v
         .get("States")
@@ -26,13 +55,14 @@ fn lower_machine(v: &Value, name: &str) -> Result<Workflow> {
 
     let mut wf = Workflow::new(name, start_at);
     wf.comment = s(v, "Comment");
+    wf.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
     for (sname, sval) in states_obj {
         // A state entry whose value is not an object is malformed (e.g. a
         // top-level `QueryLanguage` directive mistakenly nested in `States`).
         // Keep it as a marked placeholder so structural validation can report
         // it precisely instead of crashing.
         let st = if sval.is_object() {
-            lower_state(sname, sval)
+            lower_state(sname, sval, machine_ql)
                 .with_context(|| format!("while lowering state '{sname}'"))?
         } else {
             State::new(sname.clone(), StateKind::Unknown("<non-object>".into()))
@@ -51,7 +81,7 @@ fn result_path(v: &Value) -> ResultPath {
     }
 }
 
-fn lower_state(name: &str, v: &Value) -> Result<State> {
+fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     let kind = match s(v, "Type").as_deref() {
         Some("Task") => StateKind::Task,
         Some("Choice") => StateKind::Choice,
@@ -66,6 +96,14 @@ fn lower_state(name: &str, v: &Value) -> Result<State> {
     };
 
     let mut st = State::new(name, kind.clone());
+    // Effective query language: explicit directive, else the machine default;
+    // a state using JSONata constructs is treated as JSONata regardless, so the
+    // data-flow analysis stays sound on it.
+    st.query_language = if has_jsonata_constructs(v) {
+        QueryLang::JsonAta
+    } else {
+        query_lang(v, machine_ql)
+    };
     st.comment = s(v, "Comment");
     st.resource = s(v, "Resource");
     st.next = s(v, "Next");
@@ -78,6 +116,12 @@ fn lower_state(name: &str, v: &Value) -> Result<State> {
     st.result = v.get("Result").cloned();
     st.items_path = s(v, "ItemsPath");
     st.default = s(v, "Default");
+    st.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
+    st.heartbeat_seconds = v.get("HeartbeatSeconds").and_then(|x| x.as_f64());
+    st.max_concurrency = v.get("MaxConcurrency").and_then(|x| x.as_i64());
+    // `ItemSelector` (distributed Map) / `Parameters` of a Map describe the
+    // per-item document handed to each iteration.
+    st.item_selector = v.get("ItemSelector").cloned();
 
     // Retry rules
     if let Some(arr) = v.get("Retry").and_then(|x| x.as_array()) {
@@ -118,20 +162,30 @@ fn lower_state(name: &str, v: &Value) -> Result<State> {
     // Map sub-machine: Iterator (classic) or ItemProcessor (distributed/new)
     let sub = v.get("Iterator").or_else(|| v.get("ItemProcessor"));
     if let Some(subv) = sub {
-        let it = lower_machine(subv, &format!("{name}::iterator"))
+        let it = lower_machine(subv, &format!("{name}::iterator"), machine_ql)
             .with_context(|| format!("in Map iterator of '{name}'"))?;
         st.iterator = Some(Box::new(it));
     }
     // Parallel branches
     if let Some(arr) = v.get("Branches").and_then(|x| x.as_array()) {
         for (i, b) in arr.iter().enumerate() {
-            let br = lower_machine(b, &format!("{name}::branch{i}"))
+            let br = lower_machine(b, &format!("{name}::branch{i}"), machine_ql)
                 .with_context(|| format!("in Parallel branch {i} of '{name}'"))?;
             st.branches.push(br);
         }
     }
 
     Ok(st)
+}
+
+/// Emit a duration as an integer when it is whole (ASL `TimeoutSeconds`/
+/// `HeartbeatSeconds` are integer-typed), else as a float.
+fn num(x: f64) -> Value {
+    if x.fract() == 0.0 && x.abs() < 9.0e15 {
+        Value::from(x as i64)
+    } else {
+        Value::from(x)
+    }
 }
 
 fn str_array(v: Option<&Value>) -> Vec<String> {
@@ -201,6 +255,18 @@ fn emit_state(st: &State) -> Value {
     }
     if let Some(d) = &st.default {
         o.insert("Default".into(), Value::String(d.clone()));
+    }
+    if let Some(t) = st.timeout_seconds {
+        o.insert("TimeoutSeconds".into(), num(t));
+    }
+    if let Some(h) = st.heartbeat_seconds {
+        o.insert("HeartbeatSeconds".into(), num(h));
+    }
+    if let Some(mc) = st.max_concurrency {
+        o.insert("MaxConcurrency".into(), Value::from(mc));
+    }
+    if let Some(is) = &st.item_selector {
+        o.insert("ItemSelector".into(), is.clone());
     }
     if let Some(it) = &st.iterator {
         o.insert("Iterator".into(), emit(it));

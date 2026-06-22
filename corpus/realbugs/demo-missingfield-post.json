@@ -1,0 +1,18 @@
+{
+  "Comment": "SYNTHETIC demonstrator (post-fix): reads the field the Pass produced.",
+  "StartAt": "Build",
+  "States": {
+    "Build": {
+      "Type": "Pass",
+      "Result": { "order": { "orderId": "o", "amount": 1 } },
+      "ResultPath": "$",
+      "Next": "Charge"
+    },
+    "Charge": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "charge", "Payload": { "total.$": "$.order.amount" } },
+      "End": true
+    }
+  }
+}

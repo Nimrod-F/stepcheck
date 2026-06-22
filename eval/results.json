@@ -4,14 +4,15 @@
     "total_states": 1355
   },
   "baseline": {
-    "flagged_files": 86,
+    "flagged_files": 95,
     "errors": 1,
-    "warnings": 162,
+    "warnings": 195,
     "code_totals": {
       "SC0007": 9,
       "SC0010": 1,
       "SC3001": 36,
-      "SC4001": 117
+      "SC4001": 117,
+      "SC6001": 33
     }
   },
   "mutation_study": {
@@ -38,12 +39,24 @@
       "applicable": 166,
       "detected": 166,
       "recall": 1.0
+    },
+    "Concurrency": {
+      "expected_code": "SC5001",
+      "applicable": 21,
+      "detected": 21,
+      "recall": 1.0
+    },
+    "Temporal": {
+      "expected_code": "SC6003",
+      "applicable": 166,
+      "detected": 166,
+      "recall": 1.0
     }
   },
   "timing_us": {
-    "mean": 18.6860103626943,
-    "median": 14.9,
-    "max": 111.8,
-    "total_ms": 3.6064
+    "mean": 36.572020725388604,
+    "median": 27.5,
+    "max": 1027.4,
+    "total_ms": 7.0584
   }
 }

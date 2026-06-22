@@ -13,10 +13,10 @@ van~der Aalst, W.M.P.: The application of {P}etri nets to workflow management.
   language). \url{https://docs.aws.amazon.com/step-functions/} (2026), accessed
   2026-06-17
 
-\bibitem{arjona2021triggerflow}
-Arjona, A., Garc{\'\i}a~L{\'o}pez, P., Samp{\'e}, J., Slominski, A., Villard,
-  L.: Triggerflow: Trigger-based orchestration of serverless workflows. Future
-  Generation Computer Systems  (2021), arXiv:2106.00583
+\bibitem{awsStatelint}
+{Amazon Web Services Labs}: statelint: A validator for {Amazon} states language
+  documents. \url{https://github.com/awslabs/statelint} (2024), apache-2.0;
+  v0.8.0. Accessed 2026-06-18
 
 \bibitem{bianculli2007bpel}
 Bianculli, D., Ghezzi, C., Spoletini, P.: A model checking approach to verify
@@ -34,15 +34,6 @@ Burckhardt, S., Gillum, C., Justo, D., Kallas, K., McMahon, C., Meiklejohn,
   C.S.: Durable functions: Semantics for stateful serverless. Proc. ACM
   Program. Lang.  \textbf{5}(OOPSLA) (2021). \doi{10.1145/3485510}
 
-\bibitem{burnay2020restscript}
-Burnay, N., Lopes, A., Vasconcelos, V.T.: {SafeRESTScript}: Statically checking
-  {REST} {API} consumers. arXiv preprint  (2020), arXiv:2007.08048
-
-\bibitem{chang2025sagallm}
-Chang, E.Y., Geng, L.: {SagaLLM}: Context management, validation, and
-  transaction guarantees for multi-agent {LLM} planning. arXiv preprint
-  (2025), arXiv:2503.11951
-
 \bibitem{cncfServerlessWorkflow}
 {Cloud Native Computing Foundation}: Serverless workflow specification.
   \url{https://serverlessworkflow.io/} (2026), accessed 2026-06-17
@@ -51,20 +42,21 @@ Chang, E.Y., Geng, L.: {SagaLLM}: Context management, validation, and
 Colombo, C., Pace, G.J.: Comprehensive monitor-oriented compensation
   programming. arXiv preprint  (2014), arXiv:1404.0849
 
+\bibitem{cousot1977}
+Cousot, P., Cousot, R.: Abstract interpretation: A unified lattice model for
+  static analysis of programs by construction or approximation of fixpoints.
+  In: Proceedings of the 4th ACM SIGACT-SIGPLAN Symposium on Principles of
+  Programming Languages (POPL). pp. 238--252. ACM (1977)
+
 \bibitem{fahndrich2004typestates}
 DeLine, R., F{\"a}hndrich, M.: Typestates for objects. In: European Conf. on
   Object-Oriented Programming (ECOOP). pp. 465--490 (2004).
   \doi{10.1007/978-3-540-24851-4_21}
 
-\bibitem{denielou2012pmpst}
-Deni{\'e}lou, P.M., Yoshida, N., Bejleri, A., Hu, R.: Parameterised multiparty
-  session types. Logical Methods in Computer Science  (2012), arXiv:1208.6483
-
-\bibitem{garciaLopez2018faas}
-Garc{\'\i}a~L{\'o}pez, P., S{\'a}nchez-Artigas, M., Par{\'\i}s, G.,
-  Barcelona~Pons, D., Ruiz~Ollobarren, {\'A}., Arroyo~Pinto, D.: Comparison of
-  {FaaS} orchestration systems. In: IEEE/ACM Int. Conf. on Utility and Cloud
-  Computing Companion (UCC) (2018), arXiv:1807.11248
+\bibitem{ding2023flux}
+Ding, H., Wang, Z., Shen, Z., Chen, R., Chen, H.: Automated verification of
+  idempotence for stateful serverless applications. In: USENIX Symp. on
+  Operating Systems Design and Implementation (OSDI) (2023)
 
 \bibitem{garciaMolina1987sagas}
 Garcia-Molina, H., Salem, K.: Sagas. In: ACM SIGMOD Int. Conf. on Management of
@@ -80,16 +72,22 @@ Kulkarni, V., Reddy, N., Khare, T., Prasad, A.S., Babu, C., Simmhan, Y.:
   Characterizing {FaaS} workflows on public clouds: The good, the bad and the
   ugly. arXiv preprint  (2025), arXiv:2509.23013
 
-\bibitem{li2023dataflower}
-Li, Z., Xu, C., Chen, Q., Zhao, J., Chen, C., Guo, M.: {DataFlower}: Exploiting
-  the data-flow paradigm for serverless workflow orchestration. In: Int. Conf.
-  on Architectural Support for Programming Languages and Operating Systems
-  (ASPLOS) (2023), arXiv:2304.14629
-
 \bibitem{mohammad2025resilient}
 Mohammad, M.: Resilient microservices: A systematic review of recovery
   patterns, strategies, and evaluation frameworks. arXiv preprint  (2025),
   arXiv:2512.16959
+
+\bibitem{moser2009bpel}
+Moser, S., Martens, A., Gorlach, K., Amme, W., Godlinski, A.: Advanced
+  verification of distributed ws-bpel business processes incorporating
+  cssa-based data flow analysis. In: IEEE International Conference on Services
+  Computing (SCC 2007). pp. 98--105 (2007). \doi{10.1109/SCC.2007.22}
+
+\bibitem{petricek2016types}
+Petricek, T., Guerra, G., Syme, D.: Types from data: Making structured data
+  first-class citizens in {F\#}. In: ACM SIGPLAN Conf. on Programming Language
+  Design and Implementation (PLDI). pp. 477--490 (2016).
+  \doi{10.1145/2908080.2908115}
 
 \bibitem{seco2020contracts}
 Seco, J.C., Ferreira, P., Louren{\c{c}}o, H., Ferreira, C., Ferr{\~a}o, L.:
@@ -97,14 +95,36 @@ Seco, J.C., Ferreira, P., Louren{\c{c}}o, H., Ferreira, C., Ferr{\~a}o, L.:
   Science, and Engineering of Programming  \textbf{4}(3) (2020).
   \doi{10.22152/programming-journal.org/2020/4/10}
 
+\bibitem{soethout2019psac}
+Soethout, T., van~der Storm, T., Vinju, J.J.: Path-sensitive atomic commit:
+  Local coordination avoidance for distributed transactions. The Art, Science,
+  and Engineering of Programming  \textbf{4}(1) (2020)
+
+\bibitem{vonstackelberg2014bpmn}
+von Stackelberg, S., Putze, S., M{\"u}lle, J., B{\"o}hm, K.: Detecting
+  data-flow errors in {BPMN} 2.0. Open Journal of Information Systems (OJIS)
+  \textbf{1}(2) (2014), bibliographic details to be re-verified before
+  camera-ready
+
 \bibitem{stromYemini1986typestate}
 Strom, R.E., Yemini, S.: Typestate: A programming language concept for
   enhancing software reliability. IEEE Transactions on Software Engineering
   \textbf{SE-12}(1),  157--171 (1986). \doi{10.1109/TSE.1986.6312929}
 
+\bibitem{sun2006dataflow}
+Sun, S.X., Zhao, J.L., Nunamaker, J.F., Sheng, O.R.L.: Formulating the
+  data-flow perspective for business process management. Information Systems
+  Research  \textbf{17}(4),  374--391 (2006). \doi{10.1287/isre.1060.0105}
+
 \bibitem{temporal}
 {Temporal Technologies}: Temporal: Durable execution and workflow
   orchestration. \url{https://temporal.io/} (2026), accessed 2026-06-17
+
+\bibitem{trcka2009antipatterns}
+Trcka, N., van~der Aalst, W.M.P., Sidorova, N.: Data-flow anti-patterns:
+  Discovering data-flow errors in workflows. In: Int. Conf. on Advanced
+  Information Systems Engineering (CAiSE). LNCS, vol.~5565, pp. 425--439
+  (2009). \doi{10.1007/978-3-642-02144-2_34}
 
 \bibitem{cadence}
 {Uber Technologies}: Cadence: Fault-oblivious stateful workflow orchestration.
@@ -113,12 +133,6 @@ Strom, R.E., Yemini, S.: Typestate: A programming language concept for
 \bibitem{wen2021empirical}
 Wen, J., Liu, Y.: An empirical study on serverless workflow service. arXiv
   preprint  (2021), arXiv:2101.03513
-
-\bibitem{yu2021pheromone}
-Yu, M., Cao, T., Wang, W., Chen, R.: Following the data, not the function:
-  Rethinking function orchestration in serverless computing. In: USENIX Symp.
-  on Networked Systems Design and Implementation (NSDI) (2023),
-  arXiv:2109.13492
 
 \bibitem{zhang2020beldi}
 Zhang, H., Cardoza, A., Chen, P.B., Angel, S., Liu, V.: Fault-tolerant and
