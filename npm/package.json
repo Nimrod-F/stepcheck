@@ -1,6 +1,6 @@
 {
   "name": "@nimrod-f/stepcheck",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Static verifier for AWS Step Functions / Amazon States Language workflows: sound data-flow (field-provenance) analysis plus typed-contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checks. Installs a self-contained native binary.",
   "keywords": [
     "aws",

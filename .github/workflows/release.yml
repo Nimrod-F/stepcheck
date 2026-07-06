@@ -1,12 +1,13 @@
 name: Release
 
 # Cut a release by pushing a version tag, e.g. `git tag v0.1.0 && git push --tags`.
-# This builds a self-contained binary per platform, attaches them to the GitHub
-# release, and (when the corresponding token secret is present) publishes the
-# crate to crates.io and the wrapper package to npm.
+# Each platform build uploads its binary as a workflow artifact; a single release
+# job then attaches all of them to the GitHub release (one writer, no upload race).
+# When the matching token secret is present, the crate is published to crates.io
+# and the wrapper package to npm.
 #
-# Required repository secrets for the publish jobs (both optional; the jobs skip
-# themselves when the secret is empty):
+# Required repository secrets for the publish jobs (both optional; each job skips
+# itself when its secret is empty, and skips a version already on the registry):
 #   CARGO_REGISTRY_TOKEN  -- a crates.io API token (for `cargo publish`)
 #   NPM_TOKEN             -- an npm automation token (for `npm publish`)
 
@@ -47,21 +48,38 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: cp stepcheck/target/${{ matrix.target }}/release/stepcheck.exe "${{ matrix.asset }}"
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: attach binaries to the GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.asset }}
+          files: dist/*
 
   publish-crate:
     name: publish to crates.io
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
     env:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: cargo publish (skips without token)
+      - name: cargo publish (skips without token or if version exists)
         working-directory: stepcheck
         run: |
           if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
@@ -77,7 +95,7 @@ jobs:
 
   publish-npm:
     name: publish to npm
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -87,7 +105,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-      - name: npm publish (skips without token)
+      - name: npm publish (skips without token or if version exists)
         working-directory: npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
