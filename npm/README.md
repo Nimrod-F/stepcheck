@@ -6,9 +6,12 @@ your platform and exposes it as the `stepcheck` command, so a Node-centric CI ca
 add it with one line.
 
 ```bash
-npm install -g stepcheck
+npm install -g @nimrod-f/stepcheck
 stepcheck check workflow.asl.json --infer
 ```
+
+(The package is scoped as `@nimrod-f/stepcheck`; the installed command is still
+`stepcheck`.)
 
 Use it as a build gate: `stepcheck` exits `0` (clean), `1` (errors), or `2`
 (parse failure); add `--deny-warnings` to fail on warnings once a workflow is

@@ -58,10 +58,11 @@ $BIN fixpoint-stats ../corpus/asl ../corpus/cncf > ../eval/fixpoint-stats.json  
 - **Release** (`.github/workflows/release.yml`): pushing a `vX.Y.Z` tag builds a
   self-contained binary per platform, attaches them to the GitHub release, and
   publishes the crate to **crates.io** and the wrapper package to **npm**.
-- **Install**: `cargo install stepcheck` (Rust) or `npm install -g stepcheck` (the
-  `npm/` wrapper downloads the matching prebuilt binary and exposes the `stepcheck`
-  command). Both honour the same exit-code contract, so a Rust- or Node-centric CI
-  adds StepCheck as a build gate with one line.
+- **Install**: `cargo install stepcheck` (Rust) or `npm install -g @nimrod-f/stepcheck`
+  (the `npm/` wrapper downloads the matching prebuilt binary and exposes the `stepcheck`
+  command; the npm package is scoped because the unscoped name collides with an existing
+  package). Both honour the same exit-code contract, so a Rust- or Node-centric CI adds
+  StepCheck as a build gate with one line.
 
 Publishing is gated on two optional repository secrets, `CARGO_REGISTRY_TOKEN` and
 `NPM_TOKEN`; the release jobs skip themselves when a token is absent. The release

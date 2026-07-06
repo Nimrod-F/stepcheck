@@ -68,6 +68,11 @@ jobs:
             echo "CARGO_REGISTRY_TOKEN not set; skipping crates.io publish."
             exit 0
           fi
+          VER=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if curl -s -H "User-Agent: stepcheck-release" "https://crates.io/api/v1/crates/stepcheck/$VER" | grep -q '"num"'; then
+            echo "stepcheck $VER already on crates.io; skipping."
+            exit 0
+          fi
           cargo publish --locked
 
   publish-npm:
@@ -91,5 +96,11 @@ jobs:
             echo "NPM_TOKEN not set; skipping npm publish."
             exit 0
           fi
-          npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+          VER="${GITHUB_REF_NAME#v}"
+          npm version --no-git-tag-version --allow-same-version "$VER"
+          NAME=$(node -p "require('./package.json').name")
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            echo "$NAME@$VER already on npm; skipping."
+            exit 0
+          fi
           npm publish --access public
