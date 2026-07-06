@@ -1,6 +1,6 @@
 {
   "name": "stepcheck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Static verifier for AWS Step Functions / Amazon States Language workflows: sound data-flow (field-provenance) analysis plus typed-contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checks. Installs a self-contained native binary.",
   "keywords": [
     "aws",
