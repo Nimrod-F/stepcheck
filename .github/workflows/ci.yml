@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test:
+    name: build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    defaults:
+      run:
+        working-directory: stepcheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: stepcheck
+      # Gating steps: the tool must build and every test must pass.
+      - name: Build (release, locked)
+        run: cargo build --release --locked
+      - name: Test
+        run: cargo test --release --locked
+      # Advisory steps: report style/lint issues without failing the build.
+      - name: Format check (advisory)
+        run: cargo fmt --check
+        continue-on-error: true
+      - name: Clippy (advisory)
+        run: cargo clippy --release --locked
+        continue-on-error: true

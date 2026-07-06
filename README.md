@@ -26,7 +26,7 @@ task names and resource bindings.
 | `stepcheck/` | the tool, in Rust (3,692 LOC). `src/{ir,asl,cncf,dsl,annot,diag,mutate,main}.rs` and `src/passes/{structural,dataflow,contract,typestate,retry,compensation,concurrency,temporal}.rs` (eight passes). Three frontends (ASL, typed DSL, CNCF Serverless Workflow) lower to one IR; the passes are unchanged across formats. `corpus/dataflow/` holds the data-flow demonstrators. |
 | `corpus/asl/` | 193 real Step Functions workflows mined from public AWS repos. `corpus/manifest.json` records provenance; `corpus/gold-labels.json` is the inference gold set (23 workflows, 147 tasks; new workflows double-labelled, kappa 1.00/0.745). `corpus/dsl/` holds the typed-DSL worked example. |
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second corpus). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
-| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `triage-verdicts.json` + `wf-eval.js` (warning-precision + gold-expansion), `stats.tex` (E1). |
+| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `triage-verdicts.json` + `wf-eval.js` (warning-precision + gold-expansion), `stats.tex` (E1), `fixpoint-stats.json` (data-flow fixpoint round/bound utilisation across both corpora, `fixpoint-stats`). |
 | `infra/` | the AWS round-trip (E7): `deploy_run.sh`, `teardown.sh`, and captured `execution-evidence.json`. |
 | `PLAN.md` | the implementation plan / design rationale. |
 
@@ -47,7 +47,28 @@ $BIN demo order-bad  | $BIN check /dev/stdin --annot ../corpus/dsl/order.sidecar
 $BIN stats ../corpus/asl                 # E1 corpus characterization
 $BIN eval  ../corpus/asl --infer         # E2 in-the-wild + E3 mutation study + E5 timing
 node ../eval/inference_accuracy.js       # E4 inference accuracy vs gold
+$BIN fixpoint-stats ../corpus/asl ../corpus/cncf > ../eval/fixpoint-stats.json  # data-flow fixpoint round/bound utilisation (termination)
 ```
+
+## Continuous integration & packaging
+
+- **CI** (`.github/workflows/ci.yml`): builds and runs the full test suite on Linux,
+  macOS, and Windows on every push and pull request (`cargo build`/`cargo test` gate;
+  `cargo fmt`/`cargo clippy` advisory).
+- **Release** (`.github/workflows/release.yml`): pushing a `vX.Y.Z` tag builds a
+  self-contained binary per platform, attaches them to the GitHub release, and
+  publishes the crate to **crates.io** and the wrapper package to **npm**.
+- **Install**: `cargo install stepcheck` (Rust) or `npm install -g stepcheck` (the
+  `npm/` wrapper downloads the matching prebuilt binary and exposes the `stepcheck`
+  command). Both honour the same exit-code contract, so a Rust- or Node-centric CI
+  adds StepCheck as a build gate with one line.
+
+Publishing is gated on two optional repository secrets, `CARGO_REGISTRY_TOKEN` and
+`NPM_TOKEN`; the release jobs skip themselves when a token is absent. The release
+repository that hosts the downloadable binaries is set in `stepcheck/Cargo.toml`
+(`repository`) and baked into the npm installer (`npm/install.js`); end users can
+override the latter with `STEPCHECK_REPO=owner/repo` only if hosting the binaries
+elsewhere.
 
 ## Headline results (all reproducible)
 

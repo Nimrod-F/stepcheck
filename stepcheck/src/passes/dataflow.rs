@@ -40,8 +40,42 @@ use crate::diag::{Diagnostic, DiagnosticSink};
 use crate::ir::{ResultPath, State, StateKind, Workflow};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 pub struct DataFlowPass;
+
+/// Fixpoint telemetry for one analyzed machine: how many rounds the forward
+/// data-flow iteration took, the finite-height round bound it was allowed
+/// (`|states| * (|keys| + 2) + 2`), whether it converged within that bound, and
+/// the machine's state count. Used by the `fixpoint-stats` eval command to show
+/// how far the iteration stays below its termination bound on a corpus.
+#[derive(Clone, Copy)]
+pub struct FixpointRound {
+    pub rounds: usize,
+    pub bound: usize,
+    pub converged: bool,
+    pub states: usize,
+}
+
+/// Opt-in recorder for [`FixpointRound`]s. Recording is off by default, so normal
+/// verification pays only a single relaxed atomic load per machine; the
+/// `fixpoint-stats` eval command switches it on to measure the round/bound
+/// utilisation behind the termination argument.
+static FP_ON: AtomicBool = AtomicBool::new(false);
+static FP_LOG: Mutex<Vec<FixpointRound>> = Mutex::new(Vec::new());
+
+/// Start recording fixpoint telemetry, discarding any previous capture.
+pub fn fixpoint_record_start() {
+    FP_LOG.lock().unwrap().clear();
+    FP_ON.store(true, Ordering::Relaxed);
+}
+
+/// Stop recording and return everything captured since [`fixpoint_record_start`].
+pub fn fixpoint_record_take() -> Vec<FixpointRound> {
+    FP_ON.store(false, Ordering::Relaxed);
+    std::mem::take(&mut FP_LOG.lock().unwrap())
+}
 
 impl Pass for DataFlowPass {
     fn id(&self) -> &'static str {
@@ -426,6 +460,15 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
         }
     };
 
+    if FP_ON.load(Ordering::Relaxed) {
+        FP_LOG.lock().unwrap().push(FixpointRound {
+            rounds,
+            bound,
+            converged,
+            states: wf.states.len(),
+        });
+    }
+
     // Check references against each state's effective input (only at the fixpoint).
     if converged {
     for (name, st) in &wf.states {
@@ -489,9 +532,10 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
             }
         }
     }
-    } // end `if converged`
-
-    // Recurse into nested machines with the right seed.
+    // Recurse into nested machines with the right seed. Gated on convergence:
+    // when the enclosing machine did not converge its shapes are under-approximate,
+    // so a nested analysis seeded from them could report a false positive; we then
+    // suppress the recursion, exactly as we suppress this machine's own reporting.
     for (name, st) in &wf.states {
         let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
         let eff_in = narrow(&in_shape, &st.input_path);
@@ -505,10 +549,18 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
             analyze_machine(it, item_root, &qualify(scope, &format!("{name}[Map]")), sink);
         }
         for (i, br) in st.branches.iter().enumerate() {
-            // Each Parallel branch receives a copy of the state's effective input.
-            analyze_machine(br, eff_in.clone(), &qualify(scope, &format!("{name}[Branch{i}]")), sink);
+            // Each Parallel branch receives the state's effective input, reshaped
+            // by `Parameters` when present (as ASL constructs the branch payload).
+            // Ignoring Parameters would under-approximate and could raise a
+            // spurious SC1101 inside the branch.
+            let branch_root = match &st.parameters {
+                Some(p) => shape_of_constructor(p),
+                None => eff_in.clone(),
+            };
+            analyze_machine(br, branch_root, &qualify(scope, &format!("{name}[Branch{i}]")), sink);
         }
     }
+    } // end `if converged`
 }
 
 /// Whether satisfying this leaf comparator requires the `Variable` field to be

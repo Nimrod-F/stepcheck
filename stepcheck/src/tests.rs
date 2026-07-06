@@ -198,6 +198,24 @@ fn dataflow_sound_on_whole_jsonata_machine() {
 }
 
 #[test]
+fn dataflow_sound_on_parallel_parameters_seed() {
+    // SOUNDNESS REGRESSION: a Parallel `Parameters` constructs the payload each
+    // branch receives; a branch reads a field that Parameters produces. Seeding the
+    // branch from the pre-Parameters effective input alone would make `$.b` look
+    // definitely-absent — a FALSE POSITIVE. The branch seed must apply Parameters.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"a":1},"ResultPath":"$","Next":"Fan"},
+        "Fan":{"Type":"Parallel","Parameters":{"b.$":"$.a"},"End":true,"Branches":[
+            {"StartAt":"Use","States":{
+                "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                       "Parameters":{"FunctionName":"u","Payload":{"v.$":"$.b"}},"End":true}}}
+        ]}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"),
+        "a Parallel branch field constructed by Parameters must not be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
 fn dataflow_flags_dead_choice_guard() {
     // A Pass builds {a:1}; a Choice tests IsPresent on $.b (never produced) -> the
     // branch can never be taken: a dead guard (SC1110). The IsPresent:true on the
@@ -324,6 +342,41 @@ fn compensation_clean_when_catch_compensates() {
     assert!(!sink.has_code("SC4010"), "a compensating catch must not be flagged: {:#?}", sink.diagnostics);
 }
 
+// ----- downstream-aware compensation (SC4011, declared tier) ----------------
+
+#[test]
+fn compensation_flags_downstream_escape() {
+    // Two persistent steps, each with its OWN declared compensator going straight
+    // to the Fail terminal (no reverse-order chaining). If `Charge` fails after
+    // `Reserve` has committed, `Reserve`'s `Release` is never reached, so the
+    // reservation leaks. SC4001/SC4010 cannot see this (Reserve's own Catch does
+    // reach a compensator); the downstream-aware SC4011 does.
+    let (wf, sc) = dsl::Builder::new("saga", "Reserve")
+        .schema("S0", &["id"])
+        .schema("S1", &["id"])
+        .schema("S2", &["id"])
+        .protocol("S0", "S1")
+        .protocol("S1", "S2")
+        .task("Reserve", "S0", "S1", false, true, Some("Release"), Some("Charge"), Some("Release"))
+        .task("Charge", "S1", "S2", false, true, Some("Refund"), None, Some("Refund"))
+        .compensator("Release", "Failed") // straight to Fail, not chained
+        .compensator("Refund", "Failed")
+        .fail("Failed")
+        .build();
+    let sink = verify(wf, &sc);
+    assert!(sink.has_code("SC4011"), "expected a downstream-compensation escape: {:#?}", sink.diagnostics);
+    assert!(!sink.has_code("SC4001"), "SC4001 must not fire when compensation is declared");
+}
+
+#[test]
+fn compensation_clean_on_chained_saga() {
+    // The order saga wires its compensators as a reverse-order chain, so every
+    // post-commit failure unwinds all prior effects: no SC4011.
+    let (wf, sc) = dsl::order_example(false);
+    let sink = verify(wf, &sc);
+    assert!(!sink.has_code("SC4011"), "a complete reverse-order Saga must not be flagged: {:#?}", sink.diagnostics);
+}
+
 // ----- temporal analysis (SC6001/SC6003) ------------------------------------
 
 #[test]
@@ -345,4 +398,26 @@ fn structural_pass_flags_dangling_transition() {
     let mut sink = diag::DiagnosticSink::new();
     passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
     assert!(sink.has_code("SC0002"), "expected a dangling-transition error");
+}
+
+// ----- data-flow fixpoint telemetry (fixpoint-stats command) ----------------
+
+#[test]
+fn fixpoint_recorder_captures_converged_rounds() {
+    // A back-edge (CheckStock -> WaitRestock -> CheckStock) forces the forward
+    // data-flow fixpoint to take more than one round. The opt-in recorder must
+    // capture each analyzed machine, every one must converge within its bound,
+    // and no observed round count may exceed the finite-height bound.
+    let src = r#"{"StartAt":"CheckStock","States":{
+        "CheckStock":{"Type":"Choice","Choices":[{"Variable":"$.ok","IsPresent":true,"Next":"Done"}],"Default":"WaitRestock"},
+        "WaitRestock":{"Type":"Wait","Seconds":1,"Next":"CheckStock"},
+        "Done":{"Type":"Succeed"}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    passes::dataflow::fixpoint_record_start();
+    let mut sink = diag::DiagnosticSink::new();
+    passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
+    let rec = passes::dataflow::fixpoint_record_take();
+    assert!(!rec.is_empty(), "recorder should capture at least one machine");
+    assert!(rec.iter().all(|r| r.converged), "every machine must converge within its bound");
+    assert!(rec.iter().all(|r| r.rounds <= r.bound), "rounds must not exceed the bound");
 }

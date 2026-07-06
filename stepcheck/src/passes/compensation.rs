@@ -9,7 +9,7 @@
 use super::retry::{qualify, severity};
 use super::Pass;
 use crate::diag::{Diagnostic, DiagnosticSink};
-use crate::ir::{State, Workflow};
+use crate::ir::{State, StateKind, Workflow};
 
 pub struct CompensationPass;
 
@@ -80,6 +80,35 @@ fn run_machine(wf: &Workflow, scope: &str, sink: &mut DiagnosticSink) {
                     ),
                 );
             }
+
+            // SC4011 (declared tier, sound + complete): downstream-aware Saga
+            // completeness. A persistent task with a *declared* compensator `C`
+            // is Saga-complete only if every failure that can occur *after it
+            // commits* routes into the compensation chain that reaches `C`. The
+            // task's own Catch (SC4001/SC4010) is necessary but not sufficient: a
+            // later step (e.g.\ a shipping or approval step) can fail with this
+            // task's effect already committed, and unless that step's failure also
+            // reaches `C` the effect leaks. We decide this as control-flow
+            // reachability over the post-commit region; inference never supplies a
+            // compensator, so this fires only on declared annotations.
+            if let Some(comp) = &st.anno.compensation {
+                if wf.states.contains_key(comp) {
+                    if let Some(escape) = downstream_escape(wf, name, comp) {
+                        sink.push(
+                            Diagnostic::error(
+                                "SC4011",
+                                &qname,
+                                format!(
+                                    "persistent task '{name}' declares compensation '{comp}', but a failure at '{escape}' after it commits never reaches '{comp}' (its effect is left uncompensated)"
+                                ),
+                            )
+                            .with_note(
+                                "route that downstream failure into the reverse-order compensation chain that reaches the declared compensator",
+                            ),
+                        );
+                    }
+                }
+            }
         }
         recurse(st, scope, sink);
     }
@@ -104,6 +133,92 @@ fn reaches_compensator(wf: &Workflow, start: &str) -> bool {
         }
     }
     false
+}
+
+/// The states that execute *after* `start` commits, reached via *normal* control
+/// flow (the post-commit region). These are the states whose failure must be
+/// compensated for `start`. The compensator `comp` is never on a normal path from
+/// `start`, but we exclude it defensively so the region is purely forward work.
+fn post_commit_region(wf: &Workflow, start: &str, comp: &str) -> Vec<String> {
+    use std::collections::{HashSet, VecDeque};
+    let mut seen = HashSet::new();
+    let mut out = Vec::new();
+    let mut q: VecDeque<String> = wf
+        .states
+        .get(start)
+        .map(|s| s.normal_successors().iter().map(|x| x.to_string()).collect())
+        .unwrap_or_default();
+    while let Some(cur) = q.pop_front() {
+        if cur == comp || !seen.insert(cur.clone()) {
+            continue;
+        }
+        let Some(st) = wf.states.get(&cur) else { continue };
+        out.push(cur.clone());
+        for s in st.normal_successors() {
+            q.push_back(s.to_string());
+        }
+    }
+    out
+}
+
+/// Whether `state` can raise an error at run time (and so needs its failure
+/// routed to the compensator). Only task-like states invoke external work;
+/// `Choice`/`Pass`/`Wait`/`Succeed` cannot fail a forward operation.
+fn is_fallible(st: &State) -> bool {
+    matches!(st.kind, StateKind::Task | StateKind::Map | StateKind::Parallel)
+}
+
+/// Whether `target` is reachable from `from` via *normal* successors. Used to
+/// test whether a Catch path eventually runs the compensator (the compensation
+/// chain is wired with ordinary `Next` edges).
+fn reaches_state(wf: &Workflow, from: &str, target: &str) -> bool {
+    use std::collections::HashSet;
+    let mut seen = HashSet::new();
+    let mut stack = vec![from.to_string()];
+    while let Some(cur) = stack.pop() {
+        if cur == target {
+            return true;
+        }
+        if !seen.insert(cur.clone()) {
+            continue;
+        }
+        let Some(st) = wf.states.get(&cur) else { continue };
+        for s in st.normal_successors() {
+            stack.push(s.to_string());
+        }
+    }
+    false
+}
+
+/// Whether `q`'s *generic* failure is caught and routed to `comp`: it has a Catch
+/// covering a broad error class (`States.ALL`/`States.TaskFailed`, i.e. the class
+/// any task failure falls into) whose target reaches `comp`. A narrow Catch (a
+/// specific custom error only) leaves the generic failure uncaught, so it does
+/// not count.
+fn failure_reaches(wf: &Workflow, q: &State, comp: &str) -> bool {
+    q.catch.iter().any(|c| {
+        c.error_equals.iter().any(|e| e == "States.ALL" || e == "States.TaskFailed")
+            && reaches_state(wf, &c.next, comp)
+    })
+}
+
+/// The first state in `start`'s post-commit region whose failure (or a normal
+/// path to a `Fail` terminal) escapes the compensator `comp`, or `None` if every
+/// post-commit failure is compensated (the workflow is Saga-complete for
+/// `start`). This is the decision procedure behind SC4011.
+fn downstream_escape(wf: &Workflow, start: &str, comp: &str) -> Option<String> {
+    for q in post_commit_region(wf, start, comp) {
+        let Some(st) = wf.states.get(&q) else { continue };
+        // A normal-flow path to a Fail terminal aborts the execution with the
+        // effect already committed and never having reached `comp`.
+        if matches!(st.kind, StateKind::Fail) {
+            return Some(q);
+        }
+        if is_fallible(st) && !failure_reaches(wf, st, comp) {
+            return Some(q);
+        }
+    }
+    None
 }
 
 fn note(st: &State) -> String {

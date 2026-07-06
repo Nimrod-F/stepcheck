@@ -111,6 +111,16 @@ enum Cmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Measure how close the data-flow fixpoint stays to its finite-height round
+    /// bound `|states|*(|keys|+2)+2` across one or more corpora (evidence for the
+    /// termination argument). Each workflow is analyzed in both the native
+    /// (Top-seeded) and typed (closed-record-seeded) tiers; the report gives
+    /// per-corpus and combined round/bound utilisation and the non-converged count.
+    FixpointStats {
+        /// One or more directories of workflow files, e.g. `corpus/asl corpus/cncf`.
+        #[arg(required = true)]
+        dirs: Vec<PathBuf>,
+    },
     /// Emit the built-in typed-DSL example workflow to ASL JSON.
     Demo {
         /// Which example: `order` (valid) or `order-bad` (reordered).
@@ -119,6 +129,17 @@ enum Cmd {
         /// Emit the annotation sidecar (TOML) instead of the ASL.
         #[arg(long)]
         sidecar: bool,
+    },
+    /// Round-trip a workflow through the ASL emitter *unchanged*. Used as the
+    /// control in the multi-validator baseline: a `mutate` defect is injected on
+    /// top of this same emitted form, so comparing a validator's verdict on the
+    /// emitted control vs. the emitted mutant isolates exactly the injected fault
+    /// (free of any emitter-lossiness confound).
+    Emit {
+        path: PathBuf,
+        /// Write the emitted ASL here (default: stdout).
+        #[arg(long)]
+        out: Option<PathBuf>,
     },
 }
 
@@ -137,7 +158,9 @@ fn main() {
         Cmd::Oracle { dir, annot, infer } => cmd_oracle(&dir, annot.as_deref(), infer),
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
+        Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
+        Cmd::Emit { path, out } => cmd_emit(&path, out.as_deref()),
     };
     match code {
         Ok(c) => std::process::exit(c),
@@ -594,6 +617,100 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(if present == 0 { 0 } else { 1 })
+}
+
+/// Round-trip a workflow through the ASL emitter unchanged (the control form for
+/// the multi-validator baseline). Loads via the extension-chosen frontend and
+/// re-emits ASL JSON.
+fn cmd_emit(path: &Path, out: Option<&Path>) -> Result<i32> {
+    let wf = load(path)?;
+    let text = serde_json::to_string_pretty(&asl::emit(&wf))?;
+    match out {
+        Some(o) => std::fs::write(o, text)?,
+        None => println!("{text}"),
+    }
+    Ok(0)
+}
+
+/// Summarise per-machine fixpoint telemetry into a JSON object: machine count,
+/// how many failed to converge within the bound, the deepest iteration observed,
+/// and the worst-case round/bound utilisation.
+fn fixpoint_summary(
+    dir: Option<String>,
+    files: usize,
+    rec: &[passes::dataflow::FixpointRound],
+) -> serde_json::Value {
+    let machines = rec.len();
+    let non_converged = rec.iter().filter(|r| !r.converged).count();
+    let max_rounds = rec.iter().map(|r| r.rounds).max().unwrap_or(0);
+    let max_bound = rec.iter().map(|r| r.bound).max().unwrap_or(0);
+    // worst-case round/bound utilisation (how close any machine came to the cap)
+    let mut worst = (0f64, 0usize, 0usize, 0usize);
+    for r in rec {
+        let ratio = r.rounds as f64 / r.bound.max(1) as f64;
+        if ratio > worst.0 {
+            worst = (ratio, r.rounds, r.bound, r.states);
+        }
+    }
+    let mut obj = serde_json::Map::new();
+    if let Some(d) = dir {
+        obj.insert("dir".into(), json!(d));
+    }
+    obj.insert("files".into(), json!(files));
+    obj.insert("machines".into(), json!(machines));
+    obj.insert("non_converged".into(), json!(non_converged));
+    obj.insert("max_rounds".into(), json!(max_rounds));
+    obj.insert("max_bound".into(), json!(max_bound));
+    obj.insert(
+        "worst_ratio".into(),
+        json!({ "ratio": worst.0, "rounds": worst.1, "bound": worst.2, "states_in_machine": worst.3 }),
+    );
+    serde_json::Value::Object(obj)
+}
+
+/// Fixpoint-utilisation study: run the data-flow fixpoint over each corpus in
+/// both tiers and report how far it stays below its termination bound.
+fn cmd_fixpoint_stats(dirs: &[PathBuf]) -> Result<i32> {
+    let mut per_corpus = Vec::new();
+    let mut all: Vec<passes::dataflow::FixpointRound> = Vec::new();
+    let mut all_files = 0usize;
+    for dir in dirs {
+        passes::dataflow::fixpoint_record_start();
+        let mut files = 0usize;
+        for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if !p.is_file() || !is_workflow_file(p) {
+                continue;
+            }
+            let base = match load(p) {
+                Ok(w) => w,
+                Err(_) => continue,
+            };
+            files += 1;
+            // native tier: Top-seeded start document
+            let mut n = base.clone();
+            annot::resolve(&mut n, None, false);
+            let _ = run_pipeline(&n);
+            // typed tier: closed record of the top-level fields the workflow reads
+            let mut t = base.clone();
+            let f = mine_top_level_fields(&base);
+            if !f.is_empty() {
+                t.input_fields = Some(f);
+            }
+            annot::resolve(&mut t, None, false);
+            let _ = run_pipeline(&t);
+        }
+        let rec = passes::dataflow::fixpoint_record_take();
+        per_corpus.push(fixpoint_summary(Some(dir.display().to_string()), files, &rec));
+        all_files += files;
+        all.extend(rec);
+    }
+    let report = json!({
+        "corpora": per_corpus,
+        "combined": fixpoint_summary(None, all_files, &all),
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
 }
 
 fn cmd_demo(which: &str, sidecar: bool) -> Result<i32> {

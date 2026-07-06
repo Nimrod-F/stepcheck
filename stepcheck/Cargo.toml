@@ -2,8 +2,12 @@
 name = "stepcheck"
 version = "0.1.0"
 edition = "2021"
-description = "A static verifier for serverless workflows (Amazon States Language): contract, typestate, retry-safety and compensation checking."
+description = "A static verifier for serverless workflows (Amazon States Language): sound data-flow (field-provenance) analysis plus contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checking."
 license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/Nimrod-F/stepcheck"
+keywords = ["aws", "step-functions", "verification", "static-analysis", "workflow"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
 name = "stepcheck"

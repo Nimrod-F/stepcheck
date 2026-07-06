@@ -1,0 +1,45 @@
+{
+  "corpora": [
+    {
+      "dir": "corpus/asl",
+      "files": 193,
+      "machines": 646,
+      "non_converged": 0,
+      "max_rounds": 7,
+      "max_bound": 968,
+      "worst_ratio": {
+        "ratio": 0.3333333333333333,
+        "rounds": 2,
+        "bound": 6,
+        "states_in_machine": 2
+      }
+    },
+    {
+      "dir": "corpus/cncf",
+      "files": 66,
+      "machines": 140,
+      "non_converged": 0,
+      "max_rounds": 3,
+      "max_bound": 22,
+      "worst_ratio": {
+        "ratio": 0.3333333333333333,
+        "rounds": 2,
+        "bound": 6,
+        "states_in_machine": 2
+      }
+    }
+  ],
+  "combined": {
+    "files": 259,
+    "machines": 786,
+    "non_converged": 0,
+    "max_rounds": 7,
+    "max_bound": 968,
+    "worst_ratio": {
+      "ratio": 0.3333333333333333,
+      "rounds": 2,
+      "bound": 6,
+      "states_in_machine": 2
+    }
+  }
+}
