@@ -117,8 +117,13 @@ jobs:
           VER="${GITHUB_REF_NAME#v}"
           npm version --no-git-tag-version --allow-same-version "$VER"
           NAME=$(node -p "require('./package.json').name")
-          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+          echo "authenticated as: $(npm whoami || echo '<whoami failed>')"
+          # Skip only if the registry actually returns a version string. An
+          # authenticated `npm view` of a not-yet-published version in your own
+          # scope can exit 0 with EMPTY output, so check the output, not $?.
+          if [ -n "$(npm view "$NAME@$VER" version 2>/dev/null)" ]; then
             echo "$NAME@$VER already on npm; skipping."
             exit 0
           fi
+          echo "publishing $NAME@$VER to npm ..."
           npm publish --access public
