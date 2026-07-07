@@ -4,9 +4,10 @@
 //! concurrently (`MaxConcurrency` != 1). Each branch/iteration receives its own
 //! *copy* of the state document, so the document itself cannot race — but the
 //! *external* resources the tasks touch can. Two branches that both write the
-//! same DynamoDB table, S3 object, SQS queue or SNS topic, or concurrent Map
-//! iterations that all write one shared resource, produce an order-dependent or
-//! duplicated effect. No prior ASL tool reasons about this; the interference
+//! same DynamoDB table, S3 object, SQS queue, SNS topic, statically named child
+//! execution, or other recognized AWS target, or concurrent Map iterations that
+//! all write one shared resource, produce an order-dependent or duplicated
+//! effect. No prior ASL tool reasons about this; the interference
 //! literature does so for actors and distributed objects but not for serverless
 //! fan-out.
 //!
@@ -17,7 +18,7 @@ use super::retry::qualify;
 use super::Pass;
 use crate::diag::{Diagnostic, DiagnosticSink};
 use crate::ir::{State, StateKind, Workflow};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 
 pub struct ConcurrencyPass;
@@ -42,6 +43,26 @@ fn data_resource(st: &State) -> Option<(String, String)> {
         Some(Value::Object(p)) => p,
         _ => return None,
     };
+
+    if let Some(arn) = static_param(p, "StateMachineArn") {
+        if let Some(name) = static_param(p, "Name") {
+            return Some(("sfn-execution".to_string(), format!("{arn}#{name}")));
+        }
+        return Some(("sfn".to_string(), arn.to_string()));
+    }
+    if let Some(bus) = static_param(p, "EventBusName").or_else(|| static_entry_param(p, "EventBusName")) {
+        return Some(("events".to_string(), bus.to_string()));
+    }
+    if let Some(cluster) = static_param(p, "Cluster") {
+        let key = match static_param(p, "TaskDefinition") {
+            Some(task) => format!("{cluster}#{task}"),
+            None => cluster.to_string(),
+        };
+        return Some(("ecs".to_string(), key));
+    }
+    if let Some(model) = static_param(p, "ModelId") {
+        return Some(("bedrock".to_string(), model.to_string()));
+    }
     for (svc, key) in [
         ("dynamodb", "TableName"),
         ("sqs", "QueueUrl"),
@@ -53,6 +74,21 @@ fn data_resource(st: &State) -> Option<(String, String)> {
         }
     }
     None
+}
+
+fn static_param<'a>(p: &'a Map<String, Value>, key: &str) -> Option<&'a str> {
+    match p.get(key) {
+        Some(Value::String(s)) => Some(s),
+        _ => None,
+    }
+}
+
+fn static_entry_param<'a>(p: &'a Map<String, Value>, key: &str) -> Option<&'a str> {
+    let entries = p.get("Entries")?.as_array()?;
+    entries.iter().find_map(|entry| match entry {
+        Value::Object(entry) => static_param(entry, key),
+        _ => None,
+    })
 }
 
 fn is_write(st: &State) -> bool {
@@ -86,7 +122,17 @@ fn is_overwriting_write(st: &State) -> bool {
         return false;
     }
     let a = action(st);
-    a.contains("putitem") || a.contains("putobject")
+    let r = st.resource.as_deref().unwrap_or("").to_lowercase();
+    a.contains("putitem")
+        || a.contains("putobject")
+        || (r.contains(":states:startexecution") && has_static_execution_name(st))
+}
+
+fn has_static_execution_name(st: &State) -> bool {
+    match &st.parameters {
+        Some(Value::Object(p)) => static_param(p, "Name").is_some(),
+        _ => false,
+    }
 }
 
 /// Whether a write threads per-item / per-record data into its payload (any `.$`

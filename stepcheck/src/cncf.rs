@@ -231,7 +231,7 @@ fn lower_task(
         // a catch handler (`catch.do`) becomes reachable via a Catch transition
         if let Some(handler) = catch.and_then(|c| c.get("do")).and_then(|x| x.as_array()) {
             let hentry = lower_do(handler, states, &exit)?;
-            st.catch.push(CatchRule { error_equals: vec![err_type], next: hentry, result_path: ResultPath::Default });
+            st.catch.push(CatchRule { error_equals: vec![err_type], next: hentry, result_path: ResultPath::Default, assign: None });
         }
         apply_exit(&mut st, &exit);
         states.insert(name.to_string(), st);

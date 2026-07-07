@@ -72,6 +72,7 @@ impl Builder {
                 error_equals: vec!["States.ALL".into()],
                 next: c.into(),
                 result_path: ResultPath::Path("$.error".into()),
+                assign: None,
             });
         }
         self.wf.states.insert(name.to_string(), st);

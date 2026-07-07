@@ -6,10 +6,14 @@
 
 use crate::ir::*;
 use anyhow::{anyhow, Context, Result};
+use serde::Deserialize;
 use serde_json::Value;
 
 pub fn parse_str(src: &str, name: &str) -> Result<Workflow> {
-    let v: Value = serde_json::from_str(src).context("invalid JSON")?;
+    let mut de = serde_json::Deserializer::from_str(src);
+    de.disable_recursion_limit();
+    let de = serde_stacker::Deserializer::new(&mut de);
+    let v = Value::deserialize(de).context("invalid JSON")?;
     lower_machine(&v, name, QueryLang::JsonPath)
 }
 
@@ -81,6 +85,18 @@ fn result_path(v: &Value) -> ResultPath {
     }
 }
 
+fn is_distributed_map(v: &Value) -> bool {
+    if v.get("ItemReader").is_some() || v.get("ItemBatcher").is_some() {
+        return true;
+    }
+    v.get("ItemProcessor")
+        .and_then(|x| x.get("ProcessorConfig"))
+        .and_then(|x| x.get("Mode"))
+        .and_then(|x| x.as_str())
+        .map(|s| s == "DISTRIBUTED")
+        .unwrap_or(false)
+}
+
 fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     let kind = match s(v, "Type").as_deref() {
         Some("Task") => StateKind::Task,
@@ -112,6 +128,10 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     st.output_path = v.get("OutputPath").cloned();
     st.result_path = result_path(v);
     st.parameters = v.get("Parameters").cloned();
+    st.arguments = v.get("Arguments").cloned();
+    st.assign = v.get("Assign").cloned();
+    st.output = v.get("Output").cloned();
+    st.items = v.get("Items").cloned();
     st.result_selector = v.get("ResultSelector").cloned();
     st.result = v.get("Result").cloned();
     st.items_path = s(v, "ItemsPath");
@@ -119,6 +139,7 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     st.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
     st.heartbeat_seconds = v.get("HeartbeatSeconds").and_then(|x| x.as_f64());
     st.max_concurrency = v.get("MaxConcurrency").and_then(|x| x.as_i64());
+    st.distributed_map = matches!(kind, StateKind::Map) && is_distributed_map(v);
     // `ItemSelector` (distributed Map) / `Parameters` of a Map describe the
     // per-item document handed to each iteration.
     st.item_selector = v.get("ItemSelector").cloned();
@@ -142,6 +163,7 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
                     error_equals: str_array(c.get("ErrorEquals")),
                     next,
                     result_path: result_path(c),
+                    assign: c.get("Assign").cloned(),
                 });
             }
         }
@@ -221,6 +243,15 @@ fn emit_state(st: &State) -> Value {
     if let Some(p) = &st.parameters {
         o.insert("Parameters".into(), p.clone());
     }
+    if let Some(a) = &st.arguments {
+        o.insert("Arguments".into(), a.clone());
+    }
+    if let Some(a) = &st.assign {
+        o.insert("Assign".into(), a.clone());
+    }
+    if let Some(o2) = &st.output {
+        o.insert("Output".into(), o2.clone());
+    }
     if let Some(r) = &st.result {
         o.insert("Result".into(), r.clone());
     }
@@ -273,6 +304,9 @@ fn emit_state(st: &State) -> Value {
     }
     if let Some(ip) = &st.items_path {
         o.insert("ItemsPath".into(), Value::String(ip.clone()));
+    }
+    if let Some(items) = &st.items {
+        o.insert("Items".into(), items.clone());
     }
     if !st.branches.is_empty() {
         o.insert("Branches".into(), Value::Array(st.branches.iter().map(emit).collect()));

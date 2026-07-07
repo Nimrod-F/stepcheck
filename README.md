@@ -26,7 +26,7 @@ task names and resource bindings.
 | `stepcheck/` | the tool, in Rust (3,692 LOC). `src/{ir,asl,cncf,dsl,annot,diag,mutate,main}.rs` and `src/passes/{structural,dataflow,contract,typestate,retry,compensation,concurrency,temporal}.rs` (eight passes). Three frontends (ASL, typed DSL, CNCF Serverless Workflow) lower to one IR; the passes are unchanged across formats. `corpus/dataflow/` holds the data-flow demonstrators. |
 | `corpus/asl/` | 193 real Step Functions workflows mined from public AWS repos. `corpus/manifest.json` records provenance; `corpus/gold-labels.json` is the inference gold set (23 workflows, 147 tasks; new workflows double-labelled, kappa 1.00/0.745). `corpus/dsl/` holds the typed-DSL worked example. |
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second corpus). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
-| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `triage-verdicts.json` + `wf-eval.js` (warning-precision + gold-expansion), `stats.tex` (E1), `fixpoint-stats.json` (data-flow fixpoint round/bound utilisation across both corpora, `fixpoint-stats`). |
+| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision, inter-annotator kappa, RQ2 accuracy), `stats.tex` (E1), `fixpoint-stats.json` (data-flow fixpoint round/bound utilisation across both corpora, `fixpoint-stats`). |
 | `infra/` | the AWS round-trip (E7): `deploy_run.sh`, `teardown.sh`, and captured `execution-evidence.json`. |
 | `PLAN.md` | the implementation plan / design rationale. |
 
@@ -64,6 +64,29 @@ $BIN fixpoint-stats ../corpus/asl ../corpus/cncf > ../eval/fixpoint-stats.json  
   package). Both honour the same exit-code contract, so a Rust- or Node-centric CI adds
   StepCheck as a build gate with one line.
 
+### Use StepCheck as a CI gate
+
+A copy-pasteable GitHub Actions step that gates a pull request exactly like a compiler or linter —
+it fails the build on any **error** (add `--deny-warnings` to also fail on inferred warnings once a
+workflow is annotated):
+
+```yaml
+# .github/workflows/verify-workflows.yml
+name: Verify Step Functions
+on: [pull_request]
+jobs:
+  stepcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g @nimrod-f/stepcheck        # or: cargo install stepcheck
+      - name: Verify every workflow definition
+        run: |
+          for f in $(git ls-files '*.asl.json'); do
+            stepcheck check "$f" --infer || exit 1     # exit 0 clean · 1 error · 2 parse failure
+          done
+```
+
 Publishing is gated on two optional repository secrets, `CARGO_REGISTRY_TOKEN` and
 `NPM_TOKEN`; the release jobs skip themselves when a token is absent. The release
 repository that hosts the downloadable binaries is set in `stepcheck/Cargo.toml`
@@ -82,9 +105,9 @@ elsewhere.
   **0** of unsafe retry, missing compensation, concurrency, or temporal — **306/616 (50%)**.
 - Data-flow provenance (SC1101): **0/193** false positives; native + typed demonstrators in
   `corpus/dataflow/`; typed-tier missing-field recall **84/126 (67%)** (`eval --strict-input`).
-- Inference accuracy vs agreement-checked gold (23 wf, 147 tasks): **61.9%** idempotency,
-  **85.6%** persistence (≈80% coverage). In-the-wild warning precision: **72%** overall
-  (81% for compensation warnings).
+- Inference accuracy vs agreement-checked gold (23 wf, 137 labelled tasks): **70%** idempotency,
+  **87%** persistence (≈80% coverage). In-the-wild warning precision vs human gold (κ 0.89/0.99):
+  **92%** overall (46/50), **89%** for compensation warnings (SC4001).
 - Verification cost: **≈39 µs**/workflow mean (eight passes); whole corpus in **≈7.5 ms**; **0** runtime overhead.
 - AWS round-trip: a verified workflow deployed and executed on real Step Functions →
   `SUCCEEDED` (then torn down).

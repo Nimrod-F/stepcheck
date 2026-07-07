@@ -1,0 +1,27 @@
+{
+  "Comment": "testactivity ",
+  "Type": "statemachine",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Resource": "nest:add",
+      "Parameters": {
+        "x": 5,
+        "y": 6
+      },
+      "ResultPath": "$.z",
+      "Next": "S2"
+    },
+    "S2": {
+      "Type": "Task",
+      "Parameters": {
+        "x": 22,
+        "y.$": "$.z"
+      },
+      "Resource": "nest:sub",
+      "End": true
+    }
+  }
+}

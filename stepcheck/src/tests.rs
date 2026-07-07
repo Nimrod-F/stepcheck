@@ -6,8 +6,8 @@ use crate::{annot, asl, cncf, diag, dsl, ir, passes};
 
 /// Resolve annotations from a sidecar (no inference) and run the full pipeline.
 fn verify(mut wf: ir::Workflow, sidecar: &annot::Sidecar) -> diag::DiagnosticSink {
-    annot::resolve(&mut wf, Some(sidecar), false);
     let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, Some(sidecar), false, &mut sink);
     passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
     sink
 }
@@ -75,10 +75,43 @@ fn cncf_frontend_parses() {
 
 fn check_asl(src: &str, sidecar: Option<&annot::Sidecar>) -> diag::DiagnosticSink {
     let mut wf = asl::parse_str(src, "t").unwrap();
-    annot::resolve(&mut wf, sidecar, false);
     let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, sidecar, false, &mut sink);
     passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
     sink
+}
+
+#[test]
+fn sidecar_unknown_task_is_diagnostic() {
+    let src = r#"{"StartAt":"A","States":{
+        "A":{"Type":"Task","Resource":"r","End":true}}}"#;
+    let mut sc = annot::Sidecar::default();
+    sc.tasks.insert("MissingTask".into(), annot::TaskAnnot::default());
+    let sink = check_asl(src, Some(&sc));
+    assert!(sink.has_code("SC0011"), "expected stale sidecar task diagnostic: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn sidecar_unknown_compensation_is_diagnostic() {
+    let src = r#"{"StartAt":"A","States":{
+        "A":{"Type":"Task","Resource":"r","End":true}}}"#;
+    let mut sc = annot::Sidecar::default();
+    sc.tasks.insert(
+        "A".into(),
+        annot::TaskAnnot { compensation: Some("UndoA".into()), ..Default::default() },
+    );
+    let sink = check_asl(src, Some(&sc));
+    assert!(sink.has_code("SC0011"), "expected stale compensation diagnostic: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn sidecar_unknown_schema_is_diagnostic() {
+    let src = r#"{"StartAt":"A","States":{
+        "A":{"Type":"Task","Resource":"r","End":true}}}"#;
+    let mut sc = annot::Sidecar::default();
+    sc.workflow.input_schema = Some("MissingSchema".into());
+    let sink = check_asl(src, Some(&sc));
+    assert!(sink.has_code("SC0012"), "expected stale sidecar schema diagnostic: {:#?}", sink.diagnostics);
 }
 
 #[test]
@@ -187,6 +220,47 @@ fn dataflow_sound_on_jsonata_produced_field() {
 }
 
 #[test]
+fn dataflow_flags_jsonpath_assign_missing_field() {
+    // JSONPath Assign is a hard-failing read site too. In a Pass state with no
+    // explicit Result/Parameters, `$` is the effective input, so this missing
+    // field is a native SC1101.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"order":{"total":7}},"ResultPath":"$","Next":"Store"},
+        "Store":{"Type":"Pass","Assign":{"saved.$":"$.order.id"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1101"), "Assign read of a definitely-absent field must be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_pass_assign_reads_pass_result_shape() {
+    // For a JSONPath Pass state, Assign reads from the Pass result, not from the
+    // pre-Parameters input. Checking this against the input would be a false
+    // positive on $.order.id.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"raw":{"id":1}},"ResultPath":"$","Next":"Store"},
+        "Store":{"Type":"Pass","Parameters":{"order":{"id.$":"$.raw.id"}},
+                 "Assign":{"saved.$":"$.order.id"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "Assign should read from the Pass result shape: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_sound_on_jsonpath_workflow_variable_reference() {
+    // Workflow-variable references (`$customerName`) are not document paths
+    // (`$.customerName`). The current document lattice treats them as a
+    // conservative non-SC1101 read, so a field can travel through a variable
+    // without being misreported as absent from the document.
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"customer":{"name":"Ada"}},"ResultPath":"$","Next":"Store"},
+        "Store":{"Type":"Pass","Assign":{"customerName.$":"$.customer.name"},"Next":"Use"},
+        "Use":{"Type":"Pass","Parameters":{"name.$":"$customerName"},"ResultPath":"$","Next":"Send"},
+        "Send":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                "Parameters":{"FunctionName":"u","Payload":{"name.$":"$.name"}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "workflow-variable reads must not be treated as missing document fields: {:#?}", sink.diagnostics);
+}
+
+#[test]
 fn dataflow_sound_on_whole_jsonata_machine() {
     // A machine in JSONata mode uses `{% … %}` Arguments, never JSONPath `.$`
     // reads, so the provenance check must stay silent (and not crash).
@@ -195,6 +269,69 @@ fn dataflow_sound_on_whole_jsonata_machine() {
              "Arguments":{"x":"{% $states.input.nope %}"},"End":true}}}"#;
     let sink = check_asl(src, None);
     assert!(!sink.has_code("SC1101"), "JSONata machine must not be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_jsonata_output_shape_is_precise_for_object_literal() {
+    // A JSONata Output object literal closes the successor document. The later
+    // JSONPath read of $.other is therefore definitely absent and should fire;
+    // treating all JSONata as Top would miss this.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"raw":{"x":1}},"ResultPath":"$","Next":"Shape"},
+        "Shape":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Output":"{% { 'computed': $states.input.raw.x } %}","Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"v.$":"$.other"}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1101"), "JSONata Output object should close the document shape: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_flags_direct_jsonata_missing_input_read() {
+    // Direct `$states.input` reads in modeled JSONata value positions fail when
+    // the referenced field is definitely absent.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"order":{"total":7}},"ResultPath":"$","Next":"Shape"},
+        "Shape":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Output":{"id":"{% $states.input.order.id %}"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1101"), "direct JSONata read of a definitely-absent field must be flagged: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_keeps_complex_jsonata_predicates_conservative() {
+    // `$exists(...)` is a valid way to tolerate absent JSONata paths. Complex
+    // expressions are therefore not treated as hard-failing direct reads.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"order":{"total":7}},"ResultPath":"$","Next":"Shape"},
+        "Shape":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Output":{"ok":"{% $exists($states.input.order.id) %}"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "complex JSONata predicates must stay conservative: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_jsonata_variable_carries_shape_to_jsonpath() {
+    // A field can move through a workflow variable and then re-enter the JSON
+    // document through JSONata Output; the later JSONPath read should see it.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"customer":{"name":"Ada"}},"ResultPath":"$","Next":"Store"},
+        "Store":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Assign":{"person":"{% $states.input.customer %}"},"Next":"Use"},
+        "Use":{"Type":"Pass","QueryLanguage":"JSONata",
+               "Output":{"name":"{% $person.name %}"},"Next":"Send"},
+        "Send":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                "Parameters":{"FunctionName":"u","Payload":{"name.$":"$.name"}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "JSONata variable transport should preserve the produced field: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_flags_direct_jsonata_undefined_variable_read() {
+    let src = r#"{"StartAt":"Use","QueryLanguage":"JSONata","States":{
+        "Use":{"Type":"Pass","Output":{"name":"{% $person.name %}"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1101"), "direct read of an unassigned workflow variable must be flagged: {:#?}", sink.diagnostics);
 }
 
 #[test]
@@ -283,8 +420,8 @@ fn oracle_confirms_typed_merge_miss() {
 
 fn concurrency_sink(src: &str) -> diag::DiagnosticSink {
     let mut wf = asl::parse_str(src, "t").unwrap();
-    annot::resolve(&mut wf, None, true);
     let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, None, true, &mut sink);
     passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
     sink
 }
@@ -309,6 +446,76 @@ fn concurrency_clean_on_merging_writes() {
         {"StartAt":"W2","States":{"W2":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:updateItem",
             "Parameters":{"TableName":"Orders","Key":{"id.$":"$.id"}},"End":true}}}]}}}"#;
     assert!(!concurrency_sink(src).has_code("SC5001"), "merging writes must not be flagged");
+}
+
+#[test]
+fn concurrency_flags_named_child_execution_collision() {
+    // Two branches start the same child state machine with the same static execution name.
+    let src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child","Name":"order-42"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child","Name":"order-42"},"End":true}}}]}}}"#;
+    assert!(concurrency_sink(src).has_code("SC5001"), "expected a child-execution collision warning");
+}
+
+#[test]
+fn concurrency_flags_named_child_execution_sync_collision() {
+    // The same static child execution name also collides through the synchronous service integration.
+    let src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync:2",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child","Name":"order-42"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync:2",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child","Name":"order-42"},"End":true}}}]}}}"#;
+    assert!(concurrency_sink(src).has_code("SC5001"), "expected a synchronous child-execution collision warning");
+}
+
+#[test]
+fn concurrency_clean_on_anonymous_child_execution() {
+    // Without a static Name, Step Functions generates distinct child execution names.
+    let src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child"},"End":true}}}]}}}"#;
+    assert!(!concurrency_sink(src).has_code("SC5001"), "anonymous child executions must not be flagged");
+}
+
+#[test]
+fn concurrency_clean_on_non_overwriting_service_integrations() {
+    let cases = [
+        (
+            "eventbridge",
+            r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"E1","States":{"E1":{"Type":"Task","Resource":"arn:aws:states:::events:putEvents",
+            "Parameters":{"Entries":[{"EventBusName":"Orders","Source":"checkout","DetailType":"created","Detail":"{}"}]},"End":true}}},
+        {"StartAt":"E2","States":{"E2":{"Type":"Task","Resource":"arn:aws:states:::events:putEvents",
+            "Parameters":{"Entries":[{"EventBusName":"Orders","Source":"checkout","DetailType":"created","Detail":"{}"}]},"End":true}}}]}}}"#,
+        ),
+        (
+            "ecs",
+            r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"R1","States":{"R1":{"Type":"Task","Resource":"arn:aws:states:::ecs:runTask",
+            "Parameters":{"Cluster":"orders","TaskDefinition":"worker"},"End":true}}},
+        {"StartAt":"R2","States":{"R2":{"Type":"Task","Resource":"arn:aws:states:::ecs:runTask",
+            "Parameters":{"Cluster":"orders","TaskDefinition":"worker"},"End":true}}}]}}}"#,
+        ),
+        (
+            "bedrock",
+            r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"B1","States":{"B1":{"Type":"Task","Resource":"arn:aws:states:::bedrock:invokeModel",
+            "Parameters":{"ModelId":"anthropic.claude-3-haiku-20240307-v1:0"},"End":true}}},
+        {"StartAt":"B2","States":{"B2":{"Type":"Task","Resource":"arn:aws:states:::bedrock:invokeModel",
+            "Parameters":{"ModelId":"anthropic.claude-3-haiku-20240307-v1:0"},"End":true}}}]}}}"#,
+        ),
+    ];
+
+    for (case_name, source) in cases {
+        assert!(
+            !concurrency_sink(source).has_code("SC5001"),
+            "{case_name} should not be treated as a last-writer-wins overwrite"
+        );
+    }
 }
 
 // ----- effect-aware compensation (SC4010) -----------------------------------

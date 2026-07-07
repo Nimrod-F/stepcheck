@@ -1,0 +1,1135 @@
+{
+  "files": 95,
+  "flagged_files": 30,
+  "total_errors": 1,
+  "total_warnings": 50,
+  "code_totals": {
+    "SC0003": 1,
+    "SC0007": 5,
+    "SC1003": 1,
+    "SC1101": 1,
+    "SC3001": 10,
+    "SC4001": 18,
+    "SC4010": 13,
+    "SC5001": 1,
+    "SC6001": 1
+  },
+  "per_file": [
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-assign.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-dupe-fields.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-exercise-ajv-additional-properties.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-exercise-ajv.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-jsonata-path-fields.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "Add Account",
+          "message": "persistent task 'Add Account' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        }
+      ]
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-map-distributed.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-map-items.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__invalid-payload-template.asl.json",
+      "errors": 0,
+      "warnings": 2,
+      "codes": {
+        "SC1003": 1,
+        "SC6001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC1003",
+          "severity": "warning",
+          "state": "Hello, World",
+          "message": "'ipsum' is not a valid JSONPath or intrinsic-function payload",
+          "note": "a `.$` value must start with `$` or be a States.* intrinsic"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Hello, World",
+          "message": "callback task 'Hello, World' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        }
+      ]
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-assign.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-comments-are-not-parsed.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-intrinsic-functions.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-jsonata.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "Add Account",
+          "message": "persistent task 'Add Account' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        }
+      ]
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-map-distributed.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-map-inline.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "ChristopheBougere__asl-validator__src____tests____definitions__valid-map-items.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__credit-card-transaction-workflow__statemachines__credit-card-batch-processing.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ProcessTransactionBatch[Map]/ReserveFunds",
+          "message": "persistent task 'ReserveFunds' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__credit-card-transaction-workflow__statemachines__credit-card-transaction.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ReserveFunds",
+          "message": "persistent task 'ReserveFunds' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__credit-card-transaction-workflow__statemachines__express-authorization.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ReserveFunds",
+          "message": "persistent task 'ReserveFunds' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__credit-card-transaction-workflow__statemachines__transaction-reversal.asl.json",
+      "errors": 1,
+      "warnings": 0,
+      "codes": {
+        "SC1101": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC1101",
+          "severity": "error",
+          "state": "ApplyReversalEntries",
+          "message": "data-flow: 'ApplyReversalEntries' reads '$.ledgerEntries', a field no execution reaching it can have produced",
+          "note": "the reference resolves against a document the workflow constructs; no state on any path binds this field"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__freight-booking-workflow__statemachines__booking-amendment.asl.json",
+      "errors": 0,
+      "warnings": 3,
+      "codes": {
+        "SC4001": 3
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "ValidateAmendedBooking",
+          "message": "persistent task 'ValidateAmendedBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "ConfirmAmendedBooking",
+          "message": "persistent task 'ConfirmAmendedBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "CancelAmendment",
+          "message": "persistent task 'CancelAmendment' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__freight-booking-workflow__statemachines__bulk-booking-processing.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "ProcessBulkBookings[Map]/ValidateBooking",
+          "message": "persistent task 'ValidateBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__freight-booking-workflow__statemachines__express-rate-check.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__freight-booking-workflow__statemachines__freight-booking-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 5,
+      "codes": {
+        "SC4001": 5
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "ValidateBooking",
+          "message": "persistent task 'ValidateBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "CancelInvalidBooking",
+          "message": "persistent task 'CancelInvalidBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "CancelNoCapacity",
+          "message": "persistent task 'CancelNoCapacity' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "CancelHazmatViolation",
+          "message": "persistent task 'CancelHazmatViolation' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "ConfirmBooking",
+          "message": "persistent task 'ConfirmBooking' (book) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__launch-vehicle-manufacturing-workflow__statemachines__bulk-component-inspection.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "ProcessProductionLots[Map]/ValidateOrder",
+          "message": "non-idempotent task 'ValidateOrder' is retried on States.ALL and may duplicate its effect (order)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__launch-vehicle-manufacturing-workflow__statemachines__express-quality-gate-check.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "ValidateManufacturingOrder",
+          "message": "non-idempotent task 'ValidateManufacturingOrder' is retried on States.ALL and may duplicate its effect (order)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__launch-vehicle-manufacturing-workflow__statemachines__manufacturing-defect-escalation.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "ReValidateOrder",
+          "message": "non-idempotent task 'ReValidateOrder' is retried on States.ALL and may duplicate its effect (order)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__launch-vehicle-manufacturing-workflow__statemachines__manufacturing-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "ValidateManufacturingOrder",
+          "message": "non-idempotent task 'ValidateManufacturingOrder' is retried on States.ALL and may duplicate its effect (order)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__mission-control-operations-workflow__statemachines__bulk-telemetry-processing.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__mission-control-operations-workflow__statemachines__express-health-status-check.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__mission-control-operations-workflow__statemachines__mission-anomaly-escalation.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "AssessAndCommand[Branch1]/UploadRecoveryCommands",
+          "message": "non-idempotent task 'UploadRecoveryCommands' is retried on States.ALL and may duplicate its effect (upload)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__mission-control-operations-workflow__statemachines__mission-control-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "UploadMissionCommands",
+          "message": "non-idempotent task 'UploadMissionCommands' is retried on States.ALL and may duplicate its effect (upload)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__network-outage-management-workflow__statemachines__bulk-outage-processing.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__network-outage-management-workflow__statemachines__express-outage-triage.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__network-outage-management-workflow__statemachines__outage-escalation.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__network-outage-management-workflow__statemachines__outage-management-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__payment-settlement-workflow__statemachines__batch-payment-settlement.asl.json",
+      "errors": 0,
+      "warnings": 3,
+      "codes": {
+        "SC4010": 3
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ProcessPaymentBatch[Map]/ValidatePayment",
+          "message": "persistent task 'ValidatePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ProcessPaymentBatch[Map]/AuthorizePayment",
+          "message": "persistent task 'AuthorizePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ProcessPaymentBatch[Map]/SettlePayment",
+          "message": "persistent task 'SettlePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__payment-settlement-workflow__statemachines__express-payment-authorization.asl.json",
+      "errors": 0,
+      "warnings": 2,
+      "codes": {
+        "SC4010": 2
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ValidatePayment",
+          "message": "persistent task 'ValidatePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "AuthorizePayment",
+          "message": "persistent task 'AuthorizePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__payment-settlement-workflow__statemachines__payment-settlement-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 4,
+      "codes": {
+        "SC4001": 1,
+        "SC4010": 3
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ValidatePayment",
+          "message": "persistent task 'ValidatePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "FlagFraudulentPayment",
+          "message": "persistent task 'FlagFraudulentPayment' (pay) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "AuthorizePayment",
+          "message": "persistent task 'AuthorizePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "SettlePayment",
+          "message": "persistent task 'SettlePayment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__vehicle-order-fulfillment-workflow__statemachines__bulk-order-processing.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__vehicle-order-fulfillment-workflow__statemachines__express-credit-check.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "ReserveVehicle",
+          "message": "persistent task 'ReserveVehicle' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__vehicle-order-fulfillment-workflow__statemachines__order-cancellation.asl.json",
+      "errors": 0,
+      "warnings": 2,
+      "codes": {
+        "SC3001": 2
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "ConfirmCancellation",
+          "message": "non-idempotent task 'ConfirmCancellation' is retried on States.ALL and may duplicate its effect (order)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        },
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "NotifyCustomerOfCancellation",
+          "message": "non-idempotent task 'NotifyCustomerOfCancellation' is retried on States.ALL and may duplicate its effect (notify)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__vehicle-order-fulfillment-workflow__statemachines__vehicle-order-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "NotifyCustomer",
+          "message": "non-idempotent task 'NotifyCustomer' is retried on States.ALL and may duplicate its effect (notify)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "Thrubit__vehicle-recall-management-workflow__statemachines__bulk-recall-processing.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__vehicle-recall-management-workflow__statemachines__express-vehicle-check.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__vehicle-recall-management-workflow__statemachines__recall-escalation.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "Thrubit__vehicle-recall-management-workflow__statemachines__vehicle-recall-pipeline.asl.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC3001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC3001",
+          "severity": "warning",
+          "state": "NotifyOwner",
+          "message": "non-idempotent task 'NotifyOwner' is retried on States.ALL and may duplicate its effect (notify)",
+          "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        }
+      ]
+    },
+    {
+      "file": "aws-iot-builder-tools__iot-workflow-management-and-execution__workflow-management-and-execution__statemachine__firmware_upgrade.asl.json",
+      "errors": 0,
+      "warnings": 7,
+      "codes": {
+        "SC4001": 6,
+        "SC5001": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch0]/WaitForFirmwareTransferred",
+          "message": "persistent task 'WaitForFirmwareTransferred' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch0]/FirmwareTransferedMessageReceived",
+          "message": "persistent task 'FirmwareTransferedMessageReceived' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch1]/WaitForDownloadOperationResponse",
+          "message": "persistent task 'WaitForDownloadOperationResponse' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch1]/DownloadOperationMessageReceived",
+          "message": "persistent task 'DownloadOperationMessageReceived' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch2]/WaitForDeviceRebooted",
+          "message": "persistent task 'WaitForDeviceRebooted' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages[Branch2]/BootMessageReceived",
+          "message": "persistent task 'BootMessageReceived' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC5001",
+          "severity": "warning",
+          "state": "WaitForDeviceMessages",
+          "message": "parallel branches overwrite the same dynamodb resource 'FWUTaskTokens' (branch0:FirmwareTransferedMessageReceived, branch1:DownloadOperationMessageReceived, branch2:BootMessageReceived) — concurrent last-writer-wins may interfere",
+          "note": "Parallel branches run concurrently; ensure the writes target disjoint keys"
+        }
+      ]
+    },
+    {
+      "file": "mugglmenzel__step-functions-example-workflow__state-machine.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "WaitAndPay[Branch0]/PayCoffee",
+          "message": "persistent task 'PayCoffee' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
+    },
+    {
+      "file": "pssolanki111__pyDelhi_step_functions__src__state_machines__research_data_pipeline.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__activityflow.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__failmap.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__map.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__resflow.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__task_with_2_step.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__task_with_catch.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__task_with_choice.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__examples__statemachine__testact2.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__task.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__task_pass.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__map_state.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__resource_task.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__resource_task2.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__task_map_state.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__task_state.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithAllPrimitiveCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithAndCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithComplexCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithMissingCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithMultipleChoices.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithNotCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithOrCondition.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithoutDefault.json",
+      "errors": 0,
+      "warnings": 2,
+      "codes": {
+        "SC0003": 1,
+        "SC0007": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC0007",
+          "severity": "warning",
+          "state": "InitialState",
+          "message": "Choice state has no Default branch",
+          "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
+        },
+        {
+          "code": "SC0003",
+          "severity": "warning",
+          "state": "DefaultState",
+          "message": "state 'DefaultState' is unreachable from StartAt",
+          "note": null
+        }
+      ]
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithIntrinsicFunc.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithPath.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithPaths.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ParallelStateWithCatchers.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__ParallelStateWithRetriers.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__PassStateNullOutputPath.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "vdaron__StatesLanguage__test__Resources__StateMachines__SimpleChoiceState.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__calculator-with-input-paths.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC0007": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC0007",
+          "severity": "warning",
+          "state": "OperatorChoice",
+          "message": "Choice state has no Default branch",
+          "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
+        }
+      ]
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__calculator.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC0007": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC0007",
+          "severity": "warning",
+          "state": "OperatorChoice",
+          "message": "Choice state has no Default branch",
+          "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
+        }
+      ]
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__choice-state__choice-with-input-path.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC0007": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC0007",
+          "severity": "warning",
+          "state": "OperatorChoice",
+          "message": "Choice state has no Default branch",
+          "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
+        }
+      ]
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__choice-state__choice.json",
+      "errors": 0,
+      "warnings": 1,
+      "codes": {
+        "SC0007": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC0007",
+          "severity": "warning",
+          "state": "OperatorChoice",
+          "message": "Choice state has no Default branch",
+          "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
+        }
+      ]
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__error-code-and-error-object.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__error-code-and-message.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__error-exception.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__error-http-cant-connect.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__error-http-not-found.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__fail-state__fail-state-machine.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__form-filling.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__hello-fail-but-live-again.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__hello-then-failure.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__hello-then-uncaught-failure.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "wmfs__statebox__test__fixtures__state-machines__hello-then-world.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    },
+    {
+      "file": "yskszk63__sam-local-asl__example__example.asl.json",
+      "errors": 0,
+      "warnings": 0,
+      "codes": {},
+      "diagnostics": []
+    }
+  ]
+}

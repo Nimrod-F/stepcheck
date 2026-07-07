@@ -5,53 +5,52 @@
 
 \bibitem{vanDerAalst1998petri}
 van~der Aalst, W.M.P.: The application of {P}etri nets to workflow management.
-  Journal of Circuits, Systems and Computers  \textbf{8}(1),  21--66 (1998).
-  \doi{10.1142/S0218126698000043}
+  Journal of Circuits, Systems and Computers  \textbf{8}(1),  21--66 (1998)
+
+\bibitem{awsValidateDefinition}
+{Amazon Web Services}: {ValidateStateMachineDefinition} --- {AWS} {Step
+  Functions} {API} reference.
+  \url{https://docs.aws.amazon.com/step-functions/latest/apireference/API_ValidateStateMachineDefinition.html}
+  (2024)
 
 \bibitem{awsStepFunctions}
 {Amazon Web Services}: {AWS} step functions developer guide (amazon states
-  language). \url{https://docs.aws.amazon.com/step-functions/} (2026), accessed
-  2026-06-17
+  language). \url{https://docs.aws.amazon.com/step-functions/} (2026)
 
 \bibitem{awsStatelint}
 {Amazon Web Services Labs}: statelint: A validator for {Amazon} states language
-  documents. \url{https://github.com/awslabs/statelint} (2024), apache-2.0;
-  v0.8.0. Accessed 2026-06-18
+  documents. \url{https://github.com/awslabs/statelint} (2024)
 
-\bibitem{bianculli2007bpel}
-Bianculli, D., Ghezzi, C., Spoletini, P.: A model checking approach to verify
-  {BPEL4WS} workflows. In: IEEE Int. Conf. on Service-Oriented Computing and
-  Applications (SOCA). pp. 13--20 (2007). \doi{10.1109/SOCA.2007.5}
+\bibitem{arjona2021triggerflow}
+Arjona, A., Garc{\'\i}a~L{\'o}pez, P., Samp{\'e}, J., Slominski, A., Villard,
+  L.: Triggerflow: Trigger-based orchestration of serverless workflows. Future
+  Generation Computer Systems  (2021)
 
-\bibitem{blondin2022soundness}
-Blondin, M., Mazowiecki, F., Offtermatt, P.: Verifying generalised and
-  structural soundness of workflow nets via relaxations. In: Int. Conf. on
-  Computer Aided Verification (CAV). pp. 435--458 (2022).
-  \doi{10.1007/978-3-031-13188-2_23}
+\bibitem{backes2018zelkova}
+Backes, J., Bolignano, P., Cook, B., Dodge, C., Gacek, A., Luckow, K., Rungta,
+  N., Tkachuk, O., Varming, C.: Semantic-based automated reasoning for {AWS}
+  access policies using {SMT}. In: Formal Methods in Computer-Aided Design
+  (FMCAD). pp.~1--9 (2018)
+
+\bibitem{aslValidator}
+Boug{\`e}re, C.: {asl-validator}: A {JSON}-schema validator for {Amazon} states
+  language documents. \url{https://github.com/ChristopheBougere/asl-validator}
+  (2024)
 
 \bibitem{burckhardt2021durable}
 Burckhardt, S., Gillum, C., Justo, D., Kallas, K., McMahon, C., Meiklejohn,
   C.S.: Durable functions: Semantics for stateful serverless. Proc. ACM
-  Program. Lang.  \textbf{5}(OOPSLA) (2021). \doi{10.1145/3485510}
+  Program. Lang.  \textbf{5}(OOPSLA) (2021)
 
 \bibitem{cncfServerlessWorkflow}
 {Cloud Native Computing Foundation}: Serverless workflow specification.
-  \url{https://serverlessworkflow.io/} (2026), accessed 2026-06-17
-
-\bibitem{colombo2014compensation}
-Colombo, C., Pace, G.J.: Comprehensive monitor-oriented compensation
-  programming. arXiv preprint  (2014), arXiv:1404.0849
+  \url{https://serverlessworkflow.io/} (2026)
 
 \bibitem{cousot1977}
 Cousot, P., Cousot, R.: Abstract interpretation: A unified lattice model for
   static analysis of programs by construction or approximation of fixpoints.
   In: Proceedings of the 4th ACM SIGACT-SIGPLAN Symposium on Principles of
   Programming Languages (POPL). pp. 238--252. ACM (1977)
-
-\bibitem{fahndrich2004typestates}
-DeLine, R., F{\"a}hndrich, M.: Typestates for objects. In: European Conf. on
-  Object-Oriented Programming (ECOOP). pp. 465--490 (2004).
-  \doi{10.1007/978-3-540-24851-4_21}
 
 \bibitem{ding2023flux}
 Ding, H., Wang, Z., Shen, Z., Chen, R., Chen, H.: Automated verification of
@@ -60,83 +59,44 @@ Ding, H., Wang, Z., Shen, Z., Chen, R., Chen, H.: Automated verification of
 
 \bibitem{garciaMolina1987sagas}
 Garcia-Molina, H., Salem, K.: Sagas. In: ACM SIGMOD Int. Conf. on Management of
-  Data. pp. 249--259 (1987). \doi{10.1145/38713.38742}
+  Data. pp. 249--259 (1987)
 
 \bibitem{honda2008multiparty}
 Honda, K., Yoshida, N., Carbone, M.: Multiparty asynchronous session types. In:
   ACM SIGPLAN-SIGACT Symp. on Principles of Programming Languages (POPL). pp.
-  273--284 (2008). \doi{10.1145/1328438.1328472}
+  273--284 (2008)
 
-\bibitem{kulkarni2025characterizing}
-Kulkarni, V., Reddy, N., Khare, T., Prasad, A.S., Babu, C., Simmhan, Y.:
-  Characterizing {FaaS} workflows on public clouds: The good, the bad and the
-  ugly. arXiv preprint  (2025), arXiv:2509.23013
+\bibitem{jangda2019serverless}
+Jangda, A., Pinckney, D., Brun, Y., Guha, A.: Formal foundations of serverless
+  computing. Proc. ACM Program. Lang.  \textbf{3}(OOPSLA),  1--26 (2019)
 
-\bibitem{mohammad2025resilient}
-Mohammad, M.: Resilient microservices: A systematic review of recovery
-  patterns, strategies, and evaluation frameworks. arXiv preprint  (2025),
-  arXiv:2512.16959
-
-\bibitem{moser2009bpel}
-Moser, S., Martens, A., Gorlach, K., Amme, W., Godlinski, A.: Advanced
-  verification of distributed ws-bpel business processes incorporating
-  cssa-based data flow analysis. In: IEEE International Conference on Services
-  Computing (SCC 2007). pp. 98--105 (2007). \doi{10.1109/SCC.2007.22}
-
-\bibitem{petricek2016types}
-Petricek, T., Guerra, G., Syme, D.: Types from data: Making structured data
-  first-class citizens in {F\#}. In: ACM SIGPLAN Conf. on Programming Language
-  Design and Implementation (PLDI). pp. 477--490 (2016).
-  \doi{10.1145/2908080.2908115}
-
-\bibitem{seco2020contracts}
-Seco, J.C., Ferreira, P., Louren{\c{c}}o, H., Ferreira, C., Ferr{\~a}o, L.:
-  Robust contract evolution in a typesafe microservices architecture. The Art,
-  Science, and Engineering of Programming  \textbf{4}(3) (2020).
-  \doi{10.22152/programming-journal.org/2020/4/10}
-
-\bibitem{soethout2019psac}
-Soethout, T., van~der Storm, T., Vinju, J.J.: Path-sensitive atomic commit:
-  Local coordination avoidance for distributed transactions. The Art, Science,
-  and Engineering of Programming  \textbf{4}(1) (2020)
-
-\bibitem{vonstackelberg2014bpmn}
-von Stackelberg, S., Putze, S., M{\"u}lle, J., B{\"o}hm, K.: Detecting
-  data-flow errors in {BPMN} 2.0. Open Journal of Information Systems (OJIS)
-  \textbf{1}(2) (2014), bibliographic details to be re-verified before
-  camera-ready
+\bibitem{newcombe2015awsformal}
+Newcombe, C., Rath, T., Zhang, F., Munteanu, B., Brooker, M., Deardeuff, M.:
+  How {A}mazon web services uses formal methods. Communications of the ACM
+  \textbf{58}(4),  66--73 (2015)
 
 \bibitem{stromYemini1986typestate}
 Strom, R.E., Yemini, S.: Typestate: A programming language concept for
   enhancing software reliability. IEEE Transactions on Software Engineering
-  \textbf{SE-12}(1),  157--171 (1986). \doi{10.1109/TSE.1986.6312929}
+  \textbf{SE-12}(1),  157--171 (1986)
 
 \bibitem{sun2006dataflow}
 Sun, S.X., Zhao, J.L., Nunamaker, J.F., Sheng, O.R.L.: Formulating the
   data-flow perspective for business process management. Information Systems
-  Research  \textbf{17}(4),  374--391 (2006). \doi{10.1287/isre.1060.0105}
+  Research  \textbf{17}(4),  374--391 (2006)
 
 \bibitem{temporal}
 {Temporal Technologies}: Temporal: Durable execution and workflow
-  orchestration. \url{https://temporal.io/} (2026), accessed 2026-06-17
+  orchestration. \url{https://temporal.io/} (2026)
 
 \bibitem{trcka2009antipatterns}
 Trcka, N., van~der Aalst, W.M.P., Sidorova, N.: Data-flow anti-patterns:
   Discovering data-flow errors in workflows. In: Int. Conf. on Advanced
-  Information Systems Engineering (CAiSE). LNCS, vol.~5565, pp. 425--439
-  (2009). \doi{10.1007/978-3-642-02144-2_34}
-
-\bibitem{cadence}
-{Uber Technologies}: Cadence: Fault-oblivious stateful workflow orchestration.
-  \url{https://cadenceworkflow.io/} (2026), accessed 2026-06-17
-
-\bibitem{wen2021empirical}
-Wen, J., Liu, Y.: An empirical study on serverless workflow service. arXiv
-  preprint  (2021), arXiv:2101.03513
+  Information Systems Engineering (CAiSE). LNCS, vol.~5565, pp. 425--439 (2009)
 
 \bibitem{zhang2020beldi}
 Zhang, H., Cardoza, A., Chen, P.B., Angel, S., Liu, V.: Fault-tolerant and
   transactional stateful serverless workflows. In: USENIX Symp. on Operating
-  Systems Design and Implementation (OSDI) (2020), arXiv:2010.06706
+  Systems Design and Implementation (OSDI) (2020)
 
 \end{thebibliography}

@@ -77,6 +77,68 @@ pub fn fixpoint_record_take() -> Vec<FixpointRound> {
     std::mem::take(&mut FP_LOG.lock().unwrap())
 }
 
+/// How the field-reads a workflow evaluates (the `.$` operands of
+/// `Parameters`/`ItemSelector`/`Assign` operands and a `Map`'s `ItemsPath`) split
+/// between the *modeled* JSONPath fragment and the conservative fallbacks. The
+/// data-flow check resolves precisely exactly the `dotted` reads (and trivially
+/// the whole-document `$`); every other class is treated conservatively (`Maybe`)
+/// and can never produce an `SC1101`. Used by the `path-coverage` command to
+/// quantify how much of real ASL falls inside the modeled fragment.
+#[derive(Clone, Copy, Default)]
+pub struct PathCoverage {
+    /// Total field-reads examined.
+    pub total: usize,
+    /// `$.a`, `$.a.b`: dotted access, resolved precisely against the shape.
+    pub dotted: usize,
+    /// `$` exactly: the whole document (always present, trivially precise).
+    pub whole_doc: usize,
+    /// `$`-rooted but with brackets, wildcards, filters or functions: conservative.
+    pub complex: usize,
+    /// `$$…` context object: out of the document model, conservative.
+    pub context: usize,
+    /// `$var` / `$var.path` workflow-variable reads: out of the document model.
+    pub variable: usize,
+    /// `States.*` intrinsics or non-`$` literals: not a document path.
+    pub intrinsic: usize,
+}
+
+impl PathCoverage {
+    /// Reads the analysis resolves precisely (dotted access plus whole-document `$`).
+    pub fn precise(&self) -> usize {
+        self.dotted + self.whole_doc
+    }
+}
+
+/// Classify every field-read in `wf` (recursing into `Map` iterators and
+/// `Parallel` branches) into [`PathCoverage`] buckets, using the *same*
+/// [`refs_of`]/[`parse_path`] logic the `SC1101` check applies.
+pub fn path_coverage(wf: &Workflow, acc: &mut PathCoverage) {
+    for st in wf.states.values() {
+        for r in refs_of(st).into_iter().chain(assign_refs_of(st)) {
+            acc.total += 1;
+            if r.starts_with("$$") {
+                acc.context += 1;
+            } else if is_variable_ref(&r) {
+                acc.variable += 1;
+            } else if r.starts_with("States.") || !r.starts_with('$') {
+                acc.intrinsic += 1;
+            } else {
+                match parse_path(&r) {
+                    Some(segs) if segs.is_empty() => acc.whole_doc += 1,
+                    Some(_) => acc.dotted += 1,
+                    None => acc.complex += 1,
+                }
+            }
+        }
+        if let Some(it) = &st.iterator {
+            path_coverage(it, acc);
+        }
+        for br in &st.branches {
+            path_coverage(br, acc);
+        }
+    }
+}
+
 impl Pass for DataFlowPass {
     fn id(&self) -> &'static str {
         "dataflow"
@@ -85,7 +147,7 @@ impl Pass for DataFlowPass {
         "Data-flow / field-provenance analysis"
     }
     fn run(&self, wf: &Workflow, sink: &mut DiagnosticSink) {
-        let root = root_seed(wf);
+        let root = root_env(wf);
         analyze_machine(wf, root, "", sink);
     }
 }
@@ -100,6 +162,12 @@ enum Shape {
     /// arrays are modelled as `Obj({})` (a leaf: no sub-field can be present) or
     /// `Top` respectively.
     Obj(HashMap<String, Shape>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct Env {
+    doc: Shape,
+    vars: Shape,
 }
 
 #[derive(Debug, PartialEq)]
@@ -129,6 +197,10 @@ fn root_seed(wf: &Workflow) -> Shape {
     Shape::Top
 }
 
+fn root_env(wf: &Workflow) -> Env {
+    Env { doc: root_seed(wf), vars: Shape::leaf() }
+}
+
 fn closed_record(fields: &[String]) -> Shape {
     Shape::Obj(fields.iter().map(|f| (f.clone(), Shape::Top)).collect())
 }
@@ -147,6 +219,10 @@ fn join(a: &Shape, b: &Shape) -> Shape {
             Shape::Obj(out)
         }
     }
+}
+
+fn join_env(a: &Env, b: &Env) -> Env {
+    Env { doc: join(&a.doc, &b.doc), vars: join(&a.vars, &b.vars) }
 }
 
 /// Parse a *simple* dotted JSONPath (`$`, `$.a`, `$.a.b`) into its field
@@ -170,6 +246,259 @@ fn parse_path(p: &str) -> Option<Vec<String>> {
         segs.push(seg.to_string());
     }
     Some(segs)
+}
+
+/// JSONPath-mode workflow variables also begin with `$` (`$x`, `$order.id`) but
+/// are not document paths (`$.x`). We classify them explicitly so they are a
+/// conservative, documented non-SC1101 case rather than an accidental parse miss.
+fn is_variable_ref(r: &str) -> bool {
+    if !r.starts_with('$') || r == "$" || r.starts_with("$.") || r.starts_with("$$") {
+        return false;
+    }
+    let tail = &r[1..];
+    let end = tail.find(|c| c == '.' || c == '[').unwrap_or(tail.len());
+    !tail[..end].is_empty()
+}
+
+fn parse_variable_ref(r: &str) -> Option<Vec<String>> {
+    if !is_variable_ref(r) {
+        return None;
+    }
+    let tail = &r[1..];
+    let mut segs = Vec::new();
+    for seg in tail.split('.') {
+        if seg.is_empty()
+            || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            return None;
+        }
+        segs.push(seg.to_string());
+    }
+    Some(segs)
+}
+
+fn ref_shape(r: &str, doc: &Shape, vars: &Shape) -> Shape {
+    if let Some(segs) = parse_path(r) {
+        return nav(doc, &segs);
+    }
+    if let Some(segs) = parse_variable_ref(r) {
+        return nav(vars, &segs);
+    }
+    Shape::Top
+}
+
+enum JsonataRef {
+    Input(Vec<String>),
+    Result(Vec<String>),
+    ErrorOutput(Vec<String>),
+    Variable(Vec<String>),
+    Context,
+}
+
+struct JsonataSources<'a> {
+    input: &'a Shape,
+    result: &'a Shape,
+    error: &'a Shape,
+    vars: &'a Shape,
+}
+
+fn jsonata_expr_body(s: &str) -> Option<&str> {
+    let t = s.trim();
+    let body = t.strip_prefix("{%")?.strip_suffix("%}")?;
+    Some(body.trim())
+}
+
+fn parse_dot_tail(tail: &str) -> Option<Vec<String>> {
+    if tail.is_empty() {
+        return Some(Vec::new());
+    }
+    let rest = tail.strip_prefix('.')?;
+    let mut segs = Vec::new();
+    for seg in rest.split('.') {
+        if seg.is_empty()
+            || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            return None;
+        }
+        segs.push(seg.to_string());
+    }
+    Some(segs)
+}
+
+fn parse_jsonata_ref(expr: &str) -> Option<JsonataRef> {
+    let e = expr.trim();
+    if let Some(tail) = e.strip_prefix("$states.input") {
+        return parse_dot_tail(tail).map(JsonataRef::Input);
+    }
+    if let Some(tail) = e.strip_prefix("$states.result") {
+        return parse_dot_tail(tail).map(JsonataRef::Result);
+    }
+    if let Some(tail) = e.strip_prefix("$states.errorOutput") {
+        return parse_dot_tail(tail).map(JsonataRef::ErrorOutput);
+    }
+    if e.starts_with("$states.context") {
+        return Some(JsonataRef::Context);
+    }
+    parse_variable_ref(e).map(JsonataRef::Variable)
+}
+
+fn jsonata_ref_shape(r: &JsonataRef, src: &JsonataSources<'_>) -> Shape {
+    match r {
+        JsonataRef::Input(segs) => nav(src.input, segs),
+        JsonataRef::Result(segs) => nav(src.result, segs),
+        JsonataRef::ErrorOutput(segs) => nav(src.error, segs),
+        JsonataRef::Variable(segs) => nav(src.vars, segs),
+        JsonataRef::Context => Shape::Top,
+    }
+}
+
+fn split_top_level(s: &str, delimiter: char) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0usize;
+    let mut depth = 0i32;
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for (i, ch) in s.char_indices() {
+        if let Some(q) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == q {
+                quote = None;
+            }
+            continue;
+        }
+        match ch {
+            '\'' | '"' => quote = Some(ch),
+            '{' | '[' | '(' => depth += 1,
+            '}' | ']' | ')' => depth -= 1,
+            _ if ch == delimiter && depth == 0 => {
+                parts.push(s[start..i].trim());
+                start = i + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    parts.push(s[start..].trim());
+    parts
+}
+
+fn find_top_level_colon(s: &str) -> Option<usize> {
+    let mut depth = 0i32;
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for (i, ch) in s.char_indices() {
+        if let Some(q) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == q {
+                quote = None;
+            }
+            continue;
+        }
+        match ch {
+            '\'' | '"' => quote = Some(ch),
+            '{' | '[' | '(' => depth += 1,
+            '}' | ']' | ')' => depth -= 1,
+            ':' if depth == 0 => return Some(i),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn parse_jsonata_key(s: &str) -> Option<String> {
+    let t = s.trim();
+    if let Some(inner) = t.strip_prefix('\'').and_then(|x| x.strip_suffix('\'')) {
+        return Some(inner.to_string());
+    }
+    if let Some(inner) = t.strip_prefix('"').and_then(|x| x.strip_suffix('"')) {
+        return Some(inner.to_string());
+    }
+    if !t.is_empty() && t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+        return Some(t.to_string());
+    }
+    None
+}
+
+fn parse_jsonata_object(expr: &str) -> Option<Vec<(String, &str)>> {
+    let t = expr.trim();
+    let inner = t.strip_prefix('{')?.strip_suffix('}')?;
+    if inner.trim().is_empty() {
+        return Some(Vec::new());
+    }
+    let mut out = Vec::new();
+    for part in split_top_level(inner, ',') {
+        let idx = find_top_level_colon(part)?;
+        let key = parse_jsonata_key(&part[..idx])?;
+        out.push((key, part[idx + 1..].trim()));
+    }
+    Some(out)
+}
+
+fn jsonata_expr_shape(expr: &str, src: &JsonataSources<'_>) -> Shape {
+    if let Some(r) = parse_jsonata_ref(expr) {
+        return jsonata_ref_shape(&r, src);
+    }
+    if let Some(fields) = parse_jsonata_object(expr) {
+        return Shape::Obj(
+            fields
+                .into_iter()
+                .map(|(k, v)| (k, jsonata_expr_shape(v, src)))
+                .collect(),
+        );
+    }
+    Shape::Top
+}
+
+fn shape_of_jsonata_value(v: &Value, src: &JsonataSources<'_>) -> Shape {
+    match v {
+        Value::String(s) => match jsonata_expr_body(s) {
+            Some(expr) => jsonata_expr_shape(expr, src),
+            None => Shape::leaf(),
+        },
+        Value::Object(m) => Shape::Obj(
+            m.iter()
+                .map(|(k, val)| (k.clone(), shape_of_jsonata_value(val, src)))
+                .collect(),
+        ),
+        Value::Array(_) => Shape::Top,
+        _ => Shape::leaf(),
+    }
+}
+
+fn jsonata_strict_refs_in_expr<'a>(expr: &'a str, out: &mut Vec<&'a str>) {
+    if parse_jsonata_ref(expr).is_some() {
+        out.push(expr.trim());
+    } else if let Some(fields) = parse_jsonata_object(expr) {
+        for (_, v) in fields {
+            jsonata_strict_refs_in_expr(v, out);
+        }
+    }
+}
+
+fn jsonata_strict_refs_in_value<'a>(v: &'a Value, out: &mut Vec<&'a str>) {
+    match v {
+        Value::String(s) => {
+            if let Some(expr) = jsonata_expr_body(s) {
+                jsonata_strict_refs_in_expr(expr, out);
+            }
+        }
+        Value::Object(m) => {
+            for val in m.values() {
+                jsonata_strict_refs_in_value(val, out);
+            }
+        }
+        Value::Array(a) => {
+            for val in a {
+                jsonata_strict_refs_in_value(val, out);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn lookup(shape: &Shape, segs: &[String]) -> Presence {
@@ -277,6 +606,86 @@ fn shape_of_constructor(v: &Value) -> Shape {
     }
 }
 
+fn shape_of_jsonpath_assign_value(v: &Value, source_doc: &Shape, vars: &Shape) -> Shape {
+    match v {
+        Value::Object(m) => {
+            let mut out = HashMap::new();
+            for (k, val) in m {
+                if let Some(name) = k.strip_suffix(".$") {
+                    let shape = val
+                        .as_str()
+                        .map(|r| ref_shape(r, source_doc, vars))
+                        .unwrap_or(Shape::Top);
+                    out.insert(name.to_string(), shape);
+                } else {
+                    out.insert(k.clone(), shape_of_jsonpath_assign_value(val, source_doc, vars));
+                }
+            }
+            Shape::Obj(out)
+        }
+        Value::Array(_) => Shape::Top,
+        _ => Shape::leaf(),
+    }
+}
+
+fn bind_var(vars: &Shape, name: &str, val: Shape) -> Shape {
+    match vars {
+        Shape::Top => Shape::Top,
+        Shape::Obj(m) => {
+            let mut out = m.clone();
+            out.insert(name.to_string(), val);
+            Shape::Obj(out)
+        }
+    }
+}
+
+fn apply_jsonpath_assign(vars: &Shape, assign: &Option<Value>, source_doc: &Shape) -> Shape {
+    let Some(Value::Object(m)) = assign else { return vars.clone() };
+    let mut out = vars.clone();
+    for (k, val) in m {
+        let (name, shape) = if let Some(name) = k.strip_suffix(".$") {
+            let shape = val
+                .as_str()
+                .map(|r| ref_shape(r, source_doc, vars))
+                .unwrap_or(Shape::Top);
+            (name, shape)
+        } else {
+            (k.as_str(), shape_of_jsonpath_assign_value(val, source_doc, vars))
+        };
+        out = bind_var(&out, name, shape);
+    }
+    out
+}
+
+fn apply_jsonata_assign(vars: &Shape, assign: &Option<Value>, src: &JsonataSources<'_>) -> Shape {
+    let Some(Value::Object(m)) = assign else { return vars.clone() };
+    let mut out = vars.clone();
+    for (name, val) in m {
+        out = bind_var(&out, name, shape_of_jsonata_value(val, src));
+    }
+    out
+}
+
+fn jsonata_result_source_shape(st: &State) -> Shape {
+    match st.kind {
+        StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+        _ => Shape::Top,
+    }
+}
+
+fn jsonata_output_shape(st: &State, env: &Env) -> Shape {
+    let result = jsonata_result_source_shape(st);
+    let error = Shape::Top;
+    let src = JsonataSources { input: &env.doc, result: &result, error: &error, vars: &env.vars };
+    match &st.output {
+        Some(output) => shape_of_jsonata_value(output, &src),
+        None => match st.kind {
+            StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+            _ => env.doc.clone(),
+        },
+    }
+}
+
 /// The shape a state's result-processing writes back (before `ResultPath`).
 fn result_shape(st: &State, eff_in: &Shape) -> Shape {
     match st.kind {
@@ -306,25 +715,31 @@ fn has_result_processing(st: &State) -> bool {
     )
 }
 
-/// Document shape leaving a state (consumed by its successors).
-fn out_shape(st: &State, in_shape: &Shape) -> Shape {
-    // JSONata states reshape their document with `Output`/`Arguments`/`{% … %}`
-    // expressions we do not model. Producing `Top` over-approximates whatever
-    // they emit, so downstream reads of a JSONata-produced field resolve to
-    // `Maybe` (never `Missing`) and are never flagged — the soundness fallback.
+/// Abstract environment leaving a state (consumed by its successors).
+fn out_env(st: &State, env: &Env) -> Env {
     if st.is_opaque_query() {
-        return Shape::Top;
+        let result = jsonata_result_source_shape(st);
+        let error = Shape::Top;
+        let src = JsonataSources { input: &env.doc, result: &result, error: &error, vars: &env.vars };
+        return Env {
+            doc: jsonata_output_shape(st, env),
+            vars: apply_jsonata_assign(&env.vars, &st.assign, &src),
+        };
     }
-    let eff_in = narrow(in_shape, &st.input_path);
-    let combined = if has_result_processing(st) {
+    let eff_in = narrow(&env.doc, &st.input_path);
+    let doc = if has_result_processing(st) {
         // a Task/Pass/Map/Parallel merges its result into the *raw* state input
         let res = result_shape(st, &eff_in);
-        place(in_shape, &st.result_path, res)
+        place(&env.doc, &st.result_path, res)
     } else {
         // Choice/Wait/terminals pass the InputPath-filtered document through
         eff_in
     };
-    narrow(&combined, &st.output_path)
+    let assign_source = assign_source_shape(st, &narrow(&env.doc, &st.input_path));
+    Env {
+        doc: narrow(&doc, &st.output_path),
+        vars: apply_jsonpath_assign(&env.vars, &st.assign, &assign_source),
+    }
 }
 
 /// Document shape a `Catch` target receives: the state input with an opaque
@@ -379,6 +794,116 @@ fn refs_of(st: &State) -> Vec<String> {
     out
 }
 
+/// JSONPath `Assign` is also a payload-template-like hard-failing read site.
+/// Its `$` source is state-type dependent, so callers check these separately
+/// from [`refs_of`], which resolves against the effective state input.
+fn assign_refs_of(st: &State) -> Vec<String> {
+    let mut out = Vec::new();
+    if let Some(a) = &st.assign {
+        dollar_refs(a, &mut out);
+    }
+    out
+}
+
+fn assign_source_shape(st: &State, eff_in: &Shape) -> Shape {
+    match st.kind {
+        // JSONPath Assign on these states sees the raw API/sub-workflow result,
+        // before ResultSelector/ResultPath. Without a result schema that value is
+        // opaque, so reads are never definitely absent.
+        StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+        // Pass Assign sees the Pass result (Result, Parameters, or effective input).
+        StateKind::Pass => result_shape(st, eff_in),
+        // Choice and Wait Assign read from the effective input.
+        StateKind::Choice | StateKind::Wait => eff_in.clone(),
+        _ => eff_in.clone(),
+    }
+}
+
+fn check_required_ref(
+    scope: &str,
+    name: &str,
+    r: &str,
+    doc_shape: &Shape,
+    vars_shape: &Shape,
+    sink: &mut DiagnosticSink,
+) {
+    if r.starts_with("$$") || r.starts_with("States.") || !r.starts_with('$') {
+        return; // context object / intrinsic / non-path: out of modeled scope
+    }
+    let (segs, shape) = if let Some(segs) = parse_path(r) {
+        (segs, doc_shape)
+    } else if let Some(segs) = parse_variable_ref(r) {
+        (segs, vars_shape)
+    } else {
+        return;
+    };
+    if segs.is_empty() {
+        return; // `$` is the whole document
+    }
+    if lookup(shape, &segs) == Presence::Missing {
+        sink.push(
+            Diagnostic::error(
+                "SC1101",
+                &qualify(scope, name),
+                format!(
+                    "data-flow: '{name}' reads '{r}', a field no execution reaching it can have produced"
+                ),
+            )
+            .with_note(
+                "the reference resolves against a document the workflow constructs; no state on any path binds this field",
+            ),
+        );
+    }
+}
+
+fn check_jsonata_required_ref(
+    scope: &str,
+    name: &str,
+    expr: &str,
+    src: &JsonataSources<'_>,
+    sink: &mut DiagnosticSink,
+) {
+    let Some(r) = parse_jsonata_ref(expr) else { return };
+    let (segs, shape) = match &r {
+        JsonataRef::Input(segs) => (segs, src.input),
+        JsonataRef::Result(segs) => (segs, src.result),
+        JsonataRef::ErrorOutput(segs) => (segs, src.error),
+        JsonataRef::Variable(segs) => (segs, src.vars),
+        JsonataRef::Context => return,
+    };
+    if segs.is_empty() {
+        return;
+    }
+    if lookup(shape, segs) == Presence::Missing {
+        sink.push(
+            Diagnostic::error(
+                "SC1101",
+                &qualify(scope, name),
+                format!(
+                    "data-flow: '{name}' reads JSONata expression '{expr}', a field no execution reaching it can have produced"
+                ),
+            )
+            .with_note(
+                "the modeled JSONata reference resolves against a document or variable the workflow constructs; no state on any path binds this field",
+            ),
+        );
+    }
+}
+
+fn check_jsonata_value_refs(
+    scope: &str,
+    name: &str,
+    v: &Value,
+    src: &JsonataSources<'_>,
+    sink: &mut DiagnosticSink,
+) {
+    let mut refs = Vec::new();
+    jsonata_strict_refs_in_value(v, &mut refs);
+    for r in refs {
+        check_jsonata_required_ref(scope, name, r, src, sink);
+    }
+}
+
 /// An upper bound on the number of distinct field keys any shape in this machine
 /// can hold: every key a constructor/result/selector mentions, plus the declared
 /// input fields. The may-present lattice's height is bounded by this (a shape
@@ -399,14 +924,55 @@ fn key_universe(wf: &Workflow) -> usize {
             _ => {}
         }
     }
+    fn harvest_jsonata_expr(expr: &str, keys: &mut HashSet<String>) {
+        if let Some(fields) = parse_jsonata_object(expr) {
+            for (k, v) in fields {
+                keys.insert(k);
+                harvest_jsonata_expr(v, keys);
+            }
+        }
+    }
+    fn harvest_jsonata(v: &Value, keys: &mut HashSet<String>) {
+        match v {
+            Value::String(s) => {
+                if let Some(expr) = jsonata_expr_body(s) {
+                    harvest_jsonata_expr(expr, keys);
+                }
+            }
+            Value::Object(m) => {
+                for (k, val) in m {
+                    keys.insert(k.trim_end_matches(".$").to_string());
+                    harvest_jsonata(val, keys);
+                }
+            }
+            Value::Array(a) => a.iter().for_each(|val| harvest_jsonata(val, keys)),
+            _ => {}
+        }
+    }
     let mut keys: HashSet<String> = HashSet::new();
     if let Some(f) = &wf.input_fields {
         keys.extend(f.iter().cloned());
     }
     for st in wf.states.values() {
-        for v in [&st.parameters, &st.result, &st.result_selector, &st.item_selector] {
+        for v in [
+            &st.parameters,
+            &st.arguments,
+            &st.assign,
+            &st.output,
+            &st.items,
+            &st.result,
+            &st.result_selector,
+            &st.item_selector,
+        ] {
             if let Some(val) = v {
                 harvest(val, &mut keys);
+                harvest_jsonata(val, &mut keys);
+            }
+        }
+        for c in &st.catch {
+            if let Some(assign) = &c.assign {
+                harvest(assign, &mut keys);
+                harvest_jsonata(assign, &mut keys);
             }
         }
     }
@@ -415,11 +981,11 @@ fn key_universe(wf: &Workflow) -> usize {
 
 /// Compute the entry shape of every state by forward fixpoint, then check
 /// references, then recurse into nested machines.
-fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut DiagnosticSink) {
+fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticSink) {
     // Forward dataflow to a fixpoint over normal + catch edges.
-    let mut in_shapes: HashMap<String, Shape> = HashMap::new();
+    let mut in_envs: HashMap<String, Env> = HashMap::new();
     if wf.states.contains_key(&wf.start_at) {
-        in_shapes.insert(wf.start_at.clone(), root.clone());
+        in_envs.insert(wf.start_at.clone(), root.clone());
     }
     // Forward fixpoint. Each state's shape only ever grows (a join unions keys
     // or lifts to `Top`) and the key universe is finite, so the ascending chain
@@ -434,19 +1000,29 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
     let converged = loop {
         let mut changed = false;
         for (name, st) in &wf.states {
-            let Some(cur_in) = in_shapes.get(name).cloned() else { continue };
-            let out = out_shape(st, &cur_in);
+            let Some(cur_in) = in_envs.get(name).cloned() else { continue };
+            let out = out_env(st, &cur_in);
             // normal successors inherit the out shape
             for succ in st.normal_successors() {
                 if wf.states.contains_key(succ) {
-                    propagate(&mut in_shapes, succ, &out, &mut changed);
+                    propagate(&mut in_envs, succ, &out, &mut changed);
                 }
             }
             // catch successors inherit the input + opaque error object
             for c in &st.catch {
                 if wf.states.contains_key(&c.next) {
-                    let cs = catch_shape(&cur_in, &c.result_path);
-                    propagate(&mut in_shapes, &c.next, &cs, &mut changed);
+                    let mut cs = Env { doc: catch_shape(&cur_in.doc, &c.result_path), vars: cur_in.vars.clone() };
+                    if c.assign.is_some() {
+                        let error = Shape::Top;
+                        if st.is_opaque_query() {
+                            let result = Shape::Top;
+                            let src = JsonataSources { input: &cur_in.doc, result: &result, error: &error, vars: &cur_in.vars };
+                            cs.vars = apply_jsonata_assign(&cur_in.vars, &c.assign, &src);
+                        } else {
+                            cs.vars = apply_jsonpath_assign(&cur_in.vars, &c.assign, &error);
+                        }
+                    }
+                    propagate(&mut in_envs, &c.next, &cs, &mut changed);
                 }
             }
         }
@@ -472,35 +1048,33 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
     // Check references against each state's effective input (only at the fixpoint).
     if converged {
     for (name, st) in &wf.states {
-        // A JSONata state's references are `{% … %}` expressions, not JSONPath
-        // `.$` reads; we do not interpret them, so we never flag them (soundness).
+        let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
         if st.is_opaque_query() {
+            let result = jsonata_result_source_shape(st);
+            let error = Shape::Top;
+            let src = JsonataSources { input: &in_env.doc, result: &result, error: &error, vars: &in_env.vars };
+            for v in [&st.arguments, &st.output, &st.assign, &st.items] {
+                if let Some(val) = v {
+                    check_jsonata_value_refs(scope, name, val, &src, sink);
+                }
+            }
+            for rule in &st.choices {
+                check_jsonata_value_refs(scope, name, &rule.condition, &src, sink);
+            }
+            for c in &st.catch {
+                if let Some(assign) = &c.assign {
+                    check_jsonata_value_refs(scope, name, assign, &src, sink);
+                }
+            }
             continue;
         }
-        let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
-        let eff_in = narrow(&in_shape, &st.input_path);
+        let eff_in = narrow(&in_env.doc, &st.input_path);
         for r in refs_of(st) {
-            if r.starts_with("$$") || r.starts_with("States.") || !r.starts_with('$') {
-                continue; // context object / intrinsic / non-path: out of scope
-            }
-            let Some(segs) = parse_path(&r) else { continue };
-            if segs.is_empty() {
-                continue; // `$` is the whole document
-            }
-            if lookup(&eff_in, &segs) == Presence::Missing {
-                sink.push(
-                    Diagnostic::error(
-                        "SC1101",
-                        &qualify(scope, name),
-                        format!(
-                            "data-flow: '{name}' reads '{r}', a field no execution reaching it can have produced"
-                        ),
-                    )
-                    .with_note(
-                        "the reference resolves against a document the workflow constructs; no state on any path binds this field",
-                    ),
-                );
-            }
+            check_required_ref(scope, name, &r, &eff_in, &in_env.vars, sink);
+        }
+        let assign_source = assign_source_shape(st, &eff_in);
+        for r in assign_refs_of(st) {
+            check_required_ref(scope, name, &r, &assign_source, &in_env.vars, sink);
         }
     }
 
@@ -512,8 +1086,8 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
         if st.kind != StateKind::Choice || st.is_opaque_query() {
             continue;
         }
-        let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
-        let eff_in = narrow(&in_shape, &st.input_path);
+        let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
+        let eff_in = narrow(&in_env.doc, &st.input_path);
         for rule in &st.choices {
             if let Some(var) = dead_guard_field(&rule.condition, &eff_in) {
                 sink.push(
@@ -537,8 +1111,8 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
     // so a nested analysis seeded from them could report a false positive; we then
     // suppress the recursion, exactly as we suppress this machine's own reporting.
     for (name, st) in &wf.states {
-        let in_shape = in_shapes.get(name).cloned().unwrap_or(Shape::Top);
-        let eff_in = narrow(&in_shape, &st.input_path);
+        let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
+        let eff_in = narrow(&in_env.doc, &st.input_path);
         if let Some(it) = &st.iterator {
             // Each iteration sees the per-item document: the ItemSelector record
             // if declared, else an opaque element.
@@ -546,7 +1120,8 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
                 Some(is) => shape_of_constructor(is),
                 None => Shape::Top,
             };
-            analyze_machine(it, item_root, &qualify(scope, &format!("{name}[Map]")), sink);
+            let item_vars = if st.distributed_map { Shape::Top } else { in_env.vars.clone() };
+            analyze_machine(it, Env { doc: item_root, vars: item_vars }, &qualify(scope, &format!("{name}[Map]")), sink);
         }
         for (i, br) in st.branches.iter().enumerate() {
             // Each Parallel branch receives the state's effective input, reshaped
@@ -557,7 +1132,7 @@ fn analyze_machine(wf: &Workflow, root: Shape, scope: &str, sink: &mut Diagnosti
                 Some(p) => shape_of_constructor(p),
                 None => eff_in.clone(),
             };
-            analyze_machine(br, branch_root, &qualify(scope, &format!("{name}[Branch{i}]")), sink);
+            analyze_machine(br, Env { doc: branch_root, vars: in_env.vars.clone() }, &qualify(scope, &format!("{name}[Branch{i}]")), sink);
         }
     }
     } // end `if converged`
@@ -619,17 +1194,17 @@ fn dead_guard_field(cond: &Value, shape: &Shape) -> Option<String> {
     }
 }
 
-fn propagate(map: &mut HashMap<String, Shape>, target: &str, shape: &Shape, changed: &mut bool) {
+fn propagate(map: &mut HashMap<String, Env>, target: &str, env: &Env, changed: &mut bool) {
     match map.get(target) {
         Some(existing) => {
-            let j = join(existing, shape);
+            let j = join_env(existing, env);
             if &j != existing {
                 map.insert(target.to_string(), j);
                 *changed = true;
             }
         }
         None => {
-            map.insert(target.to_string(), shape.clone());
+            map.insert(target.to_string(), env.clone());
             *changed = true;
         }
     }

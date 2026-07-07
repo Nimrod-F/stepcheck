@@ -1,0 +1,45 @@
+{
+  "Comment": "testactivity ",
+  "Type": "statemachine",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.x",
+        "y.$": "$.y"
+      },
+      "Resource": "activity:unittest/Testadd",
+      "ResultPath": "$.z",
+      "Next": "S2"
+    },
+    "S2": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.x",
+        "y.$": "$.z"
+      },
+      "Resource": "activity:unittest/Testadd",
+      "ResultPath": "$.z",
+      "Next": "S3"
+    },
+    "S3": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.x",
+        "y.$": "$.z"
+      },
+      "Resource": "activity:unittest/TestaddActivity2",
+      "Next": "S4"
+    },
+    "S4": {
+      "Type": "Pass",
+      "Parameters": {
+        "x.$": "$.x",
+        "y.$": "$.z"
+      },
+      "End": true
+    }
+  }
+}

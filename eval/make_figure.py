@@ -45,7 +45,8 @@ b2 = ax[2].bar(x + w / 2, cov, w, color=C["grey"], label="coverage")
 for b in list(b1) + list(b2):
     ax[2].text(b.get_x() + b.get_width() / 2, b.get_height() + 1.5, f"{b.get_height():.0f}", ha="center", fontsize=8)
 ax[2].set_xticks(x); ax[2].set_xticklabels(labels); ax[2].set_ylim(0, 109); ax[2].set_ylabel("%")
-ax[2].set_title("(c) Inference vs human gold"); ax[2].legend(frameon=False, fontsize=8, loc="lower center", ncol=2)
+ax[2].set_title("(c) Inference vs human gold")
+ax[2].legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=2)
 
 plt.tight_layout()
 out = os.path.join(ROOT, "paper/figures/eval-figure.pdf")

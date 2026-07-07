@@ -1,0 +1,26 @@
+{
+  "Comment": "testactivity ",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Resource": "activity:unittest/add",
+      "Parameters": {
+        "x.$": "$.a",
+        "y.$": "$.b"
+      },
+      "ResultPath": "$.z",
+      "Next": "S2"
+    },
+    "S2": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.a",
+        "y.$": "$.z"
+      },
+      "Resource": "activity:unittest/add",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "generated_by": "eval/validator_panel.js",
+  "corpus_dir": "C:\\Users\\foldv\\Downloads\\ICSOC_Typecheking\\corpus\\asl",
+  "workflows": 193,
+  "tools": {
+    "statelint": true,
+    "asl-validator": true,
+    "aws": false
+  },
+  "aws_throttle_sleeps": 0,
+  "in_the_wild": {
+    "per_tool": {
+      "statelint": {
+        "flagged": 113,
+        "problems": 499
+      },
+      "asl-validator": {
+        "flagged": 18,
+        "problems": 29
+      },
+      "aws": {
+        "flagged": 0,
+        "problems": 0
+      }
+    },
+    "stepcheck_by_class": {
+      "retry": 20,
+      "compensation": 78,
+      "temporal": 22,
+      "structural": 10
+    },
+    "venn_vs_stepcheck": {
+      "stepcheck_only": 37,
+      "baseline_only": 53,
+      "both": 62,
+      "neither": 41
+    },
+    "note": "baseline = union of the available validators; stepcheck_only is dominated by the semantic classes no validator expresses."
+  },
+  "mutation_detection": {
+    "structural": {
+      "label": "Dangling transition (SC0002)",
+      "applicable": 166,
+      "statelint": {
+        "detected": 166,
+        "recall_pct": 100,
+        "any_new_problem": 166
+      },
+      "asl-validator": {
+        "detected": 156,
+        "recall_pct": 94,
+        "any_new_problem": 156
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    },
+    "contract": {
+      "label": "Broken data binding (SC1003)",
+      "applicable": 141,
+      "statelint": {
+        "detected": 140,
+        "recall_pct": 99.3,
+        "any_new_problem": 140
+      },
+      "asl-validator": {
+        "detected": 132,
+        "recall_pct": 93.6,
+        "any_new_problem": 132
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    },
+    "retry": {
+      "label": "Unsafe retry (SC3001)",
+      "applicable": 103,
+      "statelint": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 103
+      },
+      "asl-validator": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    },
+    "compensation": {
+      "label": "Missing compensation (SC4001)",
+      "applicable": 19,
+      "statelint": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 7
+      },
+      "asl-validator": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 6
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    },
+    "concurrency": {
+      "label": "Concurrency interference (SC5001)",
+      "applicable": 21,
+      "statelint": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      },
+      "asl-validator": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    },
+    "temporal": {
+      "label": "Temporal heartbeat/timeout (SC6003)",
+      "applicable": 166,
+      "statelint": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      },
+      "asl-validator": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      },
+      "aws": {
+        "detected": 0,
+        "recall_pct": 0,
+        "any_new_problem": 0
+      }
+    }
+  },
+  "note": "detection credited only when a validator emits a NEW problem (vs the emitted control) that NAMES the injected fault; incidental schema nits (e.g. a float IntervalSeconds) are not credited."
+}

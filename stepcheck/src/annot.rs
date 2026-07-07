@@ -12,11 +12,12 @@
 //! only the IR. Findings derived from inferred (vs declared) facts are reported
 //! at a lower severity by the passes (see `confidence`-based severity).
 
+use crate::diag::{Diagnostic, DiagnosticSink};
 use crate::ir::*;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Sidecar {
@@ -78,8 +79,9 @@ impl Sidecar {
 }
 
 /// Resolve annotations onto a workflow (recursively into sub-machines).
-pub fn resolve(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool) {
+pub fn resolve(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool, sink: &mut DiagnosticSink) {
     if let Some(sc) = sidecar {
+        validate_sidecar(wf, sc, sink);
         if let Some(is) = &sc.workflow.input_schema {
             wf.input_schema = Some(is.clone());
         }
@@ -93,6 +95,96 @@ pub fn resolve(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool) {
         }
     }
     resolve_machine(wf, sidecar, infer);
+}
+
+fn validate_sidecar(wf: &Workflow, sc: &Sidecar, sink: &mut DiagnosticSink) {
+    let mut states = BTreeSet::new();
+    let mut tasks = BTreeSet::new();
+    collect_state_names(wf, &mut states, &mut tasks);
+
+    for (name, task) in &sc.tasks {
+        if !states.contains(name) {
+            sink.push(
+                Diagnostic::error(
+                    "SC0011",
+                    name,
+                    format!("sidecar references unknown state/task '{name}'"),
+                )
+                .with_note("remove the stale [tasks] entry or rename it to a Task state in the workflow"),
+            );
+        } else if !tasks.contains(name) {
+            sink.push(
+                Diagnostic::error(
+                    "SC0011",
+                    name,
+                    format!("sidecar task annotation '{name}' names a non-Task state"),
+                )
+                .with_note("sidecar [tasks] entries only apply to Task states"),
+            );
+        }
+
+        if let Some(compensation) = &task.compensation {
+            if !states.contains(compensation) {
+                sink.push(
+                    Diagnostic::error(
+                        "SC0011",
+                        name,
+                        format!(
+                            "sidecar task '{name}' references unknown compensation state '{compensation}'"
+                        ),
+                    )
+                    .with_note("rename the compensation reference or add the missing state"),
+                );
+            }
+        }
+
+        check_schema_ref(&sc.schemas, name, "input_schema", &task.input_schema, sink);
+        check_schema_ref(&sc.schemas, name, "output_schema", &task.output_schema, sink);
+    }
+
+    check_schema_ref(
+        &sc.schemas,
+        "workflow",
+        "input_schema",
+        &sc.workflow.input_schema,
+        sink,
+    );
+}
+
+fn collect_state_names(wf: &Workflow, states: &mut BTreeSet<String>, tasks: &mut BTreeSet<String>) {
+    for (name, st) in &wf.states {
+        states.insert(name.clone());
+        if st.is_task() {
+            tasks.insert(name.clone());
+        }
+        if let Some(it) = &st.iterator {
+            collect_state_names(it, states, tasks);
+        }
+        for br in &st.branches {
+            collect_state_names(br, states, tasks);
+        }
+    }
+}
+
+fn check_schema_ref(
+    schemas: &BTreeMap<String, SchemaDef>,
+    owner: &str,
+    field: &str,
+    schema: &Option<String>,
+    sink: &mut DiagnosticSink,
+) {
+    if let Some(name) = schema {
+        if !schemas.contains_key(name) {
+            sink.push(
+                Diagnostic::error(
+                    "SC0012",
+                    owner,
+                    format!("sidecar {owner}.{field} references unknown schema '{name}'"),
+                )
+                .with_note("define the schema in [schemas] or correct the schema name"),
+            );
+        }
+    }
 }
 
 fn resolve_machine(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool) {

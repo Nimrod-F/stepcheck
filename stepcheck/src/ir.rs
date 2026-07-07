@@ -78,6 +78,7 @@ pub struct CatchRule {
     pub error_equals: Vec<String>,
     pub next: String,
     pub result_path: ResultPath,
+    pub assign: Option<Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +126,16 @@ pub struct State {
     pub output_path: Option<Value>,
     pub result_path: ResultPath,
     pub parameters: Option<Value>,
+    /// JSONata action arguments (`Arguments`).
+    pub arguments: Option<Value>,
+    /// Workflow-variable assignments (`Assign`). JSONPath states use payload-template
+    /// `.$` bindings; JSONata states use `{% ... %}` expressions. The data-flow
+    /// pass models JSONPath assignments conservatively and treats JSONata ones as opaque.
+    pub assign: Option<Value>,
+    /// JSONata state output (`Output`).
+    pub output: Option<Value>,
+    /// JSONata Map item source (`Items`).
+    pub items: Option<Value>,
     pub result_selector: Option<Value>,
     pub result: Option<Value>,
     pub retry: Vec<RetryRule>,
@@ -142,6 +153,9 @@ pub struct State {
     pub heartbeat_seconds: Option<f64>,
     /// `MaxConcurrency` of a `Map` state (`None` = unbounded).
     pub max_concurrency: Option<i64>,
+    /// Whether this is a Distributed Map (`ItemProcessor` in distributed mode,
+    /// or distributed-only fields such as `ItemReader`).
+    pub distributed_map: bool,
     /// `ItemSelector`/`Parameters` of a `Map` describing the per-item document.
     pub item_selector: Option<Value>,
     /// Effective query language of this state (explicit `QueryLanguage`, else the
@@ -164,6 +178,10 @@ impl State {
             output_path: None,
             result_path: ResultPath::Default,
             parameters: None,
+            arguments: None,
+            assign: None,
+            output: None,
+            items: None,
             result_selector: None,
             result: None,
             retry: Vec::new(),
@@ -176,6 +194,7 @@ impl State {
             timeout_seconds: None,
             heartbeat_seconds: None,
             max_concurrency: None,
+            distributed_map: false,
             item_selector: None,
             query_language: QueryLang::JsonPath,
             anno: Anno::default(),

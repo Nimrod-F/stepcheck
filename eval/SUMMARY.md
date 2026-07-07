@@ -57,12 +57,14 @@ compensators (idempotent in effect) as non-idempotent. Persistence (which drives
 compensation check) holds up at 86%. High annotator agreement + low heuristic accuracy =
 the truth is clear but names don't carry it → findings are warnings.
 
-## E4b — In-the-wild warning precision (vs gold)
-Of the 39 SC3001/SC4001 warnings landing on a gold-labelled task, **28/39 (72%)** are
-true positives — **26/32 (81%)** for SC4001 (compensation), **2/7** for SC3001 (retry).
-Every false positive is a compensator (RefundPayment/Cancel*) or an idempotent
-keyed/metadata write. (A broader judge+adversarial-verify triage of all 153 findings is
-in `eval/triage-verdicts.json`.)
+## E4b — In-the-wild warning precision (vs human gold)
+`node eval/score-human-gold.js --reconciled` (human gold = reconciled `gold-labels-human-{A,B}.json`
++ the 10-workflow hand-labelled core). Of the SC3001/SC4001 warnings landing on a gold-labelled
+task, **40/44 (91%)** are true positives — **33/37 (89%)** for SC4001 (compensation), **7/7 (100%)**
+for SC3001 (retry), and **6/6 (100%)** for SC4010; all three inferred codes together are
+**46/50 (92%)**. The residual SC4001 false positives are compensators (RefundPayment/Cancel*) or
+idempotent keyed/metadata writes. (Human inter-annotator Cohen's kappa **0.89** idempotent /
+**0.99** persistent.)
 
 ## E9 — Baseline: statelint (AWS Labs reference linter, v0.8.0)
 `node eval/statelint_baseline.js` → `eval/baseline-statelint.json`. On the 616 mutants:

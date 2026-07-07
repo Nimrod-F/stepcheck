@@ -1,0 +1,56 @@
+{
+  "corpora": [
+    {
+      "dir": "corpus/asl",
+      "files": 193,
+      "reads_total": 1168,
+      "dotted": 594,
+      "whole_doc": 146,
+      "complex": 63,
+      "context": 225,
+      "intrinsic": 140,
+      "precise": 740,
+      "precise_pct": 63.4,
+      "conservative_pct": 36.6
+    },
+    {
+      "dir": "corpus/cncf",
+      "files": 66,
+      "reads_total": 2,
+      "dotted": 0,
+      "whole_doc": 0,
+      "complex": 0,
+      "context": 0,
+      "intrinsic": 2,
+      "precise": 0,
+      "precise_pct": 0.0,
+      "conservative_pct": 100.0
+    },
+    {
+      "dir": "corpus/wild-external",
+      "files": 95,
+      "reads_total": 420,
+      "dotted": 296,
+      "whole_doc": 57,
+      "complex": 17,
+      "context": 20,
+      "intrinsic": 30,
+      "precise": 353,
+      "precise_pct": 84.0,
+      "conservative_pct": 16.0
+    }
+  ],
+  "combined": {
+    "dir": null,
+    "files": 354,
+    "reads_total": 1590,
+    "dotted": 890,
+    "whole_doc": 203,
+    "complex": 80,
+    "context": 245,
+    "intrinsic": 172,
+    "precise": 1093,
+    "precise_pct": 68.7,
+    "conservative_pct": 31.3
+  }
+}
