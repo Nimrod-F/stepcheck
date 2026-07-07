@@ -95,6 +95,10 @@ flags 113/193 files with 499 problems, **410** of them schema-shape nits, none s
   detected **84 / 126 (67%)**; the undetected third sit downstream of opaque task results
   (shape soundly = ⊤) — a measure of ASL's intrinsic opacity, not a reliability gap. The
   closed-world baseline produces **0** spurious SC1101.
+- **Result-shape ablation:** the implementation now resolves quoted-bracket member paths;
+  `--result-shapes` additionally adds closed declared task-output schemas and known AWS
+  service-result envelopes. SC1101 recall improves from **84 / 126** to **88 / 126 (70%)**;
+  the ablation oracle confirms **92 / 92** SC1101 reports with **0** counterexamples.
 
 ## E5 — Verification cost
 - Mean **38.9 µs**/workflow (eight passes incl. the data-flow fixpoint), median 23.7 µs,

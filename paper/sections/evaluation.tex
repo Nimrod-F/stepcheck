@@ -110,6 +110,16 @@ flow-sensitive misses through \texttt{ResultPath} merges that adjacent-task fiel
 The undetected third are downstream of opaque task results, where the shape soundly collapsed to
 $\top$.
 
+An implementation ablation reduces that opacity. The implementation also resolves quoted-bracket
+member paths; with \texttt{--result-shapes}, \tool{} treats declared task-output schemas as
+closed-world result records and adds closed top-level envelopes for common AWS integrations (Lambda
+invoke, DynamoDB, SNS, SQS, EventBridge, and Step Functions child execution). Under this
+service/output-shape modeling, \code{SC1101} recall improves from \textbf{84/126 to 88/126} (67\% to
+70\%). The independent oracle
+confirms all 92 \code{SC1101} reports emitted in the ablation run absent on all checked acyclic paths,
+again with zero counterexamples; the remaining misses are behind unsupported or templated service
+results, arrays, or complex selectors that still lift to $\top$.
+
 The modeled fragment covers most real reads: of the corpus's genuine document-field references,
 \textbf{92\%} use dotted access and resolve precisely, and \textbf{8\%} use bracket/wildcard/filter
 syntax abstracted to $\top$ (\texttt{\$\$} context and \texttt{States.*} operands are not document

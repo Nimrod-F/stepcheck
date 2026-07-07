@@ -18,9 +18,10 @@
 //! absorbs), so a path is reported missing only when it is absent on *every*
 //! execution that reaches the state. The transfer functions follow the ASL
 //! contract exactly — `InputPath` (re-root), `Parameters`/`ItemSelector`
-//! (construct a closed record; each `k.$:"$.p"` *reads* `$.p`), the opaque task
-//! result (`Top` unless a `ResultSelector` pins keys), `ResultPath` (merge into
-//! the *raw* state input), and `OutputPath` (re-root). The result is **sound**:
+//! (construct a closed record; each `k.$:"$.p"` *reads* `$.p`), task results
+//! (`Top` unless a `ResultSelector`, declared closed output contract, or known
+//! AWS service envelope pins keys), `ResultPath` (merge into the *raw* state
+//! input), and `OutputPath` (re-root). The result is **sound**:
 //! every `SC1101` is a reference that is guaranteed to fail at run time, so the
 //! analysis has no false positives by construction.
 //!
@@ -43,7 +44,28 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
-pub struct DataFlowPass;
+pub struct DataFlowPass {
+    result_shapes: bool,
+}
+
+#[derive(Clone, Copy)]
+struct Options {
+    result_shapes: bool,
+}
+
+impl DataFlowPass {
+    pub fn new() -> Self {
+        Self { result_shapes: false }
+    }
+
+    pub fn with_result_shapes() -> Self {
+        Self { result_shapes: true }
+    }
+
+    fn options(&self) -> Options {
+        Options { result_shapes: self.result_shapes }
+    }
+}
 
 /// Fixpoint telemetry for one analyzed machine: how many rounds the forward
 /// data-flow iteration took, the finite-height round bound it was allowed
@@ -148,7 +170,7 @@ impl Pass for DataFlowPass {
     }
     fn run(&self, wf: &Workflow, sink: &mut DiagnosticSink) {
         let root = root_env(wf);
-        analyze_machine(wf, root, "", sink);
+        analyze_machine(wf, root, "", self.options(), sink);
     }
 }
 
@@ -225,25 +247,48 @@ fn join_env(a: &Env, b: &Env) -> Env {
     Env { doc: join(&a.doc, &b.doc), vars: join(&a.vars, &b.vars) }
 }
 
-/// Parse a *simple* dotted JSONPath (`$`, `$.a`, `$.a.b`) into its field
-/// segments. Returns `None` for anything with brackets, wildcards, filters,
-/// functions or the context object — which callers then treat conservatively
-/// (a reference is `Maybe`, a narrow yields `Top`). This conservatism is what
-/// keeps the analysis sound on the full diversity of real ASL.
+/// Parse a precise JSONPath member chain (`$`, `$.a`, `$.a['b']`, `$["a"]`) into
+/// its field segments. Returns `None` for wildcards, filters, array indexes,
+/// functions or the context object — which callers then treat conservatively (a
+/// reference is `Maybe`, a narrow yields `Top`). This conservatism is what keeps
+/// the analysis sound on the full diversity of real ASL.
 fn parse_path(p: &str) -> Option<Vec<String>> {
     let rest = p.strip_prefix('$')?;
-    if rest.is_empty() {
-        return Some(Vec::new());
-    }
-    let rest = rest.strip_prefix('.')?;
+    parse_member_tail(rest)
+}
+
+fn valid_member_name(seg: &str) -> bool {
+    !seg.is_empty() && seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
+fn parse_member_tail(mut rest: &str) -> Option<Vec<String>> {
     let mut segs = Vec::new();
-    for seg in rest.split('.') {
-        if seg.is_empty()
-            || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-        {
+    while !rest.is_empty() {
+        if let Some(after_dot) = rest.strip_prefix('.') {
+            let end = after_dot.find(|c| c == '.' || c == '[').unwrap_or(after_dot.len());
+            let seg = &after_dot[..end];
+            if !valid_member_name(seg) {
+                return None;
+            }
+            segs.push(seg.to_string());
+            rest = &after_dot[end..];
+        } else if let Some(after_bracket) = rest.strip_prefix('[') {
+            let quote = after_bracket.chars().next()?;
+            if quote != '\'' && quote != '"' {
+                return None;
+            }
+            let after_quote = &after_bracket[quote.len_utf8()..];
+            let close = after_quote.find(quote)?;
+            let seg = &after_quote[..close];
+            let after_member = &after_quote[close + quote.len_utf8()..];
+            rest = after_member.strip_prefix(']')?;
+            if !valid_member_name(seg) {
+                return None;
+            }
+            segs.push(seg.to_string());
+        } else {
             return None;
         }
-        segs.push(seg.to_string());
     }
     Some(segs)
 }
@@ -265,15 +310,13 @@ fn parse_variable_ref(r: &str) -> Option<Vec<String>> {
         return None;
     }
     let tail = &r[1..];
-    let mut segs = Vec::new();
-    for seg in tail.split('.') {
-        if seg.is_empty()
-            || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-        {
-            return None;
-        }
-        segs.push(seg.to_string());
+    let end = tail.find(|c| c == '.' || c == '[').unwrap_or(tail.len());
+    let name = &tail[..end];
+    if !valid_member_name(name) {
+        return None;
     }
+    let mut segs = vec![name.to_string()];
+    segs.extend(parse_member_tail(&tail[end..])?);
     Some(segs)
 }
 
@@ -309,20 +352,7 @@ fn jsonata_expr_body(s: &str) -> Option<&str> {
 }
 
 fn parse_dot_tail(tail: &str) -> Option<Vec<String>> {
-    if tail.is_empty() {
-        return Some(Vec::new());
-    }
-    let rest = tail.strip_prefix('.')?;
-    let mut segs = Vec::new();
-    for seg in rest.split('.') {
-        if seg.is_empty()
-            || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-        {
-            return None;
-        }
-        segs.push(seg.to_string());
-    }
-    Some(segs)
+    parse_member_tail(tail)
 }
 
 fn parse_jsonata_ref(expr: &str) -> Option<JsonataRef> {
@@ -470,13 +500,22 @@ fn shape_of_jsonata_value(v: &Value, src: &JsonataSources<'_>) -> Shape {
     }
 }
 
+/// Collect only the JSONata reads the ASL runtime *hard-fails* on when the path
+/// is absent: a field-value expression whose *entire* body is a bare direct
+/// reference (`$states.input.p`, `$states.result.p`, `$var.p`, …). Such an
+/// expression evaluates to `undefined` on a missing path, and ASL turns a
+/// top-level `undefined` field value into `States.QueryEvaluationError`
+/// ("failure to return a result"), so absence is a definite runtime fault.
+///
+/// We deliberately do **not** descend into a JSONata *object constructor*
+/// `{% { 'k': $ref } %}`: JSONata 2.0.6 (the dialect ASL implements) *omits* a
+/// key whose value is `undefined`, so the constructor yields `{}` rather than an
+/// error — flagging `$ref` there would be a false positive. The constructor's
+/// *shape* is still tracked by [`jsonata_expr_shape`] for downstream provenance;
+/// this function governs only the hard-failing read sites.
 fn jsonata_strict_refs_in_expr<'a>(expr: &'a str, out: &mut Vec<&'a str>) {
     if parse_jsonata_ref(expr).is_some() {
         out.push(expr.trim());
-    } else if let Some(fields) = parse_jsonata_object(expr) {
-        for (_, v) in fields {
-            jsonata_strict_refs_in_expr(v, out);
-        }
     }
 }
 
@@ -666,33 +705,144 @@ fn apply_jsonata_assign(vars: &Shape, assign: &Option<Value>, src: &JsonataSourc
     out
 }
 
-fn jsonata_result_source_shape(st: &State) -> Shape {
+fn jsonata_result_source_shape(st: &State, opts: Options) -> Shape {
     match st.kind {
-        StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+        StateKind::Task => task_result_shape(st, opts).unwrap_or(Shape::Top),
+        StateKind::Map | StateKind::Parallel => Shape::Top,
         _ => Shape::Top,
     }
 }
 
-fn jsonata_output_shape(st: &State, env: &Env) -> Shape {
-    let result = jsonata_result_source_shape(st);
+fn jsonata_output_shape(st: &State, env: &Env, opts: Options) -> Shape {
+    let result = jsonata_result_source_shape(st, opts);
     let error = Shape::Top;
     let src = JsonataSources { input: &env.doc, result: &result, error: &error, vars: &env.vars };
     match &st.output {
         Some(output) => shape_of_jsonata_value(output, &src),
         None => match st.kind {
-            StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+            StateKind::Task => result,
+            StateKind::Map | StateKind::Parallel => Shape::Top,
             _ => env.doc.clone(),
         },
     }
 }
 
+fn closed_record_names(fields: &[&str]) -> Shape {
+    Shape::Obj(fields.iter().map(|f| ((*f).to_string(), Shape::Top)).collect())
+}
+
+/// Closed-world task output contracts are interpreted as the JSON object the
+/// Task contributes to ResultPath. Unknown or undeclared task results stay `Top`.
+fn declared_task_output_shape(st: &State) -> Option<Shape> {
+    st.anno.output_fields.as_ref().map(|fields| closed_record(fields))
+}
+
+fn integration_op<'a>(resource: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = resource.strip_prefix(prefix)?;
+    Some(rest.split('.').next().unwrap_or(rest))
+}
+
+fn dynamodb_result_shape(op: &str) -> Option<Shape> {
+    match op.to_ascii_lowercase().as_str() {
+        "getitem" => Some(closed_record_names(&["Item", "ConsumedCapacity"])),
+        "putitem" | "updateitem" | "deleteitem" => Some(closed_record_names(&[
+            "Attributes",
+            "ConsumedCapacity",
+            "ItemCollectionMetrics",
+        ])),
+        "scan" | "query" => Some(closed_record_names(&[
+            "Items",
+            "Count",
+            "ScannedCount",
+            "LastEvaluatedKey",
+            "ConsumedCapacity",
+        ])),
+        "batchgetitem" => Some(closed_record_names(&[
+            "Responses",
+            "UnprocessedKeys",
+            "ConsumedCapacity",
+        ])),
+        "batchwriteitem" => Some(closed_record_names(&[
+            "UnprocessedItems",
+            "ItemCollectionMetrics",
+            "ConsumedCapacity",
+        ])),
+        _ => None,
+    }
+}
+
+fn known_service_result_shape(st: &State) -> Option<Shape> {
+    let resource = st.resource.as_deref()?;
+    if resource.starts_with("arn:aws:states:::lambda:invoke") {
+        return Some(closed_record_names(&[
+            "Payload",
+            "StatusCode",
+            "ExecutedVersion",
+            "SdkHttpMetadata",
+            "SdkResponseMetadata",
+        ]));
+    }
+    if let Some(op) = integration_op(resource, "arn:aws:states:::dynamodb:") {
+        return dynamodb_result_shape(op);
+    }
+    if let Some(rest) = resource.strip_prefix("arn:aws:states:::aws-sdk:") {
+        let mut parts = rest.split(':');
+        let service = parts.next()?;
+        let op = parts.next()?.split('.').next().unwrap_or("");
+        if service == "dynamodb" {
+            return dynamodb_result_shape(op);
+        }
+    }
+    if resource.starts_with("arn:aws:states:::events:putEvents") {
+        return Some(closed_record_names(&["Entries", "FailedEntryCount"]));
+    }
+    if resource.starts_with("arn:aws:states:::sns:publish") {
+        return Some(closed_record_names(&["MessageId", "SequenceNumber"]));
+    }
+    if resource.starts_with("arn:aws:states:::sqs:sendMessage") {
+        return Some(closed_record_names(&[
+            "MD5OfMessageBody",
+            "MD5OfMessageAttributes",
+            "MD5OfMessageSystemAttributes",
+            "MessageId",
+            "SequenceNumber",
+        ]));
+    }
+    if resource.starts_with("arn:aws:states:::states:startExecution.sync:2") {
+        return Some(closed_record_names(&[
+            "ExecutionArn",
+            "StateMachineArn",
+            "Name",
+            "StartDate",
+            "StopDate",
+            "Status",
+            "Output",
+            "OutputDetails",
+            "Error",
+            "Cause",
+        ]));
+    }
+    if resource.starts_with("arn:aws:states:::states:startExecution") {
+        return Some(closed_record_names(&["ExecutionArn", "StartDate"]));
+    }
+    None
+}
+
+fn task_result_shape(st: &State, opts: Options) -> Option<Shape> {
+    if !opts.result_shapes {
+        return None;
+    }
+    declared_task_output_shape(st).or_else(|| known_service_result_shape(st))
+}
+
 /// The shape a state's result-processing writes back (before `ResultPath`).
-fn result_shape(st: &State, eff_in: &Shape) -> Shape {
+fn result_shape(st: &State, eff_in: &Shape, opts: Options) -> Shape {
     match st.kind {
         StateKind::Task | StateKind::Map | StateKind::Parallel => {
             match &st.result_selector {
                 Some(rs) => shape_of_constructor(rs), // pins the result's keys
-                None => Shape::Top,                   // opaque task/array result
+                None if st.kind == StateKind::Task => task_result_shape(st, opts).unwrap_or(Shape::Top),
+                None => Shape::Top, // opaque map/parallel result
             }
         }
         StateKind::Pass => {
@@ -716,26 +866,26 @@ fn has_result_processing(st: &State) -> bool {
 }
 
 /// Abstract environment leaving a state (consumed by its successors).
-fn out_env(st: &State, env: &Env) -> Env {
+fn out_env(st: &State, env: &Env, opts: Options) -> Env {
     if st.is_opaque_query() {
-        let result = jsonata_result_source_shape(st);
+        let result = jsonata_result_source_shape(st, opts);
         let error = Shape::Top;
         let src = JsonataSources { input: &env.doc, result: &result, error: &error, vars: &env.vars };
         return Env {
-            doc: jsonata_output_shape(st, env),
+            doc: jsonata_output_shape(st, env, opts),
             vars: apply_jsonata_assign(&env.vars, &st.assign, &src),
         };
     }
     let eff_in = narrow(&env.doc, &st.input_path);
     let doc = if has_result_processing(st) {
         // a Task/Pass/Map/Parallel merges its result into the *raw* state input
-        let res = result_shape(st, &eff_in);
+        let res = result_shape(st, &eff_in, opts);
         place(&env.doc, &st.result_path, res)
     } else {
         // Choice/Wait/terminals pass the InputPath-filtered document through
         eff_in
     };
-    let assign_source = assign_source_shape(st, &narrow(&env.doc, &st.input_path));
+    let assign_source = assign_source_shape(st, &narrow(&env.doc, &st.input_path), opts);
     Env {
         doc: narrow(&doc, &st.output_path),
         vars: apply_jsonpath_assign(&env.vars, &st.assign, &assign_source),
@@ -805,14 +955,15 @@ fn assign_refs_of(st: &State) -> Vec<String> {
     out
 }
 
-fn assign_source_shape(st: &State, eff_in: &Shape) -> Shape {
+fn assign_source_shape(st: &State, eff_in: &Shape, opts: Options) -> Shape {
     match st.kind {
         // JSONPath Assign on these states sees the raw API/sub-workflow result,
         // before ResultSelector/ResultPath. Without a result schema that value is
         // opaque, so reads are never definitely absent.
-        StateKind::Task | StateKind::Map | StateKind::Parallel => Shape::Top,
+        StateKind::Task => task_result_shape(st, opts).unwrap_or(Shape::Top),
+        StateKind::Map | StateKind::Parallel => Shape::Top,
         // Pass Assign sees the Pass result (Result, Parameters, or effective input).
-        StateKind::Pass => result_shape(st, eff_in),
+        StateKind::Pass => result_shape(st, eff_in, opts),
         // Choice and Wait Assign read from the effective input.
         StateKind::Choice | StateKind::Wait => eff_in.clone(),
         _ => eff_in.clone(),
@@ -981,7 +1132,7 @@ fn key_universe(wf: &Workflow) -> usize {
 
 /// Compute the entry shape of every state by forward fixpoint, then check
 /// references, then recurse into nested machines.
-fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticSink) {
+fn analyze_machine(wf: &Workflow, root: Env, scope: &str, opts: Options, sink: &mut DiagnosticSink) {
     // Forward dataflow to a fixpoint over normal + catch edges.
     let mut in_envs: HashMap<String, Env> = HashMap::new();
     if wf.states.contains_key(&wf.start_at) {
@@ -1001,7 +1152,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
         let mut changed = false;
         for (name, st) in &wf.states {
             let Some(cur_in) = in_envs.get(name).cloned() else { continue };
-            let out = out_env(st, &cur_in);
+            let out = out_env(st, &cur_in, opts);
             // normal successors inherit the out shape
             for succ in st.normal_successors() {
                 if wf.states.contains_key(succ) {
@@ -1015,7 +1166,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
                     if c.assign.is_some() {
                         let error = Shape::Top;
                         if st.is_opaque_query() {
-                            let result = Shape::Top;
+                            let result = jsonata_result_source_shape(st, opts);
                             let src = JsonataSources { input: &cur_in.doc, result: &result, error: &error, vars: &cur_in.vars };
                             cs.vars = apply_jsonata_assign(&cur_in.vars, &c.assign, &src);
                         } else {
@@ -1050,7 +1201,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
     for (name, st) in &wf.states {
         let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
         if st.is_opaque_query() {
-            let result = jsonata_result_source_shape(st);
+            let result = jsonata_result_source_shape(st, opts);
             let error = Shape::Top;
             let src = JsonataSources { input: &in_env.doc, result: &result, error: &error, vars: &in_env.vars };
             for v in [&st.arguments, &st.output, &st.assign, &st.items] {
@@ -1072,7 +1223,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
         for r in refs_of(st) {
             check_required_ref(scope, name, &r, &eff_in, &in_env.vars, sink);
         }
-        let assign_source = assign_source_shape(st, &eff_in);
+        let assign_source = assign_source_shape(st, &eff_in, opts);
         for r in assign_refs_of(st) {
             check_required_ref(scope, name, &r, &assign_source, &in_env.vars, sink);
         }
@@ -1121,7 +1272,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
                 None => Shape::Top,
             };
             let item_vars = if st.distributed_map { Shape::Top } else { in_env.vars.clone() };
-            analyze_machine(it, Env { doc: item_root, vars: item_vars }, &qualify(scope, &format!("{name}[Map]")), sink);
+            analyze_machine(it, Env { doc: item_root, vars: item_vars }, &qualify(scope, &format!("{name}[Map]")), opts, sink);
         }
         for (i, br) in st.branches.iter().enumerate() {
             // Each Parallel branch receives the state's effective input, reshaped
@@ -1132,7 +1283,7 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, sink: &mut DiagnosticS
                 Some(p) => shape_of_constructor(p),
                 None => eff_in.clone(),
             };
-            analyze_machine(br, Env { doc: branch_root, vars: in_env.vars.clone() }, &qualify(scope, &format!("{name}[Branch{i}]")), sink);
+            analyze_machine(br, Env { doc: branch_root, vars: in_env.vars.clone() }, &qualify(scope, &format!("{name}[Branch{i}]")), opts, sink);
         }
     }
     } // end `if converged`

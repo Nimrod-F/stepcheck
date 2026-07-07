@@ -119,8 +119,9 @@ Under the modeled JSONPath/JSONata document-and-variable semantics, if \tool{} r
 \code{SC1101} for a path $p$ at state $s$, then every concrete execution reaching $s$ lacks $p$ in
 the document or variable selected by that read site, so the \asl{} runtime fails that reference. In
 the native tier this holds for arbitrary execution input; in the typed tier it holds relative to the
-closed-world reading of the declared input schema. Expressions outside the modeled fragment lift to
-$\top$ and are therefore silent.
+closed-world reading of declared input schemas and, when result-shape modeling is enabled, declared
+task-output schemas and fixed AWS service-result envelopes. Expressions outside the modeled fragment
+lift to $\top$ and are therefore silent.
 \end{theorem}
 
 The proof is the standard abstract-interpretation argument---each transfer over-approximates its

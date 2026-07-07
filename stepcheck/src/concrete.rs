@@ -42,19 +42,44 @@ fn leaf() -> CShape {
     CShape::Rec(BTreeMap::new())
 }
 
-/// Simple dotted JSONPath (`$`, `$.a`, `$.a.b`); `None` for anything richer.
+/// Precise JSONPath member chains (`$`, `$.a`, `$.a['b']`); `None` for anything richer.
 fn parse_path(p: &str) -> Option<Vec<String>> {
     let rest = p.strip_prefix('$')?;
-    if rest.is_empty() {
-        return Some(Vec::new());
-    }
-    let rest = rest.strip_prefix('.')?;
+    parse_member_tail(rest)
+}
+
+fn valid_member_name(seg: &str) -> bool {
+    !seg.is_empty() && seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
+fn parse_member_tail(mut rest: &str) -> Option<Vec<String>> {
     let mut segs = Vec::new();
-    for seg in rest.split('.') {
-        if seg.is_empty() || !seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+    while !rest.is_empty() {
+        if let Some(after_dot) = rest.strip_prefix('.') {
+            let end = after_dot.find(|c| c == '.' || c == '[').unwrap_or(after_dot.len());
+            let seg = &after_dot[..end];
+            if !valid_member_name(seg) {
+                return None;
+            }
+            segs.push(seg.to_string());
+            rest = &after_dot[end..];
+        } else if let Some(after_bracket) = rest.strip_prefix('[') {
+            let quote = after_bracket.chars().next()?;
+            if quote != '\'' && quote != '"' {
+                return None;
+            }
+            let after_quote = &after_bracket[quote.len_utf8()..];
+            let close = after_quote.find(quote)?;
+            let seg = &after_quote[..close];
+            let after_member = &after_quote[close + quote.len_utf8()..];
+            rest = after_member.strip_prefix(']')?;
+            if !valid_member_name(seg) {
+                return None;
+            }
+            segs.push(seg.to_string());
+        } else {
             return None;
         }
-        segs.push(seg.to_string());
     }
     Some(segs)
 }
@@ -111,6 +136,116 @@ fn constructor(v: &Value) -> CShape {
     }
 }
 
+fn closed_record(fields: &[String]) -> CShape {
+    CShape::Rec(fields.iter().map(|f| (f.clone(), CShape::Opaque)).collect())
+}
+
+fn closed_record_names(fields: &[&str]) -> CShape {
+    CShape::Rec(fields.iter().map(|f| ((*f).to_string(), CShape::Opaque)).collect())
+}
+
+fn integration_op<'a>(resource: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = resource.strip_prefix(prefix)?;
+    Some(rest.split('.').next().unwrap_or(rest))
+}
+
+fn dynamodb_result_shape(op: &str) -> Option<CShape> {
+    match op.to_ascii_lowercase().as_str() {
+        "getitem" => Some(closed_record_names(&["Item", "ConsumedCapacity"])),
+        "putitem" | "updateitem" | "deleteitem" => Some(closed_record_names(&[
+            "Attributes",
+            "ConsumedCapacity",
+            "ItemCollectionMetrics",
+        ])),
+        "scan" | "query" => Some(closed_record_names(&[
+            "Items",
+            "Count",
+            "ScannedCount",
+            "LastEvaluatedKey",
+            "ConsumedCapacity",
+        ])),
+        "batchgetitem" => Some(closed_record_names(&[
+            "Responses",
+            "UnprocessedKeys",
+            "ConsumedCapacity",
+        ])),
+        "batchwriteitem" => Some(closed_record_names(&[
+            "UnprocessedItems",
+            "ItemCollectionMetrics",
+            "ConsumedCapacity",
+        ])),
+        _ => None,
+    }
+}
+
+fn known_service_result_shape(st: &State) -> Option<CShape> {
+    let resource = st.resource.as_deref()?;
+    if resource.starts_with("arn:aws:states:::lambda:invoke") {
+        return Some(closed_record_names(&[
+            "Payload",
+            "StatusCode",
+            "ExecutedVersion",
+            "SdkHttpMetadata",
+            "SdkResponseMetadata",
+        ]));
+    }
+    if let Some(op) = integration_op(resource, "arn:aws:states:::dynamodb:") {
+        return dynamodb_result_shape(op);
+    }
+    if let Some(rest) = resource.strip_prefix("arn:aws:states:::aws-sdk:") {
+        let mut parts = rest.split(':');
+        let service = parts.next()?;
+        let op = parts.next()?.split('.').next().unwrap_or("");
+        if service == "dynamodb" {
+            return dynamodb_result_shape(op);
+        }
+    }
+    if resource.starts_with("arn:aws:states:::events:putEvents") {
+        return Some(closed_record_names(&["Entries", "FailedEntryCount"]));
+    }
+    if resource.starts_with("arn:aws:states:::sns:publish") {
+        return Some(closed_record_names(&["MessageId", "SequenceNumber"]));
+    }
+    if resource.starts_with("arn:aws:states:::sqs:sendMessage") {
+        return Some(closed_record_names(&[
+            "MD5OfMessageBody",
+            "MD5OfMessageAttributes",
+            "MD5OfMessageSystemAttributes",
+            "MessageId",
+            "SequenceNumber",
+        ]));
+    }
+    if resource.starts_with("arn:aws:states:::states:startExecution.sync:2") {
+        return Some(closed_record_names(&[
+            "ExecutionArn",
+            "StateMachineArn",
+            "Name",
+            "StartDate",
+            "StopDate",
+            "Status",
+            "Output",
+            "OutputDetails",
+            "Error",
+            "Cause",
+        ]));
+    }
+    if resource.starts_with("arn:aws:states:::states:startExecution") {
+        return Some(closed_record_names(&["ExecutionArn", "StartDate"]));
+    }
+    None
+}
+
+fn task_result_shape(st: &State, result_shapes: bool) -> Option<CShape> {
+    if !result_shapes {
+        return None;
+    }
+    st.anno
+        .output_fields
+        .as_ref()
+        .map(|fields| closed_record(fields))
+        .or_else(|| known_service_result_shape(st))
+}
+
 fn place_in(doc: &CShape, segs: &[String], val: CShape) -> CShape {
     if segs.is_empty() {
         return val;
@@ -138,10 +273,11 @@ fn place(doc: &CShape, rp: &ResultPath, val: CShape) -> CShape {
     }
 }
 
-fn result_shape(st: &State, eff_in: &CShape) -> CShape {
+fn result_shape(st: &State, eff_in: &CShape, result_shapes: bool) -> CShape {
     match st.kind {
         StateKind::Task | StateKind::Map | StateKind::Parallel => match &st.result_selector {
             Some(rs) => constructor(rs),
+            None if st.kind == StateKind::Task => task_result_shape(st, result_shapes).unwrap_or(CShape::Opaque),
             None => CShape::Opaque,
         },
         StateKind::Pass => {
@@ -158,14 +294,14 @@ fn result_shape(st: &State, eff_in: &CShape) -> CShape {
 }
 
 /// Document leaving a state along this path (mirrors `dataflow::out_shape`).
-fn out_doc(st: &State, in_doc: &CShape) -> CShape {
+fn out_doc(st: &State, in_doc: &CShape, result_shapes: bool) -> CShape {
     if st.is_opaque_query() {
         return CShape::Opaque;
     }
     let eff_in = narrow(in_doc, &st.input_path);
     let combined = match st.kind {
         StateKind::Task | StateKind::Pass | StateKind::Map | StateKind::Parallel => {
-            place(in_doc, &st.result_path, result_shape(st, &eff_in))
+            place(in_doc, &st.result_path, result_shape(st, &eff_in, result_shapes))
         }
         _ => eff_in,
     };
@@ -195,12 +331,12 @@ fn root_seed(wf: &Workflow) -> CShape {
 }
 
 /// Enumerate acyclic paths to `target` and collect its entry document on each.
-fn entry_docs(wf: &Workflow, target: &str) -> (Vec<CShape>, bool) {
+fn entry_docs(wf: &Workflow, target: &str, result_shapes: bool) -> (Vec<CShape>, bool) {
     let mut entries = Vec::new();
     let mut capped = false;
     let mut on_path: HashSet<String> = HashSet::new();
     fn go(
-        wf: &Workflow, cur: &str, doc: CShape, target: &str,
+        wf: &Workflow, cur: &str, doc: CShape, target: &str, result_shapes: bool,
         on_path: &mut HashSet<String>, entries: &mut Vec<CShape>, capped: &mut bool,
     ) {
         if entries.len() >= PATH_CAP {
@@ -215,23 +351,32 @@ fn entry_docs(wf: &Workflow, target: &str) -> (Vec<CShape>, bool) {
             return; // cycle on this path
         }
         if let Some(st) = wf.states.get(cur) {
-            let out = out_doc(st, &doc);
+            let out = out_doc(st, &doc, result_shapes);
             for succ in st.normal_successors() {
                 if wf.states.contains_key(succ) {
-                    go(wf, succ, out.clone(), target, on_path, entries, capped);
+                    go(wf, succ, out.clone(), target, result_shapes, on_path, entries, capped);
                 }
             }
             for c in &st.catch {
                 if wf.states.contains_key(&c.next) {
                     let cs = place(&doc, &c.result_path, CShape::Opaque);
-                    go(wf, &c.next, cs, target, on_path, entries, capped);
+                    go(wf, &c.next, cs, target, result_shapes, on_path, entries, capped);
                 }
             }
         }
         on_path.remove(cur);
     }
     if wf.states.contains_key(&wf.start_at) {
-        go(wf, &wf.start_at, root_seed(wf), target, &mut on_path, &mut entries, &mut capped);
+        go(
+            wf,
+            &wf.start_at,
+            root_seed(wf),
+            target,
+            result_shapes,
+            &mut on_path,
+            &mut entries,
+            &mut capped,
+        );
     }
     (entries, capped)
 }
@@ -240,6 +385,14 @@ fn entry_docs(wf: &Workflow, target: &str) -> (Vec<CShape>, bool) {
 /// path enumeration. `ConfirmedAbsent` witnesses the theorem; `Present` is a
 /// soundness counterexample; `Unverifiable` abstains.
 pub fn check_ref(wf: &Workflow, state: &str, path: &str) -> Verdict {
+    check_ref_inner(wf, state, path, false)
+}
+
+pub fn check_ref_with_result_shapes(wf: &Workflow, state: &str, path: &str) -> Verdict {
+    check_ref_inner(wf, state, path, true)
+}
+
+fn check_ref_inner(wf: &Workflow, state: &str, path: &str, result_shapes: bool) -> Verdict {
     let Some(segs) = parse_path(path) else { return Verdict::Unverifiable };
     if segs.is_empty() {
         return Verdict::Unverifiable;
@@ -248,7 +401,7 @@ pub fn check_ref(wf: &Workflow, state: &str, path: &str) -> Verdict {
         Some(s) => s,
         None => return Verdict::Unverifiable,
     };
-    let (entries, capped) = entry_docs(wf, state);
+    let (entries, capped) = entry_docs(wf, state, result_shapes);
     if entries.is_empty() || capped {
         return Verdict::Unverifiable;
     }

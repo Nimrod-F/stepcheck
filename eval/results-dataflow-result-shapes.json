@@ -4,15 +4,17 @@
     "total_states": 1355
   },
   "ablation": {
-    "result_shapes": false
+    "result_shapes": true
   },
   "baseline": {
-    "flagged_files": 99,
-    "errors": 1,
-    "warnings": 223,
+    "flagged_files": 101,
+    "errors": 8,
+    "warnings": 234,
     "code_totals": {
       "SC0007": 9,
       "SC0010": 1,
+      "SC1101": 7,
+      "SC1110": 11,
       "SC3001": 36,
       "SC4001": 117,
       "SC4010": 28,
@@ -59,8 +61,8 @@
     "Dataflow": {
       "expected_code": "SC1101",
       "applicable": 126,
-      "detected": 84,
-      "recall": 0.6666666666666666
+      "detected": 88,
+      "recall": 0.6984126984126984
     }
   },
   "confusion_matrix": {
@@ -69,6 +71,8 @@
       "SC4001": 19
     },
     "Concurrency": {
+      "SC1101": 8,
+      "SC1110": 1,
       "SC5001": 21
     },
     "Contract": {
@@ -76,7 +80,7 @@
     },
     "Dataflow": {
       "SC1001": 10,
-      "SC1101": 84
+      "SC1101": 88
     },
     "Retry": {
       "SC3001": 103
@@ -91,9 +95,9 @@
     }
   },
   "timing_us": {
-    "mean": 82.63005181347151,
-    "median": 50.1,
-    "max": 1380.2,
-    "total_ms": 15.9476
+    "mean": 104.86373056994817,
+    "median": 68.9,
+    "max": 2250.6,
+    "total_ms": 20.2387
   }
 }

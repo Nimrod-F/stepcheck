@@ -44,6 +44,9 @@ enum Cmd {
         /// Treat warnings as errors for the exit code.
         #[arg(long)]
         deny_warnings: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Print the annotations inferred for a workflow.
     Infer {
@@ -58,6 +61,9 @@ enum Cmd {
         annot: Option<PathBuf>,
         #[arg(long)]
         infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Print corpus statistics over a directory of ASL files.
     Stats {
@@ -77,6 +83,9 @@ enum Cmd {
         /// run the data-flow (SC1101) mutation class.
         #[arg(long)]
         strict_input: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Cross-check the data-flow `SC1101` findings against an independent per-path
     /// execution oracle (witnesses the soundness theorem at corpus scale). Injects a
@@ -89,6 +98,9 @@ enum Cmd {
         annot: Option<PathBuf>,
         #[arg(long)]
         infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Real-bug benchmark: replay StepCheck on (pre-fix, post-fix) workflow pairs.
     /// Place pairs as `<id>-pre.json` / `<id>-post.json` in DIR (mine these from
@@ -155,16 +167,20 @@ enum Cmd {
 fn main() {
     let cli = Cli::parse();
     let code = match cli.cmd {
-        Cmd::Check { path, annot, infer, json, deny_warnings } => {
-            cmd_check(&path, annot.as_deref(), infer, json, deny_warnings)
+        Cmd::Check { path, annot, infer, json, deny_warnings, result_shapes } => {
+            cmd_check(&path, annot.as_deref(), infer, json, deny_warnings, result_shapes)
         }
         Cmd::Infer { path, json } => cmd_infer(&path, json),
-        Cmd::Scan { dir, annot, infer } => cmd_scan(&dir, annot.as_deref(), infer),
-        Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
-        Cmd::Eval { dir, annot, infer, strict_input } => {
-            cmd_eval(&dir, annot.as_deref(), infer, strict_input)
+        Cmd::Scan { dir, annot, infer, result_shapes } => {
+            cmd_scan(&dir, annot.as_deref(), infer, result_shapes)
         }
-        Cmd::Oracle { dir, annot, infer } => cmd_oracle(&dir, annot.as_deref(), infer),
+        Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
+        Cmd::Eval { dir, annot, infer, strict_input, result_shapes } => {
+            cmd_eval(&dir, annot.as_deref(), infer, strict_input, result_shapes)
+        }
+        Cmd::Oracle { dir, annot, infer, result_shapes } => {
+            cmd_oracle(&dir, annot.as_deref(), infer, result_shapes)
+        }
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
         Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
@@ -211,8 +227,12 @@ fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<(ir::
     Ok((wf, sink))
 }
 
-fn run_pipeline_into(wf: &ir::Workflow, sink: &mut diag::DiagnosticSink) {
-    let pipeline = passes::default_pipeline();
+fn run_pipeline_into(wf: &ir::Workflow, sink: &mut diag::DiagnosticSink, result_shapes: bool) {
+    let pipeline = if result_shapes {
+        passes::pipeline_with_result_shapes()
+    } else {
+        passes::default_pipeline()
+    };
     passes::run_pipeline(&pipeline, wf, sink);
 }
 
@@ -222,9 +242,10 @@ fn cmd_check(
     infer: bool,
     json: bool,
     deny_warnings: bool,
+    result_shapes: bool,
 ) -> Result<i32> {
     let (wf, mut sink) = load_resolved(path, annot, infer)?;
-    run_pipeline_into(&wf, &mut sink);
+    run_pipeline_into(&wf, &mut sink, result_shapes);
     if json {
         println!("{}", serde_json::to_string_pretty(&sink)?);
     } else {
@@ -259,7 +280,7 @@ fn cmd_infer(path: &Path, json: bool) -> Result<i32> {
     Ok(0)
 }
 
-fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
@@ -281,7 +302,7 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         };
         let mut sink = diag::DiagnosticSink::new();
         annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
-        run_pipeline_into(&wf, &mut sink);
+        run_pipeline_into(&wf, &mut sink, result_shapes);
         let mut codes: BTreeMap<String, usize> = BTreeMap::new();
         for d in &sink.diagnostics {
             *codes.entry(d.code.clone()).or_default() += 1;
@@ -375,7 +396,13 @@ fn mine_top_level_fields(wf: &ir::Workflow) -> Vec<String> {
 }
 
 /// The mutation study (E3) + in-the-wild baseline (E2) + timing (E5), in-process.
-fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -> Result<i32> {
+fn cmd_eval(
+    dir: &Path,
+    annot: Option<&Path>,
+    infer: bool,
+    strict_input: bool,
+    result_shapes: bool,
+) -> Result<i32> {
     use std::time::Instant;
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
@@ -429,7 +456,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
         let mut bsink = diag::DiagnosticSink::new();
         annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
         let t = Instant::now();
-        run_pipeline_into(&b, &mut bsink);
+        run_pipeline_into(&b, &mut bsink, result_shapes);
         times_ns.push(t.elapsed().as_nanos());
 
         let bcounts = code_counts(&bsink);
@@ -451,7 +478,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
                 }
                 let mut msink = diag::DiagnosticSink::new();
                 annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
-                run_pipeline_into(&mw, &mut msink);
+                run_pipeline_into(&mw, &mut msink, result_shapes);
                 let mcounts = code_counts(&msink);
                 let before = bcounts.get(ec).copied().unwrap_or(0);
                 let after = mcounts.get(ec).copied().unwrap_or(0);
@@ -495,6 +522,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
 
     let report = json!({
         "corpus": { "files": files, "total_states": total_states },
+        "ablation": { "result_shapes": result_shapes },
         "baseline": {
             "flagged_files": flagged,
             "errors": baseline_errors,
@@ -516,7 +544,7 @@ fn codes_for(p: &Path, infer: bool) -> BTreeMap<String, usize> {
         Ok(mut w) => {
             let mut sink = diag::DiagnosticSink::new();
             annot::resolve(&mut w, None, infer, &mut sink);
-            run_pipeline_into(&w, &mut sink);
+            run_pipeline_into(&w, &mut sink, false);
             code_counts(&sink)
         }
         Err(_) => BTreeMap::new(),
@@ -576,7 +604,7 @@ fn extract_read_path(msg: &str) -> Option<String> {
 /// workflow we seed the typed tier and inject a data-flow miss so `SC1101` fires,
 /// then confirm with an independent per-path interpreter that every flagged field
 /// is absent on all reaching paths. A `Present` verdict would be a counterexample.
-fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
@@ -602,7 +630,7 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         }
         let mut sink = diag::DiagnosticSink::new();
         annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
-        run_pipeline_into(&mw, &mut sink);
+        run_pipeline_into(&mw, &mut sink, result_shapes);
         for d in sink.diagnostics.iter().filter(|d| d.code == "SC1101") {
             findings += 1;
             if d.state.contains('/') {
@@ -611,7 +639,12 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
                 continue;
             }
             let Some(pref) = extract_read_path(&d.message) else { unver += 1; continue };
-            match concrete::check_ref(&mw, &d.state, &pref) {
+            let verdict = if result_shapes {
+                concrete::check_ref_with_result_shapes(&mw, &d.state, &pref)
+            } else {
+                concrete::check_ref(&mw, &d.state, &pref)
+            };
+            match verdict {
                 concrete::Verdict::ConfirmedAbsent => confirmed += 1,
                 concrete::Verdict::Present => present += 1,
                 concrete::Verdict::Unverifiable => unver += 1,
@@ -621,6 +654,7 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
 
     let report = json!({
         "files": files,
+        "ablation": { "result_shapes": result_shapes },
         "sc1101_findings": findings,
         "oracle": {
             "confirmed_absent": confirmed,
@@ -706,7 +740,7 @@ fn cmd_fixpoint_stats(dirs: &[PathBuf]) -> Result<i32> {
             let mut n = base.clone();
             let mut nsink = diag::DiagnosticSink::new();
             annot::resolve(&mut n, None, false, &mut nsink);
-            run_pipeline_into(&n, &mut nsink);
+            run_pipeline_into(&n, &mut nsink, false);
             // typed tier: closed record of the top-level fields the workflow reads
             let mut t = base.clone();
             let f = mine_top_level_fields(&base);
@@ -715,7 +749,7 @@ fn cmd_fixpoint_stats(dirs: &[PathBuf]) -> Result<i32> {
             }
             let mut tsink = diag::DiagnosticSink::new();
             annot::resolve(&mut t, None, false, &mut tsink);
-            run_pipeline_into(&t, &mut tsink);
+            run_pipeline_into(&t, &mut tsink, false);
         }
         let rec = passes::dataflow::fixpoint_record_take();
         per_corpus.push(fixpoint_summary(Some(dir.display().to_string()), files, &rec));

@@ -134,20 +134,23 @@ Shared resources and time bounds & partial & conservative native passes \\
 \label{sec:tr:df}
 
 The provenance analysis is a forward abstract interpretation~\cite{cousot1977} over a lattice of
-JSON \emph{document shapes}: it over-approximates, at each state, the set of documents with which
-the state may be entered, and flags a \texttt{.\$} reference that is absent on every such
-document.
+JSON \emph{document and variable shapes}: it over-approximates, at each state, the document and
+workflow-variable store with which the state may be entered, and flags a reference that is absent on
+every such environment.
 
 \subsection{The concrete property}
 
-Fix a workflow with state set $S$. A concrete execution threads a JSON document; write
-$\mathcal{D}$ for the set of JSON values. For a state $s$, let $\llbracket s\rrbracket$ be the
-set of documents with which $s$ is entered over all executions that reach $s$. A path
-$p=k_1.k_2.\dots.k_m$ is \emph{present} in a document $d$ if $d$ is an object with key $k_1$
-whose value has $k_2$, and so on to $k_m$; otherwise $p$ is \emph{absent}. The analysis
-answers a single question soundly: \emph{is $p$ absent in every $d\in\llbracket s\rrbracket$?}
-If so, a \texttt{.\$} reference to $p$ evaluated at $s$ fails on every execution, and \tool{}
-reports \code{SC1101}.
+Fix a workflow with state set $S$. A concrete execution threads a JSON document \emph{and} a store
+of workflow variables (written by \texttt{Assign}); write $\mathcal{D}$ for the set of JSON values.
+For a state $s$, let $\llbracket s\rrbracket$ be the set of \emph{environments}---a document paired
+with a variable store---with which $s$ is entered over all executions that reach $s$. A path
+$p=k_1.k_2.\dots.k_m$ is \emph{present} in a JSON value $d$ if $d$ is an object with key $k_1$ whose
+value has $k_2$, and so on to $k_m$; otherwise $p$ is \emph{absent}. Each read site selects one
+source---the document, or, for a \texttt{\$}\emph{name} reference, the variable store. The analysis
+answers a single question soundly: \emph{is the read path $p$ absent in that selected source on every
+environment in $\llbracket s\rrbracket$?} If so, the reference evaluated at $s$ fails on every
+execution (a JSONPath path-not-found, an unresolved variable, or a JSONata
+\texttt{States.QueryEvaluationError}), and \tool{} reports \code{SC1101}.
 
 \subsection{Abstract domain}
 
@@ -279,11 +282,12 @@ Write $\varepsilon$ for the empty (absent) path and $k\!::\!\mathit{rest}$ for t
 path into its first key and remainder. Then $\narrow(\sigma,\varepsilon)=\sigma$ (no path) and
 $\narrow(\sigma,\$)=\sigma$ (the bare root); $\narrow(\sigma,\texttt{null})=\Obj\,\emptyset$,
 sound because \asl{} maps an \texttt{InputPath}/\texttt{OutputPath} of \texttt{null} to the
-empty object $\{\}\in\gamma(\Obj\,\emptyset)$. For a simple path $\pi=k_1.\dots.k_n$, $\narrow$
+empty object $\{\}\in\gamma(\Obj\,\emptyset)$. For a precise member path
+$\pi=k_1.\dots.k_n$---written either in dotted form or quoted-bracket member form---$\narrow$
 descends via $\mathit{nav}$: $\mathit{nav}(\top,\_)=\top$ and
 $\mathit{nav}(\Obj\,r,k\!::\!\mathit{rest})=\mathit{nav}(r(k),\mathit{rest})$ if $k\in\dom(r)$,
 and $=\top$ otherwise (a missing intermediate key yields $\top$, over-approximating). Any path
-outside the simple-path fragment (wildcards, filters, functions, brackets, the \texttt{\$\$}
+outside this member-path fragment (wildcards, filters, functions, array indexes, the \texttt{\$\$}
 context) yields $\top$; a non-string, non-\texttt{null} path value is treated as the identity
 ($\narrow(\sigma,\cdot)=\sigma$), a case \asl{} deploy-time validation rejects and which is
 therefore unreachable in practice.
@@ -304,11 +308,13 @@ under-approximate the key set.
 
 \paragraph{Result and merge.}
 The result shape $\sigma_{\mathit{res}}$ of a state, built from its effective input $\eff$, is:
-$\top$ for an opaque \texttt{Task}/\texttt{Map}/\texttt{Parallel} result;
-$\mathit{ctor}(\textsf{ResultSelector})$ when a \texttt{ResultSelector} pins it; and for a
-\texttt{Pass}, $\mathit{lit}(\textsf{Result})$ if it carries a literal \texttt{Result}, else
-$\mathit{ctor}(\textsf{Parameters})$ if it carries only \texttt{Parameters}, else $\eff$ itself
-(a bare \texttt{Pass} forwards its effective input unchanged). Merging is
+$\top$ for an opaque \texttt{Map}/\texttt{Parallel} result and for a \texttt{Task} result with no
+modeled result shape; $\mathit{ctor}(\textsf{ResultSelector})$ when a \texttt{ResultSelector} pins
+it; a closed record when the optional result-shape model supplies a declared task-output contract or
+a fixed AWS service-result envelope; and for a \texttt{Pass}, $\mathit{lit}(\textsf{Result})$ if it
+carries a literal \texttt{Result}, else $\mathit{ctor}(\textsf{Parameters})$ if it carries only
+\texttt{Parameters}, else $\eff$ itself (a bare \texttt{Pass} forwards its effective input
+unchanged). Merging is
 \[
   \place(\sigma,\rho,\sigma_r)=
   \begin{cases}
@@ -330,8 +336,9 @@ $\sigma_{\mathrm v}$ except that key $k$ maps to $\sigma$ (identity when $\sigma
 In JSONPath mode an entry ``$k$\texttt{.\$}''$:\pi$ binds
 $k\mapsto\narrow(\sigma_{\mathrm{src}},\pi)$ and a static entry $k:v$ binds $k\mapsto\mathit{ctor}(v)$,
 where the source shape $\sigma_{\mathrm{src}}$ is the value \asl{} reads an \texttt{Assign} against
-for that state kind---the raw result ($\top$) for \texttt{Task}/\texttt{Map}/\texttt{Parallel}, the
-\texttt{Pass} result shape, or the effective input $\eff$ for \texttt{Choice}/\texttt{Wait}. In
+for that state kind---the raw result ($\top$, unless result-shape modeling supplies a task result
+record) for \texttt{Task}, $\top$ for \texttt{Map}/\texttt{Parallel}, the \texttt{Pass} result
+shape, or the effective input $\eff$ for \texttt{Choice}/\texttt{Wait}. In
 JSONata mode an entry $k:v$ binds $k\mapsto\jval(v)$ (below). The whole block $\asgn(\sigma_{\mathrm
 v},\textsf{Assign})$ is the composition of these single-key binds.
 
@@ -371,8 +378,9 @@ The JSONPath result is merged into the \emph{raw} entry document $\sigma_{\mathr
 $\eff$---exactly as \asl{} writes \texttt{ResultPath} into the pre-\texttt{InputPath} document, so a
 field the \texttt{InputPath} selection dropped still survives. In JSONata mode the successor document
 is the shape of the state's \texttt{Output}, $\jout(e)=\jval(\textsf{Output})$---an object literal
-closes the successor shape precisely, and a query \texttt{Task}/\texttt{Map}/\texttt{Parallel} with
-no \texttt{Output} yields $\top$; \asl{}'s JSONata mode has no \texttt{InputPath}/\texttt{OutputPath}
+closes the successor shape precisely, and a query \texttt{Task} with no \texttt{Output} yields its
+modeled raw-result shape when result-shape modeling is enabled, otherwise $\top$ (as do
+\texttt{Map}/\texttt{Parallel}); \asl{}'s JSONata mode has no \texttt{InputPath}/\texttt{OutputPath}
 to re-root. A \texttt{Catch} edge from entry $e$ propagates
 $\mathit{catch}(e,\rho)=\bigl(\place(\sigma_{\mathrm d},\rho,\top),\ \asgn(\sigma_{\mathrm
 v},\textsf{Catch.Assign})\bigr)$: the error object is opaque ($\top$), merged at the catch's
@@ -460,8 +468,12 @@ soundness.
 Every update is a join, so each $\Phi(s)$ is non-decreasing (Lemma~\ref{lem:join}). Let $\kappa$
 be the size of the workflow's \emph{key universe}: the finite set of keys occurring in any
 constructor (\texttt{Parameters}, \texttt{Result}, \texttt{ResultSelector},
-\texttt{ItemSelector}), in the declared input schema, or as a segment of a \texttt{ResultPath}
-or catch \texttt{ResultPath}. On the bounded-depth fragment there is a bound $D$ on the depth of
+\texttt{ItemSelector}), in an \texttt{Assign}/\texttt{Arguments}/\texttt{Output} template or a
+JSONata object literal (contributing variable names and produced field names), in the declared
+input schema, or as a segment of a \texttt{ResultPath} or catch \texttt{ResultPath}. Both
+components of the environment draw their keys from this same finite universe, so the argument
+below bounds each; the environment lattice, a finite product of the shape lattice, then has
+finite height whenever each component does. On the bounded-depth fragment there is a bound $D$ on the depth of
 every reachable shape: $\mathit{ctor}$/$\mathit{lit}$ build records whose nesting is bounded by
 the static constructor text; $\place_{\mathit{in}}$ writes a static $\sigma_{\mathit{res}}$ at
 the fixed depth $|\pi|$ of its \texttt{ResultPath} and \emph{overwrites} rather than stacks; and
@@ -495,18 +507,42 @@ cost of precision on the widened region; it is a drop-in change should such work
 
 \subsection{Reference checking}
 
-At the fixpoint---and only if the machine converged (Lemma~\ref{lem:term})---for each state $s$
-with $\eff=\narrow(\Phi(s),\textsf{InputPath})$ the analysis collects the set $\mathit{refs}(s)$
-of paths the runtime evaluates and aborts on when absent: the \texttt{.\$} keys of
-\texttt{Parameters} and \texttt{ItemSelector} (at any depth), and a \texttt{Map}'s
-\texttt{ItemsPath} string. It excludes the references it does not interpret---any string not
-beginning with \texttt{\$}, the context object \texttt{\$\$}, \texttt{States.*} intrinsics, the
-bare root \texttt{\$}, and any path outside the simple-path fragment---and skips \emph{all}
-references of a JSONata state (whose \texttt{\{\%\ \%\}} reads are not JSONPath). For a surviving
-$p$ it reports \code{SC1101} iff $p$ is definitely absent in $\eff$ (the lookup returns
-\textsf{Missing}; a path into a $\top$ or otherwise unconstrained region returns \textsf{Maybe}
-and is never flagged). It \emph{does not} inspect \texttt{Choice} operands; see
-Section~\ref{sec:tr:deadguard}.
+At the fixpoint---and only if the machine converged (Lemma~\ref{lem:term})---the analysis checks,
+at each state $s$ with entry environment $\Phi(s)=(\sigma_{\mathrm d},\sigma_{\mathrm v})$ and
+effective document $\eff=\narrow(\sigma_{\mathrm d},\textsf{InputPath})$, the reads the runtime
+evaluates and aborts on when absent. These fall into three classes.
+
+\emph{(i) JSONPath payload reads.} The \texttt{.\$} keys (at any depth) of \texttt{Parameters} and
+\texttt{ItemSelector} and a \texttt{Map}'s \texttt{ItemsPath}, resolved against $\eff$; and the
+\texttt{.\$} keys of a JSONPath \texttt{Assign}, resolved against that state's assign source. A
+reference \texttt{\$}\emph{name}$.\pi$ that names a workflow \emph{variable} (a leading \texttt{\$}
+not followed by ``\texttt{.}'', hence not a document path \texttt{\$.\dots}) is resolved against the
+store $\sigma_{\mathrm v}$ rather than $\eff$---so a field that travelled through a variable is seen
+where it is read, and only a variable no path assigns is flagged.
+
+\emph{(ii) Modeled JSONata reads.} In a JSONata state, a field-value string whose \emph{entire}
+body is a direct reference (\texttt{\$states.input}$.\pi$, \texttt{\$states.result}$.\pi$,
+\texttt{\$states.errorOutput}$.\pi$, or \texttt{\$}\emph{name}$.\pi$)---in \texttt{Arguments},
+\texttt{Output}, \texttt{Assign}, or a \texttt{Choice} \texttt{Condition}---resolved against its
+source shape (effective document, raw result, error object, or store). Such an expression returns
+\texttt{undefined} on a missing path, which \asl{} raises as
+\texttt{States.QueryEvaluationError}~\cite{awsasl} (``failure to return a result'')---a definite
+runtime fault, exactly the \code{SC1101} contract. A reference nested inside a JSONata \emph{object
+constructor} $\{\,\text{'}k\text{'}\!:e\}$ is deliberately \emph{not} in this class: JSONata omits a
+key whose value is undefined, so the constructor yields a value and does not fail; such a reference
+shapes the successor document (\S\ref{sec:tr:df}) but is never itself flagged.
+
+\emph{(iii) Excluded (opaque) reads.} Any string not beginning with \texttt{\$}, the context object
+\texttt{\$\$}/\texttt{\$states.context}, \texttt{States.*} intrinsics, the bare root \texttt{\$}, any
+JSONPath outside the simple-path fragment, and any JSONata expression outside the modeled
+direct-reference/object fragment (functions such as \texttt{\$exists}, filters, arithmetic). All
+resolve to $\top$ and never fire.
+
+For a checked reference to a path $p$ against its selected source shape $\sigma$ (document or
+variable store), \tool{} reports \code{SC1101} iff $p$ is definitely absent in $\sigma$ (the lookup
+returns \textsf{Missing}; a path into a $\top$ or otherwise unconstrained region returns
+\textsf{Maybe} and is never flagged). A JSONPath \texttt{Choice} operand is handled as a
+\emph{warning}, not an error; see Section~\ref{sec:tr:deadguard}.
 
 \begin{assumption}[Runtime resolution on non-objects]\label{asm:jsonpath}
 The \asl{} JSONPath engine resolves a dotted reference $k_1.\dots.k_m$ by successive object-key
@@ -519,44 +555,53 @@ exactly as ``absent'' predicts.
 \end{assumption}
 
 \begin{theorem}[No false positives]\label{thm:soundness}
-If \tool{} reports \code{SC1101} for a path $p$ at a state $s$, then in every concrete
-execution that reaches $s$, $p$ is absent from the state document, so the \asl{} runtime fails
-the reference. Equivalently, the analysis never flags a reference some execution could satisfy.
+If \tool{} reports \code{SC1101} for a path $p$ at a state $s$, then in every concrete execution
+that reaches $s$, $p$ is absent from the document \emph{or variable store} that the read site
+selects, so the \asl{} runtime fails the reference---a JSONPath path-not-found, an unresolved
+variable, or a JSONata \texttt{States.QueryEvaluationError}. Equivalently, the analysis never flags
+a reference some execution could satisfy.
 \end{theorem}
 \begin{proof}
-First, the fixpoint over-approximates the reachable documents: for every $s$ and every
-$d\in\llbracket s\rrbracket$, $d\in\gamma(\Phi(s))$. We argue by induction on the length of
-the execution prefix reaching $s$. \emph{Base:} the start seed $\sigma_0$ satisfies
-$\llbracket s_0\rrbracket\subseteq\gamma(\sigma_0)$---in the native tier $\sigma_0=\top$ and
-$\gamma(\top)=\mathcal{D}$; in the typed tier $\sigma_0=\Obj\,r_0$ with $\dom(r_0)$ the
-declared input fields, and the claim holds under the closed-world reading of the declared
-contract (the input contains no field outside the schema). \emph{Step:} suppose $s$ is reached
-by a transition from $s'$. If it is a normal transition, the concrete document is
-$\mathit{out}_{\mathrm{concrete}}(d')$ for some $d'\in\llbracket s'\rrbracket$; by the
-induction hypothesis $d'\in\gamma(\Phi(s'))$, by Lemma~\ref{lem:local}
-$\mathit{out}_{\mathrm{concrete}}(d')\in\gamma(\mathit{out}(\Phi(s')))$, and since the round
-joined $\mathit{out}(\Phi(s'))$ into $\Phi(s)$, by Lemma~\ref{lem:join}
-$\mathit{out}_{\mathrm{concrete}}(d')\in\gamma(\Phi(s))$. If it is a \texttt{Catch}
-transition, the concrete document is the input merged with an (arbitrary) error object;
-$\mathit{catch}$ places $\top$ at the catch path, which admits every such document, and the
-round joined it into $\Phi(s)$, so again the document lies in $\gamma(\Phi(s))$. The
-\texttt{InputPath} narrowing applied at $s$ is itself sound (Lemma~\ref{lem:local}), so the
-\emph{effective} entry documents lie in $\gamma(\eff)$.
+First, the fixpoint over-approximates the reachable environments: for every $s$ and every reachable
+$(d,\nu)\in\llbracket s\rrbracket$ (document $d$ paired with variable store $\nu$),
+$(d,\nu)\in\gamma_{\Env}(\Phi(s))$. Induction on the length of the execution prefix reaching $s$.
+\emph{Base:} the seed $e_0=(\sigma_0,\Obj\,\emptyset)$ satisfies it---the document part as before
+(native tier $\sigma_0=\top$ and $\gamma(\top)=\mathcal{D}$; typed tier $\sigma_0=\Obj\,r_0$ over the
+declared input fields, under the closed-world reading of the contract), and the initial store is
+empty, so $\nu_0=\{\}\in\gamma(\Obj\,\emptyset)$. Closed task-result records are sound relative to
+the declared output contract or fixed AWS service envelope they model. \emph{Step:} suppose $s$ is
+reached from $s'$. On a
+normal transition the concrete environment is $\mathit{out}_{\mathrm c}(d',\nu')$ for some
+$(d',\nu')\in\llbracket s'\rrbracket$; by the induction hypothesis
+$(d',\nu')\in\gamma_{\Env}(\Phi(s'))$, by Lemma~\ref{lem:local} (state/catch, which composes the
+document transfer with the \texttt{Assign} store update)
+$\mathit{out}_{\mathrm c}(d',\nu')\in\gamma_{\Env}(\mathit{out}(\Phi(s')))$, and since the round
+joined $\mathit{out}(\Phi(s'))$ into $\Phi(s)$, by the componentwise lift of Lemma~\ref{lem:join}
+the concrete environment lies in $\gamma_{\Env}(\Phi(s))$. A \texttt{Catch} transition is identical
+using $\mathit{catch}$, which places $\top$ in the document and applies the catcher's \texttt{Assign}.
+The \texttt{InputPath} narrowing at $s$ is sound (Lemma~\ref{lem:local}), so effective documents lie
+in $\gamma(\eff)$ and stores in $\gamma(\sigma_{\mathrm v})$.
 
-Now suppose \code{SC1101} fires for $p$ at $s$. Then $p$ is definitely absent in $\eff$, and by
-Lemma~\ref{lem:absence} no $d\in\gamma(\eff)$ contains $p$. Since every effective entry
-document at $s$ lies in $\gamma(\eff)$, $p$ is absent on all of them, so by
-Assumption~\ref{asm:jsonpath} the \texttt{.\$} reference to $p$ fails on every execution
-reaching $s$. A finding is emitted only when the machine converged (Lemma~\ref{lem:term}),
-i.e.\ at a genuine fixpoint, so the conclusion holds whenever \code{SC1101} is reported.
+Now suppose \code{SC1101} fires for $p$ at $s$, against its selected source shape $\sigma$---the
+effective document $\eff$ for a document read, or the store $\sigma_{\mathrm v}$ for a variable read.
+The check fires only when $p$ is definitely absent in $\sigma$, so by Lemma~\ref{lem:absence} no
+value in $\gamma(\sigma)$ contains $p$; since every concrete source at $s$ lies in $\gamma(\sigma)$,
+$p$ is absent on all of them. A JSONPath payload read then fails by Assumption~\ref{asm:jsonpath}
+(path-not-found); a JSONPath variable read has no binding to resolve; and a modeled JSONata direct
+reference evaluates to \texttt{undefined}, which \asl{} raises as \texttt{States.QueryEvaluationError}.
+In every case the runtime aborts the reference. A finding is emitted only when the machine converged
+(Lemma~\ref{lem:term}), i.e.\ at a genuine fixpoint, so the conclusion holds whenever \code{SC1101}
+is reported.
 \end{proof}
 
 \begin{corollary}[Native unconditionality]
 On the native tier ($\sigma_0=\top$), Theorem~\ref{thm:soundness} holds for an arbitrary
 execution input. On the typed tier it holds relative to the closed-world reading of the
-declared input schema; where inputs are open, the native tier is the sound fallback. (The typed
-seed also admits a second closed-world source: when a workflow declares no input schema but its
-start task declares an input contract, the start seed is that contract's field record.)
+declared input schema; when result-shape modeling is enabled it also holds relative to the
+closed-world reading of declared task-output schemas and fixed AWS service-result envelopes. Where
+inputs or results are open, the native opaque shape is the sound fallback. (The typed seed also
+admits a second closed-world source: when a workflow declares no input schema but its start task
+declares an input contract, the start seed is that contract's field record.)
 \end{corollary}
 
 \subsection{Nested machines}
@@ -600,40 +645,45 @@ underlying ``definitely absent'' judgment is exactly Lemma~\ref{lem:absence}.
 \subsection{Coverage of the modeled fragment}
 \label{sec:tr:coverage}
 
-The analysis resolves precisely exactly the reads inside the simple-path fragment ($\$$, $\$.a$,
-$\$.a.b$); every operand outside it lifts to $\top$ and can never produce a finding. To quantify
+The analysis resolves precisely exactly the reads inside the member-path fragment ($\$$, $\$.a$,
+$\$.a.b$, $\$[\text{'}a\text{'}]$); every operand outside it lifts to $\top$ and can never produce a finding. To quantify
 how much of real ASL this covers, the \texttt{stepcheck path-coverage} command classifies every
-field-read a workflow evaluates---the \texttt{.\$} operands of \texttt{Parameters}/\texttt{ItemSelector}
-and a \texttt{Map}'s \texttt{ItemsPath}, i.e.\ the same \texttt{refs\_of} set the \code{SC1101}
-check consumes---into the dotted fragment, the whole-document $\$$, complex JSONPath
-(bracket/wildcard/filter/function), the \texttt{\$\$} context object, and \texttt{States.*}
-intrinsics. Table~\ref{tab:tr:coverage} reports the split over the AWS corpus, the CNCF examples,
-and the independent repositories of Section~\ref{sec:tr:external}.
+field-read a workflow evaluates---the \texttt{.\$} operands of
+\texttt{Parameters}/\texttt{ItemSelector}/\texttt{Assign} and a \texttt{Map}'s \texttt{ItemsPath},
+i.e.\ the read sites the \code{SC1101} check consumes---into the dotted/quoted-member fragment, the whole-document
+$\$$, complex JSONPath (wildcard/filter/function/array-index), the \texttt{\$\$} context object,
+\texttt{\$}\emph{name} workflow-variable reads, and \texttt{States.*} intrinsics.
+Table~\ref{tab:tr:coverage} reports the split over the AWS corpus, the CNCF examples, and the
+independent repositories of Section~\ref{sec:tr:external}. JSONata \texttt{\{\%\ \%\}} reads form a
+separate modeled fragment---direct references and object literals (\S\ref{sec:tr:df})---and are not
+counted in this JSONPath surface.
 
 \begin{table}[t]
 \centering\small
 \setlength{\tabcolsep}{5pt}
 \caption{Field-read coverage by the modeled JSONPath fragment (\texttt{stepcheck path-coverage}).
-``Doc.\ reads'' are the genuine document-field references (dotted $+$ whole-$\$$ $+$ complex),
+``Doc.\ reads'' are the genuine document-field references (member $+$ whole-$\$$ $+$ complex),
 excluding the \texttt{\$\$} context and \texttt{States.*} operands, which are not document
-references and cannot miss a field. ``Precise'' is dotted $+$ whole-$\$$.}
+references and cannot miss a field. ``Precise'' is dotted or quoted-member access $+$ whole-$\$$.}
 \label{tab:tr:coverage}
-\begin{tabular}{@{}lrrrrrrr@{}}
+\begin{tabular}{@{}lrrrrrrrr@{}}
 \toprule
-Corpus & Reads & Dotted & Whole-$\$$ & Complex & \texttt{\$\$} & \texttt{States.*} & Precise / doc.\ reads \\
+Corpus & Reads & Dotted & Whole-$\$$ & Complex & \texttt{\$\$} & \texttt{\$}var & \texttt{States.*} & Precise / doc.\ reads \\
 \midrule
-AWS (193)        & 1168 & 594 & 146 & 63 & 225 & 140 & 740/803 = \textbf{92.2\%} \\
-CNCF (66)        &    2 &   0 &   0 &  0 &   0 &   2 & --- (runtime expr.) \\
-Independent (95) &  420 & 296 &  57 & 17 &  20 &  30 & 353/370 = \textbf{95.4\%} \\
+AWS (193)        & 1168 & 596 & 146 & 61 & 225 & 0 & 140 & 742/803 = \textbf{92.4\%} \\
+CNCF (66)        &    2 &   0 &   0 &  0 &   0 & 0 &   2 & --- (runtime expr.) \\
+Independent (95) &  420 & 296 &  57 & 17 &  20 & 0 &  30 & 353/370 = \textbf{95.4\%} \\
 \midrule
-Combined         & 1590 & 890 & 203 & 80 & 245 & 172 & 1093/1173 = \textbf{93.2\%} \\
+Combined         & 1590 & 892 & 203 & 78 & 245 & 0 & 172 & 1095/1173 = \textbf{93.4\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Of the genuine document-field references, $92$--$95\%$ fall inside the modeled dotted fragment;
-only $6.8\%$ (combined) use bracket, wildcard, or filter syntax that the analysis soundly abstracts
-to $\top$. The CNCF corpus exercises almost no \texttt{.\$} reads because Serverless Workflow uses
+Of the genuine document-field references, $92$--$95\%$ fall inside the modeled member fragment;
+only $6.6\%$ (combined) use wildcard, filter, array-index, or other nonmember syntax that the
+analysis soundly abstracts to $\top$. No workflow in these JSONPath corpora issues a \texttt{\$}\emph{name} variable read (the
+\texttt{\$}var column is zero); the variable and JSONata-fragment provenance is exercised instead by
+the regression suite and the JSONata-mode workflows in the corpus. The CNCF corpus exercises almost no \texttt{.\$} reads because Serverless Workflow uses
 runtime expressions rather than JSONPath provenance, consistent with the ASL-specific data-flow
 checks staying silent there.
 
@@ -960,11 +1010,16 @@ only at deploy time. \code{SC6001} is a warning because a missing timeout is occ
 acceptable for a short-lived task; \code{SC6003} is the one error-level temporal finding, as
 it is unambiguous.
 
-\begin{remark}[Extending data-flow beyond JSONPath]
-JSONata states and workflow variables are currently lifted to $\top$, which is sound but loses
-precision. Extending provenance to them is the next data-flow step: it requires an expression
-abstraction for JSONata reads and writes in place of the opaque lift, after which the same shape
-lattice and fixpoint apply unchanged.
+\begin{remark}[Residual opacity beyond the modeled fragments]
+\tool{} tracks workflow variables and a JSONata fragment---direct
+\texttt{\$states}/\texttt{\$}\emph{name} references and object literals---as first-class provenance,
+on equal footing with JSONPath: the document and variable shapes share one lattice and one fixpoint
+(\S\ref{sec:tr:env}). What remains lifted to $\top$---soundly, at a cost in precision---is the
+genuinely opaque residue: JSONata functions, filters, and arithmetic (\texttt{\$exists}, path
+predicates, \texttt{\$merge}, string and math operators), the \texttt{\$states.context} object, and
+the opaque results of external tasks. A richer JSONata value abstraction (for instance, tracking the
+keys \texttt{\$merge} preserves) would recover some of this precision under the same lattice and
+fixpoint; it is the natural next step, and the shape machinery already accommodates it.
 \end{remark}
 
 \section{Artifact and implementation notes}
@@ -1005,6 +1060,13 @@ baseline of the main paper scores each injected defect; \texttt{oracle} runs the
 soundness cross-check; \texttt{eval-pairs} drives the real-bug benchmark by replaying each
 pre-fix and post-fix workflow; \texttt{mutate} injects one defect of a chosen class; and
 \texttt{demo} emits a built-in typed-DSL example to \asl.
+
+The data-flow commands also expose the \texttt{--result-shapes} ablation used in the main paper's
+evaluation. This flag leaves the default opaque-task transfer unchanged but, for the ablation run,
+treats declared task-output schemas and a small table of AWS service-result envelopes as closed
+records. On the strict-input missing-field mutation study, this improves \code{SC1101} recall from
+84/126 to 88/126; the paired oracle run confirms all 92 \code{SC1101} reports emitted under the
+ablation with zero counterexamples.
 
 The evaluation is reproducible offline on a commodity laptop. A Rust~1.96 toolchain builds the
 verifier and runs the mutation study, data-flow oracle, timing experiments, and real-bug replay.

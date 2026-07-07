@@ -81,13 +81,21 @@ fn check_asl(src: &str, sidecar: Option<&annot::Sidecar>) -> diag::DiagnosticSin
     sink
 }
 
+fn check_asl_with_result_shapes(src: &str, sidecar: Option<&annot::Sidecar>) -> diag::DiagnosticSink {
+    let mut wf = asl::parse_str(src, "t").unwrap();
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, sidecar, false, &mut sink);
+    passes::run_pipeline(&passes::pipeline_with_result_shapes(), &wf, &mut sink);
+    sink
+}
+
 #[test]
 fn sidecar_unknown_task_is_diagnostic() {
     let src = r#"{"StartAt":"A","States":{
         "A":{"Type":"Task","Resource":"r","End":true}}}"#;
     let mut sc = annot::Sidecar::default();
     sc.tasks.insert("MissingTask".into(), annot::TaskAnnot::default());
-    let sink = check_asl(src, Some(&sc));
+    let sink = check_asl_with_result_shapes(src, Some(&sc));
     assert!(sink.has_code("SC0011"), "expected stale sidecar task diagnostic: {:#?}", sink.diagnostics);
 }
 
@@ -147,7 +155,7 @@ fn dataflow_typed_tracks_through_resultpath_merge() {
                    "ResultSelector":{"reservationId.$":"$.Payload.id"},"ResultPath":"$.reservation","Next":"Charge"},
         "Charge":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
                   "Parameters":{"FunctionName":"c","Payload":{"a.$":"$.amount","r.$":"$.reservation.reservationId"}},"End":true}}}"#;
-    let sink = check_asl(src, Some(&sc));
+    let sink = check_asl_with_result_shapes(src, Some(&sc));
     assert!(!sink.has_code("SC1101"), "valid typed flow must be clean: {:#?}", sink.diagnostics);
 }
 
@@ -165,6 +173,43 @@ fn dataflow_typed_flags_schema_and_merge_misses() {
     let sink = check_asl(src, Some(&sc));
     let n = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
     assert!(n >= 2, "expected two SC1101 (schema miss + merge miss), got {n}: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_tracks_declared_task_output_contract() {
+    let mut sc = annot::Sidecar::default();
+    sc.schemas.insert("Out".into(), annot::SchemaDef { fields: vec!["known".into()] });
+    sc.tasks.insert(
+        "Produce".into(),
+        annot::TaskAnnot { output_schema: Some("Out".into()), ..Default::default() },
+    );
+    let src = r#"{"StartAt":"Produce","States":{
+        "Produce":{"Type":"Task","Resource":"${ProducerArn}","Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.missing"}},"End":true}}}"#;
+    let sink = check_asl_with_result_shapes(src, Some(&sc));
+    assert!(sink.has_code("SC1101"), "closed task output contracts should expose absent fields: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_tracks_known_lambda_result_envelope() {
+    let src = r#"{"StartAt":"Invoke","States":{
+        "Invoke":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                  "Parameters":{"FunctionName":"p","Payload":{"id":"1"}},"Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.__stepcheck_absent"}},"End":true}}}"#;
+    let sink = check_asl_with_result_shapes(src, None);
+    assert!(sink.has_code("SC1101"), "known service result envelopes should be closed records: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_accepts_quoted_bracket_member_paths() {
+    let src = r#"{"StartAt":"Build","States":{
+        "Build":{"Type":"Pass","Result":{"order":{"total":7}},"ResultPath":"$","Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$['order'][\"id\"]"}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(sink.has_code("SC1101"), "quoted bracket member paths should be resolved precisely: {:#?}", sink.diagnostics);
 }
 
 #[test]
@@ -284,6 +329,22 @@ fn dataflow_jsonata_output_shape_is_precise_for_object_literal() {
                "Parameters":{"FunctionName":"u","Payload":{"v.$":"$.other"}},"End":true}}}"#;
     let sink = check_asl(src, None);
     assert!(sink.has_code("SC1101"), "JSONata Output object should close the document shape: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn dataflow_sound_on_jsonata_object_constructor_absent_field() {
+    // SOUNDNESS REGRESSION: a JSONata object constructor `{% { 'k': $ref } %}`
+    // OMITS a key whose value is undefined (JSONata 2.0.6, which ASL implements),
+    // yielding `{}` rather than a `States.QueryEvaluationError`. Only a *bare*
+    // top-level expression that evaluates to undefined hard-fails. So a
+    // definitely-absent reference nested INSIDE a constructor must NOT be flagged
+    // SC1101, even though `Build` closes `$states.input` to `{a}`.
+    let src = r#"{"StartAt":"Build","QueryLanguage":"JSONPath","States":{
+        "Build":{"Type":"Pass","Result":{"a":1},"ResultPath":"$","Next":"Shape"},
+        "Shape":{"Type":"Pass","QueryLanguage":"JSONata",
+                 "Output":"{% { 'k': $states.input.missing } %}","End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1101"), "a ref inside a JSONata object constructor must not hard-fail: {:#?}", sink.diagnostics);
 }
 
 #[test]
