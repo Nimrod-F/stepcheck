@@ -2,7 +2,7 @@
 //! reordered), the ASL emitter round-trip, and the ASL / CNCF frontends.
 //! Run with `cargo test`.
 
-use crate::{annot, asl, cncf, diag, dsl, ir, passes};
+use crate::{annot, asl, cfn, cncf, diag, dsl, ir, passes};
 
 /// Resolve annotations from a sidecar (no inference) and run the full pipeline.
 fn verify(mut wf: ir::Workflow, sidecar: &annot::Sidecar) -> diag::DiagnosticSink {
@@ -55,6 +55,26 @@ fn dsl_emits_reparsable_asl() {
 }
 
 #[test]
+fn asl_emit_preserves_passthrough_fields() {
+    let src = r#"{"Comment":"top","QueryLanguage":"JSONata","TimeoutSeconds":3600,"StartAt":"MapIt","States":{
+        "MapIt":{"Type":"Map","Label":"jobs","ItemReader":{"Resource":"arn:aws:states:::s3:getObject"},
+            "ItemProcessor":{"ProcessorConfig":{"Mode":"DISTRIBUTED"},"StartAt":"Work","States":{
+                "Work":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","Catch":[{"ErrorEquals":["States.ALL"],"Assign":{"err":"{% $states.errorOutput %}"},"Next":"Done"}],"Next":"Done"},
+                "Done":{"Type":"Succeed"}}},"End":true}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    let emitted = asl::emit(&wf);
+    assert_eq!(emitted.get("TimeoutSeconds").and_then(|v| v.as_i64()), Some(3600));
+    assert_eq!(emitted.get("QueryLanguage").and_then(|v| v.as_str()), Some("JSONata"));
+    let map = emitted.pointer("/States/MapIt").unwrap();
+    assert!(map.get("ItemProcessor").is_some(), "ItemProcessor spelling should be preserved");
+    assert!(map.get("Iterator").is_none(), "Distributed Map should not be rewritten to Iterator");
+    assert!(map.get("ItemReader").is_some(), "uninterpreted Map fields should pass through");
+    assert_eq!(map.get("Label").and_then(|v| v.as_str()), Some("jobs"));
+    assert!(emitted.pointer("/States/MapIt/ItemProcessor/ProcessorConfig").is_some());
+    assert!(emitted.pointer("/States/MapIt/ItemProcessor/States/Work/Catch/0/Assign").is_some());
+}
+
+#[test]
 fn asl_frontend_parses() {
     let src = r#"{"StartAt":"A","States":{
         "A":{"Type":"Task","Resource":"r","Next":"B"},
@@ -69,6 +89,161 @@ fn cncf_frontend_parses() {
     let src = "document:\n  name: t\ndo:\n  - first:\n      call: http\n      then: exit\n";
     let wf = cncf::parse_str(src, "t").unwrap();
     assert!(wf.states.contains_key("first"));
+}
+
+#[test]
+fn cfn_yaml_template_extracts_state_machine() {
+    // A SAM/CloudFormation YAML template with a short-form !Sub DefinitionString:
+    // the CFN frontend must find the AWS::StepFunctions::StateMachine, resolve the
+    // ${...} intrinsics (keeping service ARNs intact), and yield runnable ASL.
+    let src = concat!(
+        "Resources:\n",
+        "  ProcessBooking:\n",
+        "    Type: AWS::StepFunctions::StateMachine\n",
+        "    Properties:\n",
+        "      StateMachineName: !Sub ${AWS::StackName}-ProcessBooking\n",
+        "      DefinitionString: !Sub |\n",
+        "        {\n",
+        "          \"StartAt\": \"Charge\",\n",
+        "          \"States\": {\n",
+        "            \"Charge\": {\n",
+        "              \"Type\": \"Task\",\n",
+        "              \"Resource\": \"${CollectPayment.Arn}\",\n",
+        "              \"Next\": \"Confirm\"\n",
+        "            },\n",
+        "            \"Confirm\": { \"Type\": \"Succeed\" }\n",
+        "          }\n",
+        "        }\n",
+    );
+    let machines = cfn::extract(src, "template.yaml", None).unwrap();
+    assert_eq!(machines.len(), 1);
+    let (id, wf) = &machines[0];
+    assert_eq!(id, "ProcessBooking");
+    assert!(wf.states.contains_key("Charge") && wf.states.contains_key("Confirm"));
+}
+
+#[test]
+fn cfn_json_template_with_dangling_transition_flags_sc0002() {
+    // A CDK-synth-style JSON template (Fn::Sub long form) whose extracted ASL has a
+    // dangling Next -> the structural pass fires on the CFN-extracted machine.
+    let src = r#"{"Resources":{"Machine":{"Type":"AWS::StepFunctions::StateMachine",
+      "Properties":{"DefinitionString":{"Fn::Sub":"{ \"StartAt\": \"A\", \"States\": { \"A\": { \"Type\": \"Task\", \"Resource\": \"${Fn.Arn}\", \"Next\": \"Missing\" } } }"}}}}}"#;
+    let machines = cfn::extract(src, "cdk.out", None).unwrap();
+    assert_eq!(machines.len(), 1);
+    let mut sink = diag::DiagnosticSink::new();
+    passes::run_pipeline(&passes::default_pipeline(), &machines[0].1, &mut sink);
+    assert!(sink.has_code("SC0002"), "expected SC0002 on dangling transition: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn cfn_template_links_child_state_machine_aliases() {
+    let src = r#"{"Resources":{
+      "Parent":{"Type":"AWS::StepFunctions::StateMachine","Properties":{"DefinitionString":{"Fn::Sub":"{ \"StartAt\": \"Run\", \"States\": { \"Run\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::states:startExecution\", \"Parameters\": { \"StateMachineArn\": \"${Child.Arn}\" }, \"End\": true } } }"}}},
+      "Child":{"Type":"AWS::StepFunctions::StateMachine","Properties":{"DefinitionString":"{ \"StartAt\": \"Write\", \"States\": { \"Write\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::dynamodb:putItem\", \"Parameters\": { \"TableName\": \"Orders\", \"Item\": { \"id\": { \"S\": \"1\" } } }, \"End\": true } } }"}}
+    }}"#;
+    let machines = cfn::extract(src, "template.json", None).unwrap();
+    let parent = machines.iter().find(|(id, _)| id == "Parent").unwrap();
+    let run = &parent.1.states["Run"];
+    let arn = match &run.parameters {
+        Some(serde_json::Value::Object(p)) => p.get("StateMachineArn").and_then(|v| v.as_str()),
+        _ => None,
+    };
+    assert_eq!(arn, Some("arn:aws:states:us-east-1:000000000000:stateMachine:Child"));
+    assert!(parent.1.linked_children.contains_key(arn.unwrap()));
+}
+
+#[test]
+fn cfn_template_links_state_machine_name_alias_for_child_flattening() {
+        let src = r#"{"Resources":{
+            "Parent":{"Type":"AWS::StepFunctions::StateMachine","Properties":{"StateMachineName":"parent-sm","DefinitionString":{"Fn::Sub":"{ \"StartAt\": \"P\", \"States\": { \"P\": { \"Type\": \"Parallel\", \"End\": true, \"Branches\": [ { \"StartAt\": \"C1\", \"States\": { \"C1\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::states:startExecution\", \"Parameters\": { \"StateMachineArn\": \"arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:child-sm\" }, \"End\": true } } }, { \"StartAt\": \"C2\", \"States\": { \"C2\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::states:startExecution\", \"Parameters\": { \"StateMachineArn\": \"arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:child-sm\" }, \"End\": true } } } ] } } }"}}},
+            "Child":{"Type":"AWS::StepFunctions::StateMachine","Properties":{"StateMachineName":"child-sm","DefinitionString":"{ \"StartAt\": \"Write\", \"States\": { \"Write\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::dynamodb:putItem\", \"Parameters\": { \"TableName\": \"Orders\", \"Item\": { \"id\": { \"S\": \"1\" } } }, \"End\": true } } }"}}
+        }}"#;
+        let machines = cfn::extract(src, "template.json", None).unwrap();
+        let (_, mut parent) = machines.into_iter().find(|(id, _)| id == "Parent").unwrap();
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut parent, None, true, &mut sink);
+        passes::run_pipeline(&passes::default_pipeline(), &parent, &mut sink);
+        assert!(sink.has_code("SC5003"), "expected child invocation composition warning: {:#?}", sink.diagnostics);
+        assert!(sink.has_code("SC5001"), "expected flattened child write collision through StateMachineName alias: {:#?}", sink.diagnostics);
+}
+
+fn check_cncf(src: &str) -> diag::DiagnosticSink {
+    let mut wf = cncf::parse_str(src, "t").unwrap();
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, None, false, &mut sink);
+    passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
+    sink
+}
+
+#[test]
+fn cncf_jq_read_of_missing_field_flags_sc1101() {
+    // A jq reference `${ .customerId }` in `with:` reads a field absent from the
+    // task's declared input schema {orderId, amount} -> SC1101, at the same
+    // extension point as ASL (no pass changed to support CNCF).
+    let src = "document:\n  name: t\ndo:\n  - chargeCard:\n      call: http\n      input:\n        schema:\n          document:\n            properties:\n              orderId: { type: string }\n              amount: { type: number }\n      with:\n        order: ${ .orderId }\n        customer: ${ .customerId }\n";
+    let sink = check_cncf(src);
+    assert!(sink.has_code("SC1101"), "expected SC1101 on CNCF jq read: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn cncf_jq_read_of_present_field_is_clean() {
+    // Reading only declared fields via jq must not flag (no false positive), and
+    // a composite jq expression must stay silent (projects to Top).
+    let src = "document:\n  name: t\ndo:\n  - chargeCard:\n      call: http\n      input:\n        schema:\n          document:\n            properties:\n              orderId: { type: string }\n              amount: { type: number }\n      with:\n        order: ${ .orderId }\n        doubled: ${ .amount * 2 }\n";
+    let sink = check_cncf(src);
+    assert!(!sink.has_code("SC1101"), "must not flag present/opaque jq: {:#?}", sink.diagnostics);
+}
+
+/// Lower a single `switch` task and return its first case's Choice condition.
+fn cncf_first_guard(when: &str) -> serde_json::Value {
+    let src = format!(
+        "document:\n  name: t\ndo:\n  - route:\n      switch:\n        - hit:\n            when: {when}\n            then: done\n        - miss:\n            then: done\n  - done:\n      set:\n        ok: true\n"
+    );
+    let wf = cncf::parse_str(&src, "t").unwrap();
+    wf.states.get("route").unwrap().choices[0].condition.clone()
+}
+
+#[test]
+fn cncf_when_comparison_operators_read_the_field() {
+    // Non-`==` comparison guards must expose the document field as a Choice read
+    // (so SC1101/SC1110 apply), and preserve the precise numeric comparator.
+    let lt = cncf_first_guard("${ .customer.age < 18 }");
+    assert_eq!(lt["Variable"], "$.customer.age");
+    assert_eq!(lt["NumericLessThan"], 18.0);
+
+    let gt = cncf_first_guard("${ .temperature > 38 }");
+    assert_eq!(gt["Variable"], "$.temperature");
+    assert_eq!(gt["NumericGreaterThan"], 38.0);
+
+    // `!=` (and any non-literal / context right side) falls back to a sound
+    // presence read: the field is still definitely read to evaluate the guard.
+    let ne = cncf_first_guard("${ .vet != null }");
+    assert_eq!(ne["Variable"], "$.vet");
+    assert_eq!(ne["IsPresent"], true);
+
+    // Existing equality behaviour is preserved.
+    let eq = cncf_first_guard("${ .status == \"OPEN\" }");
+    assert_eq!(eq["Variable"], "$.status");
+    assert_eq!(eq["StringEquals"], "OPEN");
+}
+
+#[test]
+fn cncf_when_boolean_models_only_leading_operand() {
+    // jq `and`/`or` short-circuit, so only the leading operand's field is
+    // guaranteed to be read; we model exactly that one (sound under-approximation).
+    let cond = cncf_first_guard("${ .bpm < 60 or .bpm > 100 }");
+    assert_eq!(cond["Variable"], "$.bpm");
+    assert_eq!(cond["NumericLessThan"], 60.0);
+}
+
+#[test]
+fn cncf_when_composite_lhs_stays_opaque() {
+    // A guard whose left side is not a pure document field (arithmetic, context)
+    // must not manufacture a read: it stays opaque so no unsound SC1101 fires.
+    let arith = cncf_first_guard("${ .a + .b == 5 }");
+    assert!(arith.get("Variable").is_none(), "arithmetic LHS must stay opaque: {arith:#?}");
+    let ctx = cncf_first_guard("${ $context.userId == 7 }");
+    assert!(ctx.get("Variable").is_none(), "context LHS must stay opaque: {ctx:#?}");
 }
 
 // ----- data-flow / provenance analysis (SC1101) -----------------------------
@@ -477,6 +652,54 @@ fn oracle_confirms_typed_merge_miss() {
     assert_eq!(check_ref(&wf, "Charge", "$.reservation.reservationId"), Verdict::Present);
 }
 
+#[test]
+fn oracle_unrolls_loop_revisits() {
+    use crate::concrete::{check_ref, Verdict};
+    // The first visit to Check lacks $.done, but the Wait branch writes it and
+    // loops back. The oracle must keep exploring after recording the first target
+    // entry, otherwise it would incorrectly confirm $.done absent.
+    let src = r#"{"StartAt":"Seed","States":{
+        "Seed":{"Type":"Pass","Result":{"order":{"amount":1}},"ResultPath":"$","Next":"Check"},
+        "Check":{"Type":"Choice","Choices":[{"Variable":"$.done","IsPresent":true,"Next":"Use"}],"Default":"Wait"},
+        "Wait":{"Type":"Pass","Result":true,"ResultPath":"$.done","Next":"Check"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.order.total"}},"End":true}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    assert_eq!(check_ref(&wf, "Check", "$.done"), Verdict::Present);
+    assert_eq!(check_ref(&wf, "Use", "$.order.total"), Verdict::ConfirmedAbsent);
+}
+
+#[test]
+fn dataflow_waitfortasktoken_result_is_opaque() {
+    // Surfaced on aws-solutions/media2cloud: a `.waitForTaskToken` callback's
+    // result is the arbitrary SendTaskSuccess payload, not the base service
+    // envelope, so under --result-shapes a downstream read must not be flagged a
+    // definite absence (that was a false positive on real callback workflows).
+    let src = r#"{"StartAt":"Wait","States":{
+        "Wait":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke.waitForTaskToken",
+            "Parameters":{"FunctionName":"f","Payload":{"token.$":"$$.Task.Token"}},"ResultPath":"$","Next":"Use"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+            "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.uuid"}},"End":true}}}"#;
+    let sink = check_asl_with_result_shapes(src, None);
+    assert!(!sink.has_code("SC1101"), "callback result is opaque, must not flag: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn issue_sns_envelope_missing_field_sc1101() {
+    // Regression for aws issue-tracker defect campus-compute#32: a task reads a
+    // job field from the SNS Publish response envelope {MessageId,SequenceNumber}
+    // that never contains it -> the runtime "JSONPath could not be found" error,
+    // caught statically as SC1101 under service-result-shape modeling.
+    let src = r#"{"StartAt":"Notify","States":{
+        "Notify":{"Type":"Task","Resource":"arn:aws:states:::sns:publish",
+            "Parameters":{"TopicArn":"arn:aws:sns:us-east-1:1:alerts","Message":"failed"},
+            "ResultPath":"$","Next":"Audit"},
+        "Audit":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+            "Parameters":{"FunctionName":"audit","Payload":{"execution_id.$":"$.execution_id"}},"End":true}}}"#;
+    let sink = check_asl_with_result_shapes(src, None);
+    assert!(sink.has_code("SC1101"), "expected SC1101 on SNS-envelope read: {:#?}", sink.diagnostics);
+}
+
 // ----- concurrency interference (SC5001) ------------------------------------
 
 fn concurrency_sink(src: &str) -> diag::DiagnosticSink {
@@ -529,6 +752,57 @@ fn concurrency_flags_named_child_execution_sync_collision() {
         {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync:2",
             "Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:111122223333:stateMachine:Child","Name":"order-42"},"End":true}}}]}}}"#;
     assert!(concurrency_sink(src).has_code("SC5001"), "expected a synchronous child-execution collision warning");
+}
+
+#[test]
+fn concurrency_composes_across_startexecution_sc5003() {
+    // Two parallel branches invoke the same child workflow (a CloudFormation ARN
+    // reference, no static Name). No SC5001 name-collision, but the child's
+    // effects run twice concurrently -> SC5003 composition warning.
+    let src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildStateMachine}"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildStateMachine}"},"End":true}}}]}}}"#;
+    let sink = concurrency_sink(src);
+    assert!(sink.has_code("SC5003"), "expected startExecution composition warning: {:#?}", sink.diagnostics);
+    assert!(!sink.has_code("SC5001"), "no name collision here");
+}
+
+#[test]
+fn concurrency_flattens_resolved_child_writes_for_sc5001() {
+    let parent_src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildA}"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildB}"},"End":true}}}]}}}"#;
+    let child_a_src = r#"{"StartAt":"AWrite","States":{"AWrite":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:putItem",
+        "Parameters":{"TableName":"Orders","Item":{"id":{"S":"1"}}},"End":true}}}"#;
+    let child_b_src = r#"{"StartAt":"BWrite","States":{"BWrite":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:putItem",
+        "Parameters":{"TableName":"Orders","Item":{"id":{"S":"1"}}},"End":true}}}"#;
+
+    let mut parent = asl::parse_str(parent_src, "parent").unwrap();
+    let child_a = asl::parse_str(child_a_src, "child-a").unwrap();
+    let child_b = asl::parse_str(child_b_src, "child-b").unwrap();
+    parent.linked_children = std::rc::Rc::new(std::collections::BTreeMap::from([
+        ("${ChildA}".to_string(), child_a),
+        ("${ChildB}".to_string(), child_b),
+    ]));
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut parent, None, true, &mut sink);
+    passes::run_pipeline(&passes::default_pipeline(), &parent, &mut sink);
+    assert!(sink.has_code("SC5001"), "expected flattened child write collision: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn concurrency_clean_on_distinct_child_executions() {
+    // Two branches invoke *different* child workflows: no composition interference.
+    let src = r#"{"StartAt":"P","States":{"P":{"Type":"Parallel","End":true,"Branches":[
+        {"StartAt":"C1","States":{"C1":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildA}"},"End":true}}},
+        {"StartAt":"C2","States":{"C2":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution",
+            "Parameters":{"StateMachineArn":"${ChildB}"},"End":true}}}]}}}"#;
+    assert!(!concurrency_sink(src).has_code("SC5003"), "distinct children must not be flagged");
 }
 
 #[test]
@@ -688,4 +962,47 @@ fn fixpoint_recorder_captures_converged_rounds() {
     assert!(!rec.is_empty(), "recorder should capture at least one machine");
     assert!(rec.iter().all(|r| r.converged), "every machine must converge within its bound");
     assert!(rec.iter().all(|r| r.rounds <= r.bound), "rounds must not exceed the bound");
+}
+
+#[test]
+fn dataflow_reports_after_cyclic_reembedding_widens() {
+    // This loop re-embeds the whole document under $.wrap on each iteration. A
+    // cap-and-suppress fixpoint can lose all SC1101 reporting for the machine;
+    // depth-k widening collapses the deep tail to Top while preserving the
+    // shallow fact that $.missing is never produced.
+    let mut sc = annot::Sidecar::default();
+    sc.workflow.input_schema = Some("In".into());
+    sc.schemas.insert("In".into(), annot::SchemaDef { fields: vec!["base".into(), "stop".into()] });
+    let src = r#"{"StartAt":"Grow","States":{
+        "Grow":{"Type":"Pass","ResultPath":"$.wrap","Next":"Check"},
+        "Check":{"Type":"Choice","Choices":[{"Variable":"$.stop","IsPresent":true,"Next":"Use"}],"Default":"Grow"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.missing"}},"End":true}}}"#;
+    let sink = check_asl(src, Some(&sc));
+    assert!(
+        sink.has_code("SC1101"),
+        "widened cyclic re-embedding should still report shallow missing fields: {:#?}",
+        sink.diagnostics
+    );
+}
+
+#[test]
+fn dataflow_certificate_checks_cyclic_report() {
+    let mut sc = annot::Sidecar::default();
+    sc.workflow.input_schema = Some("In".into());
+    sc.schemas.insert("In".into(), annot::SchemaDef { fields: vec!["base".into(), "stop".into()] });
+    let src = r#"{"StartAt":"Grow","States":{
+        "Grow":{"Type":"Pass","ResultPath":"$.wrap","Next":"Check"},
+        "Check":{"Type":"Choice","Choices":[{"Variable":"$.stop","IsPresent":true,"Next":"Use"}],"Default":"Grow"},
+        "Use":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+               "Parameters":{"FunctionName":"u","Payload":{"x.$":"$.missing"}},"End":true}}}"#;
+    let mut wf = asl::parse_str(src, "t").unwrap();
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, Some(&sc), false, &mut sink);
+    passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
+    let sc1101 = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
+    let cert = passes::dataflow::certify_sc1101(&wf, false);
+    assert!(cert.ok(), "certificate obligations should hold");
+    assert_eq!(cert.sc1101_reports, sc1101, "certificate and diagnostics should agree");
+    assert!(cert.postconditions > 0, "certificate should check finite edge obligations");
 }

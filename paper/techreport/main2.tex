@@ -451,63 +451,46 @@ $\Phi(u)\leftarrow\Phi(u)\sqcup\mathit{catch}(\Phi(s),\rho)$. Updates are in pla
 (Gauss--Seidel) in an unspecified state order; the least fixpoint, once reached, is independent
 of that order. Rounds repeat until a round changes nothing.
 
-\begin{lemma}[Convergence and the soundness guard]\label{lem:term}
-The forward iteration is monotone: each $\Phi(s)$ only ascends under $\sqsubseteq$. On the
-\emph{bounded-depth fragment}---workflows in which every result shape $\sigma_{\mathit{res}}$ is
-\emph{static} (built by $\mathit{ctor}$/$\mathit{lit}$ from constructor text, or opaque
-$\top$), so that no state both selects a sub-document and re-embeds it under a
-\texttt{ResultPath}---the iteration reaches the least fixpoint. In general the domain admits
-infinite ascending chains, so convergence is not guaranteed; the implementation therefore caps
-the loop at $N=|S|\cdot(\kappa_0+2)+2$ rounds (with $\kappa_0$ the implementation's key count
-and $|S|$ the state count) and, on exceeding the cap, sets a \emph{non-converged} flag that
-suppresses \emph{all} \code{SC1101} and \code{SC1110} reporting for that (sub-)machine. A
-finding is thus emitted only at a genuine fixpoint: the cap can cost precision but never
-soundness.
+\begin{lemma}[Widened convergence]\label{lem:term}
+The forward iteration with depth-$k$ widening is monotone and reaches a post-fixpoint on every
+workflow topology. The implementation uses $k=12$ and records the safety bound
+$N=|S|\cdot(\kappa_0+2)\cdot(k+1)+2$ rounds, where $\kappa_0$ is the implementation's key count.
+If the safety bound were exceeded because of an implementation bug, all known entries would be
+lifted to $(\top,\top)$ before checking, preserving soundness by losing precision rather than
+reporting from an under-approximation.
 \end{lemma}
 \begin{proof}
-Every update is a join, so each $\Phi(s)$ is non-decreasing (Lemma~\ref{lem:join}). Let $\kappa$
-be the size of the workflow's \emph{key universe}: the finite set of keys occurring in any
-constructor (\texttt{Parameters}, \texttt{Result}, \texttt{ResultSelector},
-\texttt{ItemSelector}), in an \texttt{Assign}/\texttt{Arguments}/\texttt{Output} template or a
-JSONata object literal (contributing variable names and produced field names), in the declared
-input schema, or as a segment of a \texttt{ResultPath} or catch \texttt{ResultPath}. Both
-components of the environment draw their keys from this same finite universe, so the argument
-below bounds each; the environment lattice, a finite product of the shape lattice, then has
-finite height whenever each component does. On the bounded-depth fragment there is a bound $D$ on the depth of
-every reachable shape: $\mathit{ctor}$/$\mathit{lit}$ build records whose nesting is bounded by
-the static constructor text; $\place_{\mathit{in}}$ writes a static $\sigma_{\mathit{res}}$ at
-the fixed depth $|\pi|$ of its \texttt{ResultPath} and \emph{overwrites} rather than stacks; and
-$\narrow$, $\mathit{nav}$, and $\sqcup$ never increase depth. Every reachable shape then lies in
-the (finite-height) lattice of records of depth at most $D$ over the $\kappa$-key universe; a
-non-decreasing chain in a finite-height lattice stabilises, so the iteration reaches the least
-fixpoint. Outside the fragment a bare \texttt{Pass} can forward its narrowed input as
-$\sigma_{\mathit{res}}$ while a \texttt{ResultPath} re-embeds that sub-document one level deeper;
-a cycle through such a state deepens shapes without bound, so no finite-height bound exists and
-the iteration need not converge. The implementation's cap $N$ uses a key count $\kappa_0$ that
-omits \texttt{ResultPath} segments, making $N$ a heuristic guard rather than a tight bound (in
-debug builds an assertion additionally flags the event). Because reporting is gated on the
-converged flag, exceeding $N$ merely suppresses findings; soundness
-(Theorem~\ref{thm:soundness}) is therefore unconditional, whereas convergence---and hence the
-possibility of \emph{any} finding---is guaranteed only on the bounded-depth fragment.
+Every normal or catch-edge update is a join, so each $\Phi(s)$ is non-decreasing
+(Lemma~\ref{lem:join}). Let $\kappa$ be the workflow's finite \emph{key universe}: keys occurring
+in constructors (\texttt{Parameters}, \texttt{Result}, \texttt{ResultSelector},
+\texttt{ItemSelector}), in \texttt{Assign}/\texttt{Arguments}/\texttt{Output} templates or JSONata
+object literals, in declared input or output schemas, and as segments of \texttt{ResultPath} and
+catch \texttt{ResultPath} fields. Define $W_k$ over shapes by replacing every record nested deeper
+than $k$ by $\top$ and recursing otherwise. $W_k$ is extensive and monotone: for every shape
+$\sigma$, $\gamma(\sigma)\subseteq\gamma(W_k(\sigma))$, and if $\sigma_1\sqsubseteq\sigma_2$ then
+$W_k(\sigma_1)\sqsubseteq W_k(\sigma_2)$. The implementation applies $W_k$ to every propagated
+environment and again after each join.
+
+After widening, every environment component ranges over records of depth at most $k$ over the
+finite key universe, plus $\top$; the product environment lattice therefore has finite height. A
+monotone in-place iteration over a finite-height lattice stabilises at a post-fixpoint independent
+of state order. Cyclic re-embedding can still push a growing tail through a loop, but once the tail
+passes depth $k$ it becomes $\top$, so the chain stops growing. The emergency lift to $(\top,\top)$
+is also an over-approximation: subsequent propagation can only join smaller transfer results into
+$\top$ entries, so no definite-absence report can arise from the lifted region.
 \end{proof}
 
-\begin{remark}[Why cap-and-suppress rather than widening]
-The orthodox way to recover termination on the full domain is a depth-$k$ \emph{widening}: lift any
-shape whose nesting exceeds $k$ to $\top$. Because widening over-approximates, it preserves the
-soundness of Theorem~\ref{thm:soundness} and, by collapsing the deep tail to $\top$, restores a
-finite-height domain and guarantees convergence. We use cap-and-suppress instead for two reasons:
-it is simpler (no widening operator or threshold to tune), and it is empirically unnecessary---the
-round bound is never reached on the 193 AWS and 66 CNCF workflows (786 fixpoints, native and typed
-seeding, nested machines included: at most 7 rounds in absolute terms and at most one third of the
-permitted rounds at any single machine) or on the acyclic scale sweep, whose definitions converge
-in a single forward pass by construction, so no machine is ever suppressed. Adopting widening would
-trade the (never-taken) suppression branch for guaranteed findings on cyclic re-embedding, at the
-cost of precision on the widened region; it is a drop-in change should such workflows appear.
+\begin{remark}[Empirical headroom]
+The widened bound is deliberately conservative. On the current corpus---193 AWS workflows, 66 CNCF
+workflows, and two DSL workflows, including nested machines and both native and typed seeding---all
+790 data-flow fixpoints converge, with a maximum of 7 rounds and a worst observed bound utilization
+of 2/54 (3.7\%). The synthetic scale sweep remains near-linear; acyclic chains converge in one
+forward pass by construction.
 \end{remark}
 
 \subsection{Reference checking}
 
-At the fixpoint---and only if the machine converged (Lemma~\ref{lem:term})---the analysis checks,
+At the widened fixpoint (Lemma~\ref{lem:term}), the analysis checks,
 at each state $s$ with entry environment $\Phi(s)=(\sigma_{\mathrm d},\sigma_{\mathrm v})$ and
 effective document $\eff=\narrow(\sigma_{\mathrm d},\textsf{InputPath})$, the reads the runtime
 evaluates and aborts on when absent. These fall into three classes.
@@ -611,9 +594,9 @@ A \texttt{Map}'s iterator and a \texttt{Parallel}'s branches are themselves stat
 analysed by the same procedure under a seed derived from the enclosing state's entry.
 
 \begin{remark}[Nested-machine seeds]\label{rmk:nested}
-The nested analysis runs---crucially for soundness---only when the enclosing machine has
-converged (Lemma~\ref{lem:term}); otherwise its entry shapes are under-approximate and the
-recursion is suppressed together with the enclosing machine's own reporting. Each \texttt{Map}
+The nested analysis runs under seeds derived from the enclosing machine's widened fixpoint; if the
+safety guard ever lifted an enclosing entry to $\top$, the nested seed is correspondingly opaque and
+conservative. Each \texttt{Map}
 iteration is seeded with $\mathit{ctor}(\textsf{ItemSelector})$ when an \texttt{ItemSelector} is
 declared and $\top$ otherwise; each \texttt{Parallel} branch is seeded with
 $\mathit{ctor}(\textsf{Parameters})$ when the state declares \texttt{Parameters} and with the
@@ -982,9 +965,11 @@ mines each task's resource key---service plus the named target: \texttt{TableNam
 identifiers, Bedrock \texttt{ModelId}, and nested-workflow \texttt{StateMachineArn}/\texttt{Name}
 pairs (statically named \texttt{states:startExecution} calls that provably share a child workflow
 and execution name also collide)---and considers only \emph{overwriting}
-writes---\texttt{PutItem}/\texttt{PutObject}, which are last-writer-wins. It does not inspect a
-separately defined child workflow unless that child definition is checked as a workflow of its
-own. A task counts as a
+writes---\texttt{PutItem}/\texttt{PutObject}, which are last-writer-wins. For child workflows, the
+CloudFormation/SAM front end links sibling state machines through logical ids, \texttt{Ref}/\texttt{GetAtt},
+\texttt{DefinitionSubstitutions}, and \texttt{StateMachineName}-derived ARNs, so the child's own write
+set is recursively flattened when the definition is present in the artifact; externally deployed
+children with no local definition remain a scope boundary. A task counts as a
 write only when it is annotated non-idempotent (or persistent): an unannotated \texttt{PutItem}
 is not flagged, a deliberate precision trade that keeps the analysis silent absent an
 effect declaration and contributes to its zero-false-positive record. The check also
@@ -1065,8 +1050,8 @@ The data-flow commands also expose the \texttt{--result-shapes} ablation used in
 evaluation. This flag leaves the default opaque-task transfer unchanged but, for the ablation run,
 treats declared task-output schemas and a small table of AWS service-result envelopes as closed
 records. On the strict-input missing-field mutation study, this improves \code{SC1101} recall from
-84/126 to 88/126; the paired oracle run confirms all 92 \code{SC1101} reports emitted under the
-ablation with zero counterexamples.
+84/126 to 88/126; the paired bounded-loop oracle run confirms all 92 \code{SC1101} reports emitted
+under the ablation with zero counterexamples.
 
 The evaluation is reproducible offline on a commodity laptop. A Rust~1.96 toolchain builds the
 verifier and runs the mutation study, data-flow oracle, timing experiments, and real-bug replay.
@@ -1076,8 +1061,10 @@ credentials are required to reproduce the paper's tables, figures, mutation resu
 oracle, timing results, or local validator baselines. AWS's server-side
 \texttt{ValidateStateMachineDefinition} check is opt-in (\texttt{STEPCHECK\_AWS=1}), creates no
 resources, and has recorded outputs committed with the artifact so its numbers reproduce offline.
-The only step that touches an AWS account is the optional Express-machine smoke test reported in
-the main paper; no other result depends on it.
+The only steps that touch an AWS account are the optional deployment checks reported in
+the main paper (Express, Standard, and live-callback runs; scripts
+\texttt{infra/deploy\_run\{,\_standard,\_callback\}.sh}); no other result depends on them, and the
+captured execution evidence is committed with the artifact.
 
 The \asl{} emitter is currently lossy for a workflow's pure I/O-processing fields: among others
 it does not re-emit \texttt{InputPath}, \texttt{OutputPath}, or \texttt{ResultSelector}, nor the
@@ -1102,12 +1089,29 @@ fan-out, and nested-\texttt{Map} sweeps exercise scale and topology, but they ca
 for industrial semantic diversity---richer contracts, deeper Saga chains, and organization-specific
 naming conventions that inference has not been tuned on.
 
-\paragraph{Deployment smoke test.}
-The AWS deployment test emits one DSL-authored order workflow, deploys it unmodified as an
-Express-mode state machine, executes it to \texttt{SUCCEEDED}, and tears it down. It does not
-exercise Standard mode, a live \texttt{.waitForTaskToken} callback, Activity workers, or
-service-integration failures; those behaviours are covered only by the static analyses and the
-offline oracle, not by live execution.
+\paragraph{Deployment check.}
+The AWS deployment check exercises three execution models on StepCheck-verified definitions, each
+deployed unmodified (only \texttt{FunctionName} bound to a stand-in echo Lambda) and each reaching
+\texttt{SUCCEEDED} before teardown: (i)~the DSL-authored order workflow as a synchronous
+\emph{Express} machine; (ii)~the same definition as a \emph{Standard} machine executed
+asynchronously, whose durable history retains all 24 events (Express retains none); and (iii)~a
+DSL-verified order variant with a bounded \texttt{.waitForTaskToken} approval gate deployed as
+Standard (Express cannot run this integration), where the execution pauses at the callback, an
+external \texttt{SendTaskSuccess} resumes it, and it completes in 30 events. The callback carries a
+\texttt{TimeoutSeconds} bound, so the temporal pass raises no \code{SC6001}; removing the bound makes
+StepCheck flag it before deployment, tying the check to the deployed behaviour. To confirm the
+verified artifact runs correctly beyond a single execution, we additionally run the order workflow
+\textbf{100} times in each non-callback mode: all complete successfully (Express 100/100, Standard
+100/100), with per-execution wall time of p50/p95/p99 $\approx$72/130/165\,ms (Express, mean
+$\approx$84\,ms) and $\approx$345/456/484\,ms (Standard, mean $\approx$361\,ms, five state
+transitions per run). We report these distributions as evidence of stable completion across
+execution models, not as a cross-mode AWS performance benchmark. StepCheck itself is also wired as a
+live gate: \texttt{.github/workflows/gate.yml} runs the blocking check (\texttt{-{}-deny-warnings})
+on every push/PR over the deployment artifacts and includes a negative test that injects a defect and
+fails the job unless the gate blocks it. What the deployment check still does \emph{not} exercise is
+Activity workers, service-integration failures, or a broad multi-workflow performance benchmark;
+those behaviours remain covered by the static analyses and the offline oracle rather than by live
+execution.
 
 \paragraph{Semantic drift.}
 Declared premises are checked for syntactic rot (\code{SC0011}/\code{SC0012}) but not for truth:

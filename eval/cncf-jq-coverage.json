@@ -1,0 +1,9 @@
+{
+  "generated_by": "WS-F CNCF jq coverage probe",
+  "cncf_workflows": 66,
+  "workflows_with_jq_expression": 30,
+  "workflows_with_modelable_pure_field_ref": 12,
+  "pure_field_ref_sites_modeled": 18,
+  "composite_expression_sites_top": 35,
+  "note": "Pure jq field references (.a.b / ${ .a.b }) are lowered to JSONPath so the sound SC1101/SC1110 checks fire at declared record boundaries (input/output schemas). A comparison or presence guard over a document field (.a.b == v, .a.b < v, .a.b != null, and the leading operand of a short-circuiting and/or) likewise lowers to that field's read; the remaining composite jq (pipes, arithmetic, object construction, $context/$workflow runtime references) projects to Top and stays soundly silent. The 18/12 counts are value-position pure field-reference sites and are unchanged by the guard-operator extension (the corpus's when guards are all equality; its non-equality comparisons sit under if/while/filter/data)."
+}

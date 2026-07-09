@@ -1,0 +1,65 @@
+name: stepcheck-gate
+
+# A real build-time verification gate. On every push / PR it (1) runs StepCheck
+# with the blocking policy (--deny-warnings) over the deployment artifacts and
+# fails the build if any is unsound, and (2) runs a negative test proving the
+# gate actually blocks an injected defect (a workflow the AWS
+# ValidateStateMachineDefinition API would accept and deploy). This is the live
+# counterpart of the build-time gate measured in the paper.
+
+on:
+  push:
+    branches: [ main, novelty-dataflow-concurrency-temporal ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  workflow-gate:
+    name: build-time verification gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: stepcheck
+
+      - name: Build StepCheck (release, locked)
+        working-directory: stepcheck
+        run: cargo build --release --locked
+
+      # (1) The gate: every deployment artifact must verify clean under the
+      # blocking policy, or the build fails before anything deploys.
+      - name: Gate deployment artifacts
+        run: |
+          SC=stepcheck/target/release/stepcheck
+          ARTIFACTS="corpus/dsl/order.asl.json corpus/dsl/order-callback.asl.json"
+          fail=0
+          for a in $ARTIFACTS; do
+            echo "::group::gate $a"
+            start=$(date +%s%N)
+            "$SC" check --deny-warnings "$a" || fail=1
+            end=$(date +%s%N)
+            echo "gate latency: $(( (end - start) / 1000000 )) ms"
+            echo "::endgroup::"
+          done
+          if [ "$fail" -eq 0 ]; then
+            echo "GATE PASSED: all deployment artifacts verify clean"
+          else
+            echo "::error::GATE FAILED: an unsound deployment artifact was blocked"
+            exit 1
+          fi
+
+      # (2) Negative test: injecting one defect must make the gate fail. If the
+      # gate lets the mutant through, THIS step fails the job -- so the gate's
+      # blocking behaviour is itself checked in CI.
+      - name: Gate must block an injected defect
+        run: |
+          SC=stepcheck/target/release/stepcheck
+          "$SC" mutate corpus/dsl/order.asl.json --kind structural --out "$RUNNER_TEMP/mutant.asl.json"
+          if "$SC" check --deny-warnings "$RUNNER_TEMP/mutant.asl.json"; then
+            echo "::error::gate did NOT block a defective workflow"
+            exit 1
+          else
+            echo "gate correctly blocked the injected defect (a real build would fail here)"
+          fi
