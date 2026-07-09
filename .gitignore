@@ -23,6 +23,21 @@ __pycache__/
 
 # transient AWS round-trip artifacts
 infra/.last_sm_arn
+infra/.last_sm_arn_*
+infra/bench-*-history.json
+infra/execution-*.json
+
+# build artifacts (regenerable)
+infra/echo.zip
+
+# internal memos / plans (not for public repo)
+comparatie reala - ICSOC.pdf
+recenzie-JENNI-ICSOC.pdf
+stepcheck_acceptance_plan_*.md
+stepcheck_icsoc_audit_*.md
+stepcheck_paper_review_*.md
+stepcheck_review_audit.md
+stepcheck_trim_plan_*.md
 
 # OS
 .DS_Store
@@ -34,3 +49,6 @@ Thumbs.db
 
 # real-bug miner work dir (transient clones)
 eval/.realbugs-work/
+
+# generated BPMN baseline encodings
+eval/asl2bpmn/out/

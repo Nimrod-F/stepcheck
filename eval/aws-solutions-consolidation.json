@@ -1,0 +1,167 @@
+{
+  "generated_by": "eval: AWS Solutions Library consolidation",
+  "solutions": [
+    "aws-solutions-library-samples/media2cloud",
+    "aws-solutions/aws-control-tower-customizations",
+    "aws-solutions/network-orchestration-for-aws-transit-gateway",
+    "aws-solutions/instance-scheduler-on-aws (cdk synth)",
+    "aws-solutions/automated-security-response-on-aws (cdk synth)",
+    "aws-solutions/distributed-load-testing-on-aws (cdk synth)",
+    "aws-solutions/account-assessment-for-aws-organizations (cdk synth)"
+  ],
+  "machines_analyzed": 26,
+  "by_solution": {
+    "Account Assessment for AWS Organizations (cdk synth)": 1,
+    "Automated Security Response on AWS (cdk synth)": 1,
+    "Control Tower Customizations": 3,
+    "Distributed Load Testing on AWS (cdk synth)": 3,
+    "Instance Scheduler (cdk synth)": 1,
+    "Media2Cloud": 16,
+    "Network Orchestration (Transit Gateway)": 1
+  },
+  "flagged_machines": 14,
+  "findings_by_code": {
+    "SC0007": 3,
+    "SC3001": 8,
+    "SC4001": 20,
+    "SC6001": 1
+  },
+  "note": "Production AWS Solutions Library workflows, analyzed directly from committed ASL/CloudFormation or from CDK synth artifacts. Media2Cloud uses committed ASL; Control Tower Customizations and Network Orchestration use committed CloudFormation via the CFN front end (multi-machine). Instance Scheduler, Automated Security Response, Distributed Load Testing, and Account Assessment are CDK synth artifacts. Sound/native findings include SC0007 (non-exhaustive Choice) on enterprise orchestrators and SC6001 (unbounded callback) in Automated Security Response; advisory SC3001/SC4001 fire on persistent create/delete/publish/send steps. Distributed Load Testing and Account Assessment are clean true negatives.",
+  "flagged": [
+    {
+      "solution": "Automated Security Response on AWS (cdk synth)",
+      "machine": "orchestratorStateMachine77C3F8FB",
+      "codes": [
+        "SC3001",
+        "SC6001"
+      ]
+    },
+    {
+      "solution": "Control Tower Customizations",
+      "machine": "ServiceControlPolicyMachine",
+      "codes": [
+        "SC0007",
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Control Tower Customizations",
+      "machine": "ResourceControlPolicyMachine",
+      "codes": [
+        "SC0007",
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Control Tower Customizations",
+      "machine": "StackSetStateMachine",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main.asl.json",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_analysis_audio.asl.json",
+      "codes": [
+        "SC3001",
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_analysis_main.asl.json",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_analysis_post-process.asl.json",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_analysis_video.asl.json",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_ingest_fixity.asl.json",
+      "codes": [
+        "SC3001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_ingest_main.asl.json",
+      "codes": [
+        "SC3001",
+        "SC4001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_ingest_video.asl.json",
+      "codes": [
+        "SC3001"
+      ]
+    },
+    {
+      "solution": "Media2Cloud",
+      "machine": "media2cloud__main_removal.asl.json",
+      "codes": [
+        "SC3001"
+      ]
+    },
+    {
+      "solution": "Network Orchestration (Transit Gateway)",
+      "machine": "network-orchestration-transit-gateway.cfn.yaml",
+      "codes": [
+        "SC0007",
+        "SC3001"
+      ]
+    }
+  ],
+  "cdk_synth_note": "CDK synth artifacts were materialized for Instance Scheduler, Automated Security Response, Distributed Load Testing, and Account Assessment and checked directly as cdk.out/*.template.json. Instance Scheduler, Distributed Load Testing, and Account Assessment are clean true negatives; Automated Security Response reports SC3001 on a retried Send Task Token and SC6001 on the same callback lacking TimeoutSeconds/HeartbeatSeconds. Reproduction required per-repo build fixes: install dependencies at the owning source/CDK package, build Distributed Load Testing's web UI and legacy Lambda packages, expose cp.exe from Git for Windows for its asset copy on Windows, and provide Account Assessment's required synth environment plus a lambda.zip asset placeholder when Poetry is unavailable. These fixes confirm the CDK-synth path while documenting the bespoke build steps.",
+  "cdk_build_time_gate": {
+    "artifact": "eval/aws-solutions-cdk-gate.json",
+    "generated_by": "eval/industrial/aws_solutions_cdk_gate.py",
+    "templates": 6,
+    "method": "Mutants are applied to the ASL emitted from each CDK synth template, then embedded back into a copy of the same CloudFormation template as DefinitionString; StepCheck is timed on the deployment artifact. Platform silent-pass uses asl-validator on the emitted ASL and excludes mutant denominators whose clean definition is already rejected by that validator.",
+    "by_injected_defects": {
+      "0": {
+        "platform_silent_pass_rate": 0.333,
+        "gate_p95_ms": 18.9
+      },
+      "1": {
+        "applied": 6,
+        "caught": 6,
+        "catch_rate": 1.0,
+        "platform_silent_pass": 2,
+        "platform_n": 2,
+        "platform_silent_pass_rate": 1.0,
+        "gate_p95_ms": 19.7
+      },
+      "5": {
+        "applied": 5,
+        "caught": 5,
+        "catch_rate": 1.0,
+        "platform_silent_pass": 0,
+        "platform_n": 1,
+        "platform_silent_pass_rate": 0.0,
+        "gate_p95_ms": 18.3
+      }
+    }
+  }
+}

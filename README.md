@@ -26,8 +26,8 @@ task names and resource bindings.
 | `stepcheck/` | the tool, in Rust (3,692 LOC). `src/{ir,asl,cncf,dsl,annot,diag,mutate,main}.rs` and `src/passes/{structural,dataflow,contract,typestate,retry,compensation,concurrency,temporal}.rs` (eight passes). Three frontends (ASL, typed DSL, CNCF Serverless Workflow) lower to one IR; the passes are unchanged across formats. `corpus/dataflow/` holds the data-flow demonstrators. |
 | `corpus/asl/` | 193 real Step Functions workflows mined from public AWS repos. `corpus/manifest.json` records provenance; `corpus/gold-labels.json` is the inference gold set (23 workflows, 147 tasks; new workflows double-labelled, kappa 1.00/0.745). `corpus/dsl/` holds the typed-DSL worked example. |
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second corpus). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
-| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision, inter-annotator kappa, RQ2 accuracy), `stats.tex` (E1), `fixpoint-stats.json` (data-flow fixpoint round/bound utilisation across both corpora, `fixpoint-stats`). |
-| `infra/` | the AWS round-trip (E7): `deploy_run.sh`, `teardown.sh`, and captured `execution-evidence.json`. |
+| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json` (E2/E3/E5), `results-dataflow.json` (E10 typed-tier data-flow recall, `eval --strict-input`), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` (E4), `baseline-statelint.json` + `statelint_baseline.js` (E9, six-class statelint baseline), `asl2bpmn/encode.js` + `asl2bpmn-summary.json` + `bpmn-baseline.json` (WS-D BPMN baseline setup and verifier availability), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision, inter-annotator kappa, RQ2 accuracy), `stats.tex` (E1), `fixpoint-stats.json` (data-flow fixpoint round/bound utilisation across both corpora, `fixpoint-stats`). |
+| `infra/` | the AWS round-trip (E7): Express, Standard, and live `.waitForTaskToken` callback scripts plus captured execution evidence/history. Summary: `eval/aws-roundtrip-modes.json`. |
 | `PLAN.md` | the implementation plan / design rationale. |
 
 ## Build & run the tool
@@ -48,6 +48,8 @@ $BIN stats ../corpus/asl                 # E1 corpus characterization
 $BIN eval  ../corpus/asl --infer         # E2 in-the-wild + E3 mutation study + E5 timing
 node ../eval/inference_accuracy.js       # E4 inference accuracy vs gold
 $BIN fixpoint-stats ../corpus/asl ../corpus/cncf > ../eval/fixpoint-stats.json  # data-flow fixpoint round/bound utilisation (termination)
+node ../eval/asl2bpmn/encode.js ../corpus/asl --limit 30 --out ../eval/asl2bpmn/out --summary ../eval/asl2bpmn-summary.json  # WS-D BPMN baseline setup
+node ../eval/asl2bpmn/run_baselines.js --summary ../eval/asl2bpmn-summary.json --out ../eval/bpmn-baseline.json  # records BProVe/BPMN Analyze availability or raw runs
 ```
 
 ## Continuous integration & packaging
@@ -108,9 +110,11 @@ elsewhere.
 - Inference accuracy vs agreement-checked gold (23 wf, 137 labelled tasks): **70%** idempotency,
   **87%** persistence (≈80% coverage). In-the-wild warning precision vs human gold (κ 0.89/0.99):
   **92%** overall (46/50), **89%** for compensation warnings (SC4001).
-- Verification cost: **≈39 µs**/workflow mean (eight passes); whole corpus in **≈7.5 ms**; **0** runtime overhead.
-- AWS round-trip: a verified workflow deployed and executed on real Step Functions →
-  `SUCCEEDED` (then torn down).
+- Verification cost: **≈39 µs**/workflow mean on the 193-workflow AWS sample corpus; real industrial set **≈91 µs**/workflow; AWS Solutions workflows/artifacts **≈0.28 ms**/workflow; **0** runtime overhead.
+- AWS round-trip: verified workflows deployed and executed on real Step Functions →
+  `SUCCEEDED` in Express synchronous mode, Standard asynchronous mode with a durable 24-event
+  history, and Standard live `.waitForTaskToken` callback mode resumed by external `SendTaskSuccess`
+  with a durable 30-event history.
 - Cross-format: a CNCF Serverless Workflow frontend (added with **no change to the IR or
   any pass**) parses all **66** spec examples; the typed contract check runs natively on
   CNCF-declared JSON Schemas (`stepcheck check corpus/cncf-typed/order-bad.yaml`).
@@ -118,6 +122,8 @@ elsewhere.
 ## Reproduce the AWS round-trip (optional; creates & deletes resources)
 
 ```bash
-bash infra/deploy_run.sh   # deploy a verified workflow, run it, capture evidence
-bash infra/teardown.sh     # delete the created state machine + lambda
+bash infra/deploy_run.sh            # Express synchronous run
+bash infra/deploy_run_standard.sh   # Standard async run + durable history
+bash infra/deploy_run_callback.sh   # Standard live callback + SendTaskSuccess
+bash infra/teardown.sh              # delete created state machines + Lambdas
 ```

@@ -1,0 +1,83 @@
+﻿{
+  "corpus": {
+    "files": 24,
+    "total_states": 385
+  },
+  "ablation": {
+    "result_shapes": false
+  },
+  "baseline": {
+    "flagged_files": 12,
+    "errors": 0,
+    "warnings": 32,
+    "code_totals": {
+      "SC0007": 3,
+      "SC3001": 8,
+      "SC4001": 20,
+      "SC6001": 1
+    }
+  },
+  "mutation_study": {
+    "Contract": {
+      "expected_code": "SC1003",
+      "applicable": 21,
+      "detected": 21,
+      "recall": 1.0
+    },
+    "Retry": {
+      "expected_code": "SC3001",
+      "applicable": 8,
+      "detected": 8,
+      "recall": 1.0
+    },
+    "Compensation": {
+      "expected_code": "SC4001",
+      "applicable": 0,
+      "detected": 0,
+      "recall": 0.0
+    },
+    "Structural": {
+      "expected_code": "SC0002",
+      "applicable": 21,
+      "detected": 21,
+      "recall": 1.0
+    },
+    "Concurrency": {
+      "expected_code": "SC5001",
+      "applicable": 4,
+      "detected": 4,
+      "recall": 1.0
+    },
+    "Temporal": {
+      "expected_code": "SC6003",
+      "applicable": 23,
+      "detected": 23,
+      "recall": 1.0
+    }
+  },
+  "confusion_matrix": {
+    "Concurrency": {
+      "SC5001": 4
+    },
+    "Contract": {
+      "SC1003": 21
+    },
+    "Retry": {
+      "SC3001": 8
+    },
+    "Structural": {
+      "SC0002": 21,
+      "SC0003": 18,
+      "SC0005": 14
+    },
+    "Temporal": {
+      "SC6003": 23
+    }
+  },
+  "timing_us": {
+    "mean": 279.3041666666667,
+    "median": 118.5,
+    "max": 1579.2,
+    "total_ms": 6.7033
+  }
+}

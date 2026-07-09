@@ -1,0 +1,95 @@
+{
+  "generated_by": "eval: serverless-patterns consolidation (external validity)",
+  "source": "aws-samples/serverless-patterns, deduped by pattern directory",
+  "candidate_files": 97,
+  "distinct_patterns_analyzed": 55,
+  "flagged_patterns": 13,
+  "patterns_with_code": {
+    "SC4001": 8,
+    "SC3001": 3,
+    "SC4010": 1,
+    "SC0007": 1,
+    "SC6001": 1
+  },
+  "flagged": [
+    {
+      "pattern": "apigw-lambda-sfn-transcribe-translate-polly-sam",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "apigw-rest-stepfunction",
+      "codes": [
+        "SC3001",
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "apigw-sfn-crud",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "appsync-lambda-sfn-sam",
+      "codes": [
+        "SC4010"
+      ]
+    },
+    {
+      "pattern": "eventbridge-sfn",
+      "codes": [
+        "SC0007"
+      ]
+    },
+    {
+      "pattern": "lambda-step-functions-sam-java",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "sfn-dynamodb",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "sfn-ecs-sam",
+      "codes": [
+        "SC6001"
+      ]
+    },
+    {
+      "pattern": "sfn-manage-batch-job-tf",
+      "codes": [
+        "SC3001"
+      ]
+    },
+    {
+      "pattern": "sfn-sfn",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "stepfunctions-bedrock-sam",
+      "codes": [
+        "SC3001"
+      ]
+    },
+    {
+      "pattern": "stepfunctions-eventbridge-schedule-sam-python",
+      "codes": [
+        "SC4001"
+      ]
+    },
+    {
+      "pattern": "systems-manager-automation-to-stepfunctions",
+      "codes": [
+        "SC4001"
+      ]
+    }
+  ]
+}

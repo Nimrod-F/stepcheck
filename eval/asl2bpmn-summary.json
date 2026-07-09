@@ -1,0 +1,1144 @@
+{
+  "generated_by": "eval/asl2bpmn/encode.js",
+  "input": "corpus/asl",
+  "selected": 30,
+  "encoded": 30,
+  "failed": 0,
+  "output_dir": "eval/asl2bpmn/out",
+  "totals": {
+    "states": 184,
+    "flows": 263,
+    "nodes": 248,
+    "choices": 21,
+    "parallel": 6,
+    "map": 6,
+    "retry": 26,
+    "catch": 17,
+    "jsonata": 0,
+    "lossy": {
+      "dataConditions": 26,
+      "retries": 25,
+      "mapIterators": 6,
+      "jsonata": 0,
+      "catchGateways": 16
+    }
+  },
+  "limitations": [
+    "BPMN is used only for fair-class control-flow soundness baselines; JSON document provenance is not encoded.",
+    "Choice condition expressions are preserved as sequence-flow labels, not executable guards.",
+    "Catch is lowered to an exclusive gateway (normal vs. error branch); Retry policies and service/task semantics are lossy metadata.",
+    "Map states are encoded as activity placeholders; item data flow is out of scope.",
+    "All terminals are merged into a single end event to obtain a workflow-net shape."
+  ],
+  "workflows": [
+    {
+      "file": "corpus/asl/sfn-collection___workflow_model__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection___workflow_model__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 6,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 3,
+        "byType": {
+          "Task": 3
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 1,
+        "catch": 1,
+        "jsonata": 0,
+        "flows": 6,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 1,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 1
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__account_vending_machine__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 16,
+        "flows": 18,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 16,
+        "byType": {
+          "Task": 7,
+          "Wait": 1,
+          "Choice": 2,
+          "Pass": 4,
+          "Map": 1,
+          "Fail": 1
+        },
+        "choices": 2,
+        "parallel": 0,
+        "map": 1,
+        "retry": 0,
+        "catch": 1,
+        "jsonata": 0,
+        "flows": 18,
+        "lossy": {
+          "dataConditions": 2,
+          "retries": 0,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 1
+        }
+      },
+      "notes": [
+        "Map top/Loop over all OUs encoded as activity placeholder"
+      ]
+    },
+    {
+      "file": "corpus/asl/sfn-collection__activity-state-machine-tf__statemachines__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__activity_state_machine_tf__statemachines__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 1,
+          "Succeed": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__activity-state-machine__statemachine__activity_state.asl.json",
+      "output": "corpus_asl_sfn_collection__activity_state_machine__statemachine__activity_state_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 1,
+          "Succeed": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
+      "output": "corpus_asl_sfn_collection__app_control_concurrency_with_dynamodb_tf__statemachines__dynamodb_semaphore_cleanfromincomplete_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 7,
+        "flows": 8,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 2,
+          "Choice": 1,
+          "Succeed": 1
+        },
+        "choices": 1,
+        "parallel": 0,
+        "map": 0,
+        "retry": 2,
+        "catch": 1,
+        "jsonata": 0,
+        "flows": 8,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 2,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 1
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore.asl.json",
+      "output": "corpus_asl_sfn_collection__app_control_concurrency_with_dynamodb_tf__statemachines__dynamodb_semaphore_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 22,
+        "flows": 26,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 15,
+        "byType": {
+          "Parallel": 2,
+          "Task": 5,
+          "Choice": 1,
+          "Pass": 5,
+          "Wait": 1,
+          "Succeed": 1
+        },
+        "choices": 1,
+        "parallel": 2,
+        "map": 0,
+        "retry": 2,
+        "catch": 3,
+        "jsonata": 0,
+        "flows": 26,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 2,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 3
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__app_control_concurrency_with_dynamodb_tf__statemachines__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 22,
+        "flows": 26,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 15,
+        "byType": {
+          "Parallel": 2,
+          "Task": 5,
+          "Choice": 1,
+          "Pass": 5,
+          "Wait": 1,
+          "Succeed": 1
+        },
+        "choices": 1,
+        "parallel": 2,
+        "map": 0,
+        "retry": 2,
+        "catch": 3,
+        "jsonata": 0,
+        "flows": 26,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 2,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 3
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__test-run-semaphore.asl.json",
+      "output": "corpus_asl_sfn_collection__app_control_concurrency_with_dynamodb_tf__statemachines__test_run_semaphore_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Pass": 2,
+          "Map": 1,
+          "Task": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 1,
+        "retry": 1,
+        "catch": 1,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": [
+        "Map top/StartInParallel encoded as activity placeholder"
+      ]
+    },
+    {
+      "file": "corpus/asl/sfn-collection__async-state-machine-streaming-lambda-results-sam__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__async_state_machine_streaming_lambda_results_sam__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 5,
+        "flows": 4,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 7,
+        "byType": {
+          "Pass": 2,
+          "Map": 1,
+          "Wait": 1,
+          "Choice": 1,
+          "Task": 2
+        },
+        "choices": 1,
+        "parallel": 0,
+        "map": 1,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 4,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": [
+        "Map top/SimulatedProcessing encoded as activity placeholder"
+      ]
+    },
+    {
+      "file": "corpus/asl/sfn-collection__automating-a-security-incident-with-step-functions-cdk__python__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__automating_a_security_incident_with_step_functions_cdk__python__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 11,
+        "flows": 14,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 9,
+        "byType": {
+          "Pass": 2,
+          "Task": 5,
+          "Choice": 2
+        },
+        "choices": 2,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 14,
+        "lossy": {
+          "dataConditions": 4,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__background-cropper__statemachine__img-cropper-sfn.asl.json",
+      "output": "corpus_asl_sfn_collection__background_cropper__statemachine__img_cropper_sfn_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 2
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 2,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 2,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__batch-lambda-cdk__batch_lambda_cdk__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__batch_lambda_cdk__batch_lambda_cdk__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 2
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__batch-lambda-sam__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__batch_lambda_sam__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 2
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__batch-lambda-tf__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__batch_lambda_tf__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Task": 2
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__bedrock_evaluations_sam__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 30,
+        "flows": 36,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 27,
+        "byType": {
+          "Parallel": 1,
+          "Task": 12,
+          "Choice": 4,
+          "Fail": 2,
+          "Succeed": 2,
+          "Wait": 6
+        },
+        "choices": 4,
+        "parallel": 1,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 36,
+        "lossy": {
+          "dataConditions": 6,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json",
+      "output": "corpus_asl_sfn_collection__bedrock_invokemodel__statemachine__StateMachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 3,
+        "flows": 2,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 1,
+        "byType": {
+          "Task": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 2,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__call-http-api__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__call_http_api__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 3,
+        "flows": 2,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 1,
+        "byType": {
+          "Task": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 1,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 2,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 1,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__call-microservice-apigw__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__call_microservice_apigw__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 6,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 3,
+          "Choice": 1
+        },
+        "choices": 1,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 6,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__calling-async-api-callback__statemachine__workflow_AsyncAPICallbackPattern.asl.json",
+      "output": "corpus_asl_sfn_collection__calling_async_api_callback__statemachine__workflow_AsyncAPICallbackPattern_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 7,
+        "flows": 8,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 3,
+          "Choice": 1
+        },
+        "choices": 1,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 1,
+        "jsonata": 0,
+        "flows": 8,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 1
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__calling-async-api-callback__statemachine__workflow_ExternalAsyncAPISimulator.asl.json",
+      "output": "corpus_asl_sfn_collection__calling_async_api_callback__statemachine__workflow_ExternalAsyncAPISimulator_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 4,
+        "flows": 3,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 2,
+        "byType": {
+          "Wait": 1,
+          "Task": 1
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 1,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 3,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 1,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__categorization-state-machine__statemachine__stateMachine.asl.json",
+      "output": "corpus_asl_sfn_collection__categorization_state_machine__statemachine__stateMachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 7,
+        "flows": 8,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 5,
+        "byType": {
+          "Task": 4,
+          "Choice": 1
+        },
+        "choices": 1,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 8,
+        "lossy": {
+          "dataConditions": 2,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__celebrity-identifier-sam__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__celebrity_identifier_sam__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 6,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 7,
+        "byType": {
+          "Task": 2,
+          "Choice": 2,
+          "Succeed": 2,
+          "Map": 1
+        },
+        "choices": 2,
+        "parallel": 0,
+        "map": 1,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 6,
+        "lossy": {
+          "dataConditions": 1,
+          "retries": 0,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": [
+        "Map top/Iterate list encoded as activity placeholder"
+      ]
+    },
+    {
+      "file": "corpus/asl/sfn-collection__chain-of-responsibility-cdk__python__statemachine__atm_dispenser_chained.asl.json",
+      "output": "corpus_asl_sfn_collection__chain_of_responsibility_cdk__python__statemachine__atm_dispenser_chained_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 5,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 4
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 4,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 5,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 4,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__chain-of-responsibility-cdk__typscript__statemachine__atm_dispenser_chained.asl.json",
+      "output": "corpus_asl_sfn_collection__chain_of_responsibility_cdk__typscript__statemachine__atm_dispenser_chained_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 5,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 4
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 4,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 5,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 4,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__chain-of-responsibility__statemachine__atm_dispenser_chained.asl.json",
+      "output": "corpus_asl_sfn_collection__chain_of_responsibility__statemachine__atm_dispenser_chained_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 6,
+        "flows": 5,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 4
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 4,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 5,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 4,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json",
+      "output": "corpus_asl_sfn_collection__checkout_processing_workflow__statemachine__checkout_workflow_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 14,
+        "flows": 15,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 12,
+        "byType": {
+          "Task": 10,
+          "Choice": 2
+        },
+        "choices": 2,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 15,
+        "lossy": {
+          "dataConditions": 2,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__common-error-handling__statemachine__common_error_option1.asl.json",
+      "output": "corpus_asl_sfn_collection__common_error_handling__statemachine__common_error_option1_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 9,
+        "flows": 11,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 4
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 3,
+        "jsonata": 0,
+        "flows": 11,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 3
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__common-error-handling__statemachine__common_error_option2.asl.json",
+      "output": "corpus_asl_sfn_collection__common_error_handling__statemachine__common_error_option2_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 9,
+        "flows": 11,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 4,
+        "byType": {
+          "Task": 4
+        },
+        "choices": 0,
+        "parallel": 0,
+        "map": 0,
+        "retry": 0,
+        "catch": 3,
+        "jsonata": 0,
+        "flows": 11,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 0,
+          "jsonata": 0,
+          "catchGateways": 3
+        }
+      },
+      "notes": []
+    },
+    {
+      "file": "corpus/asl/sfn-collection__cqrs__statemachine__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__cqrs__statemachine__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 12,
+        "flows": 15,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 11,
+        "byType": {
+          "Choice": 2,
+          "Task": 6,
+          "Map": 1,
+          "Pass": 1,
+          "Fail": 1
+        },
+        "choices": 2,
+        "parallel": 0,
+        "map": 1,
+        "retry": 2,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 15,
+        "lossy": {
+          "dataConditions": 4,
+          "retries": 2,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": [
+        "Map top/Loop Order Items encoded as activity placeholder"
+      ]
+    },
+    {
+      "file": "corpus/asl/sfn-collection__data-processing-tf__statemachines__statemachine.asl.json",
+      "output": "corpus_asl_sfn_collection__data_processing_tf__statemachines__statemachine_asl.bpmn",
+      "validation": {
+        "ok": true,
+        "starts": 1,
+        "ends": 1,
+        "nodes": 3,
+        "flows": 2,
+        "orphans": [],
+        "dangling": [],
+        "missing": []
+      },
+      "stats": {
+        "states": 5,
+        "byType": {
+          "Map": 1,
+          "Parallel": 1,
+          "Task": 3
+        },
+        "choices": 0,
+        "parallel": 1,
+        "map": 1,
+        "retry": 0,
+        "catch": 0,
+        "jsonata": 0,
+        "flows": 2,
+        "lossy": {
+          "dataConditions": 0,
+          "retries": 0,
+          "mapIterators": 1,
+          "jsonata": 0,
+          "catchGateways": 0
+        }
+      },
+      "notes": [
+        "Map top/IterateS3Objects encoded as activity placeholder"
+      ]
+    }
+  ],
+  "failures": []
+}

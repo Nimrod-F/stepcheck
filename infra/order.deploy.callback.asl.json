@@ -1,0 +1,143 @@
+{
+  "Comment": "DSL-verified order saga with a bounded human-approval callback (.waitForTaskToken) before shipping. The callback carries an explicit TimeoutSeconds/HeartbeatSeconds, so StepCheck's temporal pass does NOT raise SC6001 (unbounded callback). Deployed as a Standard state machine; the execution pauses at RequestApproval and is resumed by an external SendTaskSuccess.",
+  "StartAt": "CreateOrder",
+  "States": {
+    "CreateOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "CancelOrder"
+        }
+      ],
+      "Next": "ReserveInventory"
+    },
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "ReleaseInventory"
+        }
+      ],
+      "Next": "ChargeCard"
+    },
+    "ChargeCard": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "RefundPayment"
+        }
+      ],
+      "Next": "RequestApproval"
+    },
+    "RequestApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "TimeoutSeconds": 3600,
+      "HeartbeatSeconds": 900,
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload": {
+          "TaskToken.$": "$$.Task.Token",
+          "Order.$": "$"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "RefundPayment"
+        }
+      ],
+      "Next": "ShipOrder"
+    },
+    "ShipOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "CancelShipment"
+        }
+      ],
+      "Next": "OrderCompleted"
+    },
+    "CancelOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "ReleaseInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "RefundPayment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "CancelShipment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "Payload.$": "$"
+      },
+      "Next": "OrderFailed"
+    },
+    "OrderCompleted": {
+      "Type": "Succeed"
+    },
+    "OrderFailed": {
+      "Type": "Fail"
+    }
+  }
+}

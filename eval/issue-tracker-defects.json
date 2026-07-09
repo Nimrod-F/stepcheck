@@ -1,0 +1,76 @@
+{
+  "generated_by": "issue-tracker mining (WS-A, 2026-07-08)",
+  "method": "GitHub issue search for user-reported Step Functions defects quoting the runtime error StepCheck's sound tier predicts (e.g. the JSONPath-not-found error SC1101 statically prevents). Unlike fix-commit pairs, the defect is reported by a real user, not inferred from a diff. Because these repositories build the state machine in CDK/code (no clean *.asl.json), StepCheck is confirmed on a minimal reproduction of the reported structure; the issue URL and verbatim runtime error are given for independent verification.",
+  "extraction_note": "Production Step Functions machines are overwhelmingly CDK/SAM-generated (verified via authenticated code search over 26 candidate repos), so a standalone pre-fix *.asl.json is rarely committed. But CDK ultimately synthesizes ASL: for campus-compute #32 we cloned the repo, checked out the buggy commit, ran `cdk synth` (neutralizing one Docker-bundled Lambda *layer*, which does not affect the state machine), and extracted the REAL synthesized DefinitionString -- StepCheck then flags the exact user-reported defect. For issues whose repos we did not synth, StepCheck is confirmed on a minimal reproduction of the reported structure with the issue URL and verbatim error for verification.",
+  "cdk_synth_method": "git checkout <buggy-commit>; cdk synth; then `stepcheck check cdk.out/Stack.template.json` -- the CloudFormation front end (stepcheck/src/cfn.rs) now reads the synthesized template directly (finds every AWS::StepFunctions::StateMachine, resolves Fn::Sub/Join/Ref keeping AWS pseudo-parameters exact). It also reads SAM/CloudFormation template.yaml directly (`stepcheck check template.yaml`). The standalone eval/cdk_extract_asl.py is kept only as a reference; the tool no longer needs it.",
+  "defects": [
+    {
+      "repo": "scttfrdmn/campus-compute",
+      "issue": 32,
+      "url": "https://github.com/scttfrdmn/campus-compute/issues/32",
+      "state": "closed",
+      "closed_at": "2026-04-04",
+      "title": "SFN AuditLogFailed state fails: $.execution_id not found in SNS publish response",
+      "sc_class": "SC1101",
+      "reported_runtime_error": "The JSONPath '$.execution_id' specified for the field 'execution_id.$' could not be found in the input '{\"MessageId\": ...}'",
+      "defect": "AuditLogFailed reads $.execution_id, but the preceding NotifyFailure (SNS Publish) has the default ResultPath=$, replacing the whole document with the SNS envelope {MessageId, SequenceNumber}; execution_id is gone.",
+      "extraction": "REAL: cloned the repo, checked out the buggy commit 3977ec8 (v0.8.0, which introduced the audit log), ran `cdk synth`, and extracted the actual synthesized state machine DefinitionString (14 states) with CloudFormation intrinsics resolved. Not a hand reproduction.",
+      "reproduction": "corpus/realbugs/issues/campus-compute-32-REAL-cdk-synth.asl.json",
+      "stepcheck": "SC1101 on AuditLogFailed (and AuditLogSucceeded) reads '$.execution_id' etc., with --result-shapes; confirmed on the cdk-synthesized ASL",
+      "detected": true
+    },
+    {
+      "repo": "dataPlor/turbofan",
+      "issue": 1,
+      "url": "https://github.com/dataPlor/turbofan/issues/1",
+      "state": "closed",
+      "closed_at": "2026-03-26",
+      "title": "ASL generator does not pass items_s3_uri to chunking lambda for first-step fan-outs",
+      "sc_class": "SC1101",
+      "reported_runtime_error": "the Step Functions execution fails immediately because the ASL looks for $.input which doesn't exist in the trigger payload",
+      "defect": "The first fan-out step reads $.input, but the trigger payload provides items_s3_uri (no 'input' field).",
+      "reproduction": "corpus/realbugs/issues/turbofan-1-missing-input.asl.json (+ .sidecar.toml declaring the trigger schema)",
+      "stepcheck": "SC1101 on ChunkFanOut reads '$.input'",
+      "detected": true
+    },
+    {
+      "repo": "aws-samples/serverless-coffee-workshop",
+      "issue": 56,
+      "url": "https://github.com/aws-samples/serverless-coffee-workshop/issues/56",
+      "state": "closed",
+      "closed_at": "2024-05-02",
+      "official_aws_sample": true,
+      "title": "An error occurred while executing the state 'Emit - Awaiting Completion TT'",
+      "sc_class": "SC1101 (+SC6001)",
+      "reported_runtime_error": "The JSONPath '$.detail.orderId' specified for the field 'orderId.$' could not be found in the input '{\"orderNumber\":\"10\"}'",
+      "defect": "The 'Emit - Awaiting Completion TT' state reads $.detail.orderId, but the workflow input is {orderNumber} (no detail.orderId). Reported by a workshop user who reran the lab three times.",
+      "reproduction": "corpus/realbugs/issues/coffee-workshop-56-detail-orderid.asl.json (+ .sidecar.toml)",
+      "stepcheck": "SC1101 on 'Emit - Awaiting Completion TT' reads '$.detail.orderId'; also SC6001 (waitForTaskToken callback with no timeout)",
+      "detected": true
+    }
+  ],
+  "second_pass_standalone_asl": [
+    {
+      "repo": "Sachin1801/solo-vault-backend",
+      "issue": 11,
+      "url": "https://github.com/Sachin1801/solo-vault-backend/issues/11",
+      "file": "infra/step-functions/pipeline.asl.json",
+      "reproduction": "corpus/realbugs/issues/solo-vault-11-pipeline-unsafe-retry.asl.json",
+      "sc_class": "SC3001",
+      "finding": "the 'Embed' task (SQS sendMessage, non-idempotent) is retried on States.TaskFailed with MaxAttempts=3, so a transient failure may deliver the message up to three times.",
+      "note": "advisory (inferred non-idempotent) tier; a real standalone .asl.json from an independent repo, tied to the FR that built the pipeline.",
+      "detected": true
+    },
+    {
+      "repo": "JawaharRamis/data-meshy",
+      "issue": 45,
+      "url": "https://github.com/JawaharRamis/data-meshy/issues/45",
+      "file": "templates/step_functions/subscription_saga.asl.json",
+      "reproduction": "corpus/realbugs/issues/data-meshy-45-subscription-saga-clean.asl.json",
+      "sc_class": "none",
+      "finding": "CLEAN: this subscription saga has proper compensation on its persistent steps; StepCheck reports no finding. Recorded as an honest negative -- not every saga is broken.",
+      "detected": false
+    }
+  ],
+  "note": "Existence evidence complementing the 7 curated fix-commit pairs: real user-filed issues whose reported runtime error is exactly what StepCheck's sound data-flow tier prevents at build time (one from an official AWS workshop). SC1101 is the most issue-tracker-visible class because it crashes with a clear JSONPath error; concurrency/compensation defects are rarely filed as workflow-definition bugs. Related classes seen but not counted (state machine not reproducible or class outside the sound tier): aws-samples/iam-identity-center-team#513 (missing retry on SsoAdmin.Conflict), susumutomita/TenkaCloud#758 (missing event.detail field)."
+}

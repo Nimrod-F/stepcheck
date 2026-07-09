@@ -1,0 +1,66 @@
+{
+  "generated_from": [
+    "infra/execution-evidence.json",
+    "infra/execution-evidence-standard.json",
+    "infra/execution-evidence-callback.json",
+    "infra/execution-history-standard.json",
+    "infra/execution-history-callback.json"
+  ],
+  "region": "eu-central-1",
+  "runs": {
+    "express_sync": {
+      "script": "infra/deploy_run.sh",
+      "definition": "infra/order.deploy.asl.json",
+      "state_machine_type": "EXPRESS",
+      "status": "SUCCEEDED",
+      "execution_arn": "arn:aws:states:eu-central-1:683003725669:express:stepcheck-demo-order:6a90ec2f-ba90-4b57-b150-7c224def8836:0b23a59f-b8b9-47ef-91d2-5172ebbc7dfe",
+      "history_events": 0,
+      "note": "Express synchronous execution succeeded; Express does not retain a durable get-execution-history log."
+    },
+    "standard_async": {
+      "script": "infra/deploy_run_standard.sh",
+      "definition": "infra/order.deploy.standard.asl.json",
+      "state_machine_type": "STANDARD",
+      "status": "SUCCEEDED",
+      "execution_arn": "arn:aws:states:eu-central-1:683003725669:execution:stepcheck-demo-order-standard:f69556d6-e3df-468d-97bd-ea06656cee95",
+      "history_events": 24,
+      "event_counts": {
+        "ExecutionStarted": 1,
+        "TaskScheduled": 4,
+        "TaskSucceeded": 4,
+        "ExecutionSucceeded": 1
+      },
+      "note": "Standard asynchronous execution succeeded and retained a durable execution history."
+    },
+    "standard_live_callback": {
+      "script": "infra/deploy_run_callback.sh",
+      "definition": "infra/order.deploy.callback.asl.json",
+      "state_machine_type": "STANDARD",
+      "status": "SUCCEEDED",
+      "execution_arn": "arn:aws:states:eu-central-1:683003725669:execution:stepcheck-demo-order-callback:4d51f477-c0c4-4884-8446-13687e10d3da",
+      "callback_state": "RequestApproval",
+      "callback_resource": "lambda:invoke.waitForTaskToken",
+      "paused_status_before_send_task_success": "RUNNING",
+      "resumed_by": "SendTaskSuccess",
+      "task_output": {
+        "approved": true,
+        "approver": "external-reviewer",
+        "channel": "out-of-band-callback"
+      },
+      "history_events": 30,
+      "event_counts": {
+        "ExecutionStarted": 1,
+        "TaskScheduled": 5,
+        "TaskSubmitted": 1,
+        "TaskSucceeded": 5,
+        "ExecutionSucceeded": 1
+      },
+      "temporal_bounds": {
+        "TimeoutSeconds": 3600,
+        "HeartbeatSeconds": 900
+      },
+      "note": "Standard-only waitForTaskToken callback paused at RequestApproval, was resumed by an external SendTaskSuccess, and completed."
+    }
+  },
+  "conclusion": "The AWS round-trip covers Express synchronous execution, Standard asynchronous execution with durable history, and a live Standard waitForTaskToken callback resumed out-of-band."
+}

@@ -1,0 +1,343 @@
+{
+  "generated_by": "eval/industrial/wse.py",
+  "verifier": "Woflan via pm4py 2.7.23.1",
+  "platform_validator": "asl-validator",
+  "corpus": "corpus/industrial",
+  "workflows": 6,
+  "build_time_gate": {
+    "metric": "at 0/1/5 defects injected at build time: StepCheck gate CATCH-RATE (build fails on a new finding, confound-free vs the emitted control) vs the platform validator's SILENT PASS-THROUGH (asl-validator accepts the same mutant -> would deploy); plus gate latency.",
+    "by_injected_defects": {
+      "0": {
+        "applied": 0,
+        "caught": 0,
+        "platform_silent_pass": 5,
+        "platform_n": 6,
+        "gate_latency_ms": {
+          "p50": 9.4,
+          "p95": 11.0,
+          "p99": 11.9
+        },
+        "catch_rate": null,
+        "platform_silent_pass_rate": 0.833
+      },
+      "1": {
+        "applied": 5,
+        "caught": 5,
+        "platform_silent_pass": 4,
+        "platform_n": 5,
+        "gate_latency_ms": {
+          "p50": 9.4,
+          "p95": 11.3,
+          "p99": 14.9
+        },
+        "catch_rate": 1.0,
+        "platform_silent_pass_rate": 0.8
+      },
+      "5": {
+        "applied": 3,
+        "caught": 3,
+        "platform_silent_pass": 0,
+        "platform_n": 3,
+        "gate_latency_ms": {
+          "p50": 9.3,
+          "p95": 10.5,
+          "p99": 13.6
+        },
+        "catch_rate": 1.0,
+        "platform_silent_pass_rate": 0.0
+      }
+    }
+  },
+  "workflows_detail": [
+    {
+      "file": "corpus/industrial/aws-checkout-processing.asl.json",
+      "name": "aws-checkout-processing.asl",
+      "topology": {
+        "states": 12,
+        "tasks": 10,
+        "retries": 0,
+        "catches": 0,
+        "parallel": 0,
+        "map": 0,
+        "choice": 2
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 9,
+        "codes": {
+          "SC4001": 7,
+          "SC6001": 2
+        }
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.6,
+        "p95_ms": 10.6,
+        "p99_ms": 11.6,
+        "min_ms": 8.5
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 20.0
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 4,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-etl-stream-aggregator.asl.json",
+      "name": "aws-etl-stream-aggregator.asl",
+      "topology": {
+        "states": 5,
+        "tasks": 2,
+        "retries": 1,
+        "catches": 0,
+        "parallel": 0,
+        "map": 1,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.2,
+        "p95_ms": 10.8,
+        "p99_ms": 12.2,
+        "min_ms": 8.3
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 13.6
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": false
+        },
+        "1": {
+          "injected": 1,
+          "caught": true,
+          "platform_accepts": false
+        },
+        "5": {
+          "injected": 3,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-inventory-reserve-stock.asl.json",
+      "name": "aws-inventory-reserve-stock.asl",
+      "topology": {
+        "states": 5,
+        "tasks": 1,
+        "retries": 0,
+        "catches": 0,
+        "parallel": 2,
+        "map": 0,
+        "choice": 1
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 1,
+        "codes": {
+          "SC4001": 1
+        }
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.6,
+        "p95_ms": 11.4,
+        "p99_ms": 13.9,
+        "min_ms": 8.2
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 89.9
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 0,
+          "caught": false,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 3,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-saga-cdk.asl.json",
+      "name": "aws-saga-cdk.asl",
+      "topology": {
+        "states": 12,
+        "tasks": 10,
+        "retries": 8,
+        "catches": 5,
+        "parallel": 0,
+        "map": 0,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 4,
+        "codes": {
+          "SC3001": 3,
+          "SC4001": 1
+        }
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.5,
+        "p95_ms": 11.8,
+        "p99_ms": 12.2,
+        "min_ms": 8.3
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 17.7
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 5,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-saga-travel-reservation.asl.json",
+      "name": "aws-saga-travel-reservation.asl",
+      "topology": {
+        "states": 12,
+        "tasks": 10,
+        "retries": 8,
+        "catches": 5,
+        "parallel": 0,
+        "map": 0,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 4,
+        "codes": {
+          "SC3001": 3,
+          "SC4001": 1
+        }
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.5,
+        "p95_ms": 12.3,
+        "p99_ms": 15.9,
+        "min_ms": 8.2
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 19.3
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 5,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/sab-booking-processbooking.asl.json",
+      "name": "sab-booking-processbooking.asl",
+      "topology": {
+        "states": 12,
+        "tasks": 10,
+        "retries": 7,
+        "catches": 8,
+        "parallel": 0,
+        "map": 0,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 2,
+        "codes": {
+          "SC4010": 1,
+          "SC4001": 1
+        }
+      },
+      "timing": {
+        "runs": 60,
+        "p50_ms": 9.5,
+        "p95_ms": 10.8,
+        "p99_ms": 12.1,
+        "min_ms": 8.7
+      },
+      "woflan": {
+        "sound": true,
+        "ms": 64.8
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 5,
+          "caught": true,
+          "platform_accepts": false
+        }
+      }
+    }
+  ]
+}

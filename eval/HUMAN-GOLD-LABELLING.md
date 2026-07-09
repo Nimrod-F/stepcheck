@@ -90,3 +90,27 @@ Both `-A.json` and `-B.json` share this shape (exact state names as in the JSON)
 
 The 23 source workflows are under `corpus/asl/` (their filenames are the JSON keys in
 the template).
+
+## Leakage-free hold-out evaluation (WS-B)
+
+To answer the reviewer's leakage concern (rule author == label author), the
+inference rules are **frozen** and the gold set is split before any number is read
+off:
+
+* **Rule freeze.** The inference ruleset is `stepcheck/src/annot.rs`, pinned by its
+  git blob hash `536271c1…` in `eval/score-holdout.js`. No rule is tuned after this
+  point.
+* **Design vs. hold-out.** The **10** original gold workflows (which informed rule
+  authoring) are the *design* partition; the **13** later-added expansion workflows
+  (`eval/gold-expansion-labels.json`) are the **hold-out** partition — labelled after
+  the freeze and never used to write or tune a rule.
+* **Reported metric.** `node eval/score-holdout.js` reports, **on the hold-out
+  partition**, per-property precision / recall / **false-omission rate** / F1 /
+  accuracy (bootstrap 95% CI) and per-property inter-annotator Cohen's κ (A vs. B),
+  plus per-check warning precision (SC3001/SC4001/SC4010). The design partition is
+  printed alongside only to show the numbers do not over-fit. Output:
+  `eval/holdout-inference.json`.
+* **Reframe.** The inference tier is an **advisory adoption aid**. The paper's
+  verification weight is on the *label-free* sound native tier (SC1101, proven in
+  Theorem 1) and the *declared* tier — neither depends on these labels — so the
+  hold-out inference numbers, whatever they are, are not load-bearing.

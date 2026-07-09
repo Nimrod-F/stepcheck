@@ -1,0 +1,5 @@
+{"Comment":"reproduces aws-samples/serverless-coffee-workshop#56: state reads $.detail.orderId absent from input {orderNumber}",
+ "StartAt":"Emit - Awaiting Completion TT","States":{
+  "Emit - Awaiting Completion TT":{"Type":"Task","Resource":"arn:aws:states:::events:putEvents.waitForTaskToken",
+    "Parameters":{"Entries":[{"Source":"awsserverlesscoffee","DetailType":"OrderProcessor.awaiting","Detail":{"orderId.$":"$.detail.orderId","TaskToken.$":"$$.Task.Token"}}]},
+    "End":true}}}

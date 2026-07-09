@@ -1,0 +1,164 @@
+<mxfile host="Electron">
+  <diagram id="sab-processbooking" name="ProcessBooking">
+    <mxGraphModel dx="1471" dy="943" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="560" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontStyle=1;fontSize=11;" value="StartAt" vertex="1">
+          <mxGeometry height="50" width="54" x="320" y="168" as="geometry" />
+        </mxCell>
+        <mxCell id="flight" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Reserve Flight&#xa;DynamoDB" vertex="1">
+          <mxGeometry height="46" width="140" x="420" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="booking" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Reserve&#xa;Booking" vertex="1">
+          <mxGeometry height="46" width="130" x="600" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Collect&#xa;Payment" vertex="1">
+          <mxGeometry height="46" width="130" x="770" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="confirm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Confirm&#xa;Booking" vertex="1">
+          <mxGeometry height="46" width="130" x="940" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="notify-ok" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Notify Booking&#xa;Confirmed" vertex="1">
+          <mxGeometry height="46" width="150" x="1110" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ok" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Booking&#xa;Confirmed" vertex="1">
+          <mxGeometry height="46" width="120" x="1285" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="failed" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Booking&#xa;Failed" vertex="1">
+          <mxGeometry height="46" width="110" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="dlq" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Booking&#xa;DLQ" vertex="1">
+          <mxGeometry height="46" width="120" x="160" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="notify-failed" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Notify Booking&#xa;Failed" vertex="1">
+          <mxGeometry height="46" width="150" x="320" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="release" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Release Flight&#xa;Seat" vertex="1">
+          <mxGeometry height="46" width="140" x="520" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="cancel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Cancel&#xa;Booking" vertex="1">
+          <mxGeometry height="46" width="130" x="710" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="refund" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Refund&#xa;Payment" vertex="1">
+          <mxGeometry height="46" width="130" x="900" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontFamily=Courier New;fontSize=11;align=center;" value="reads $.flightTable&#xa;and $.outboundFlightId" vertex="1">
+          <mxGeometry height="52" width="156" x="304" y="42" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;" value="Retry on durable&#xa;seat/booking effects" vertex="1">
+          <mxGeometry height="52" width="123" x="603.5" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="note4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;" value="failure path must compensate&#xa;payment, booking, and seat effects" vertex="1">
+          <mxGeometry height="52" width="159" x="695.5" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="mut-label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cc0000;fontSize=11;align=center;" value="bad reorder" vertex="1">
+          <mxGeometry height="24" width="110" x="772" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="tag1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#b85450;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="26" width="26" x="441" y="27" as="geometry" />
+        </mxCell>
+        <mxCell id="tag2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#b85450;fontStyle=1;" value="2" vertex="1">
+          <mxGeometry height="26" width="26" x="859" y="97" as="geometry" />
+        </mxCell>
+        <mxCell id="tag3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#b85450;fontStyle=1;" value="3" vertex="1">
+          <mxGeometry height="26" width="26" x="705" y="27" as="geometry" />
+        </mxCell>
+        <mxCell id="tag4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#b85450;fontStyle=1;" value="4" vertex="1">
+          <mxGeometry height="26" width="26" x="679" y="463" as="geometry" />
+        </mxCell>
+        <mxCell id="e-start-flight" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="flight">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-flight-booking" edge="1" parent="1" source="flight" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="booking">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-booking-payment" edge="1" parent="1" source="booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="payment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-payment-confirm" edge="1" parent="1" source="payment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="confirm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-confirm-notify" edge="1" parent="1" source="confirm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="notify-ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-notify-ok-done" edge="1" parent="1" source="notify-ok" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-flight-failnotify" edge="1" parent="1" source="flight" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#cc0000;" target="notify-failed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="270" />
+              <mxPoint x="395" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-booking-cancel" edge="1" parent="1" source="booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#cc0000;" target="cancel">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="270" />
+              <mxPoint x="775" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-payment-cancel" edge="1" parent="1" source="payment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#cc0000;" target="cancel">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="835" y="270" />
+              <mxPoint x="775" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-confirm-refund" edge="1" parent="1" source="confirm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#cc0000;" target="refund">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1005" y="270" />
+              <mxPoint x="965" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-refund-cancel" edge="1" parent="1" source="refund" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cancel-release" edge="1" parent="1" source="cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="release">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-release-failnotify" edge="1" parent="1" source="release" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="notify-failed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-failnotify-dlq" edge="1" parent="1" source="notify-failed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="dlq">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-dlq-failed" edge="1" parent="1" source="dlq" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#333333;" target="failed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note1-flight" edge="1" parent="1" source="note1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="flight">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note3-flight" edge="1" parent="1" source="note3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="flight">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note3-booking" edge="1" parent="1" source="note3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="booking">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note4-release" edge="1" parent="1" source="note4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="release">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note4-cancel" edge="1" parent="1" source="note4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-note4-refund" edge="1" parent="1" source="note4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#0000cc;" target="refund">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-bad-reorder" edge="1" parent="1" source="booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;strokeColor=#cc0000;" target="confirm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="126" />
+              <mxPoint x="1005" y="126" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -9,18 +9,31 @@ bugs become production failures rather than local exceptions.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.72\linewidth]{figures/figure1-workflow.pdf}
-\caption{An order-processing workflow that passes AWS's syntactic validation yet hides six latent
-defect classes; marker \textbf{(2)} is a one-edge ship-before-pay mutation, not an existing edge.}
+\includegraphics[width=\linewidth]{figures/figure1-sab-processbooking.pdf}
+\caption{AWS Serverless Airline Booking \texttt{ProcessBooking}, extracted from the public
+\texttt{aws-samples} SAM template~\cite{awsServerlessAirline} and used as a serverless benchmark by
+Eismann et al.~\cite{eismann2022stability}; marker \textbf{(2)} is an invalid mutation, not an
+upstream transition.}
 \label{fig:intro}
 \end{figure}
 
-Figure~\ref{fig:intro} shows one such workflow. It passes AWS's syntactic validation, yet six latent
-defect classes survive. \textbf{(1)} \code{ChargeCard} reads a missing \texttt{\$.total};
-\textbf{(2)} reordering a single edge would let it ship before payment; and \textbf{(3)} a broad
-retry can double-charge. The same workflow also shows \textbf{(4)} two parallel branches updating
-the same item, \textbf{(5)} a callback that can wait forever, and \textbf{(6)} a committed
-reservation without compensation (Section~\ref{sec:bg:defects}).
+Figure~\ref{fig:intro} uses a production proxy rather than a synthetic order graph. The application
+is a widely reused public benchmark: Eismann et al. use AWS Serverless Airline Booking as the
+canonical case application in their study of serverless performance-test stability~\cite{eismann2022stability},
+a line of work with roughly 30 citations in the serverless literature. In the upstream template, an
+AppSync resolver builds the execution input from frontend booking fields, but the state machine
+itself starts at \texttt{Reserve Flight}: it reserves a flight seat through DynamoDB, reserves the
+booking, collects payment, confirms the booking, and notifies the customer. Its failure paths refund
+payment, cancel the booking, release the seat, and send unresolved failures to a booking DLQ.
+
+The markers show why syntax validation is not enough. \textbf{(1)} frontend/schema drift can make a
+JSONPath read fail although the graph validates; \textbf{(2)} a one-edge ordering mutation can confirm
+before payment; \textbf{(3)} retries around durable seat and booking effects are safe only under an
+idempotency premise that \asl{} does not encode; and \textbf{(4)} Saga correctness depends on matching
+persistent effects with compensation paths (Section~\ref{sec:bg:defects}). The two remaining
+classes in \tool{}---parallel write interference and unbounded callbacks---are evaluated on other
+public AWS and external workflows, not drawn into \texttt{ProcessBooking}, whose upstream \asl{} has
+neither a \texttt{Parallel} state nor a callback task.
 
 Existing validators check that the JSON is well-formed, transitions exist, and paths are syntactic
 \cite{awsStatelint,aslValidator,awsValidateDefinition}. They do not know whether a task produces
@@ -51,5 +64,5 @@ and temporal bounds.
   \item A deployed-artifact verification architecture for \asl{} with native and declared semantic layers.
   \item A no-false-positive data-flow analysis for missing JSON fields (under the modeled JSONPath semantics), plus workflow checks for retry, ordering, concurrency, time, and compensation.
   \item A Rust implementation with raw \asl{}, typed-DSL, and CNCF Serverless Workflow front ends.
-  \item Evidence on 193 AWS and 66 CNCF workflows, plus 95 from independent repositories: six real bugs rediscovered, 84 oracle-confirmed missing-field detections with zero false positives, and 100\% recall on 616 targeted mutants produced by \tool{}'s mutator.
+  \item Evidence on 193 AWS and 66 CNCF workflows, plus 95 from independent repositories: six real bugs rediscovered, 88/126 missing-field mutants detected with all 92 emitted reports oracle-confirmed, and 100\% recall on 616 targeted mutants produced by \tool{}'s mutator.
 \end{itemize}

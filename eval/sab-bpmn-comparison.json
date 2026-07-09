@@ -1,0 +1,273 @@
+{
+  "generated_by": "eval/asl2bpmn/compare.py",
+  "verifier": "Woflan (van der Aalst & Verbeek) via pm4py 2.7.23.1",
+  "verifier2": "BPMN Analyzer 2.0 (Kraeuter 2024) via rust_bpmn_analyzer CLI",
+  "verifier3": "BProVe/BPMNOS (Corradini et al.) via BPMNOS parser + Maude",
+  "bprove_properties": [
+    "safeness",
+    "option-to-complete",
+    "proper-completion"
+  ],
+  "corpus": "corpus/industrial",
+  "workflows": 1,
+  "methodology": "confound-free: control=`stepcheck emit`, mutant=`stepcheck mutate --kind k`; a formal verifier detects the class iff the mutant encoding carries a fresh soundness violation absent from the control encoding.",
+  "clean_baseline": {
+    "workflows": 1,
+    "woflan_unsound": 0,
+    "woflan_overreport_rate": 0.0,
+    "bpmn_analyzer_unsound": 0,
+    "bpmn_analyzer_overreport_rate": 0.0,
+    "bprove_unsound": 0,
+    "bprove_overreport_rate": 0.0,
+    "note": "A formal workflow verifier flags a valid AWS serverless workflow unsound when its parallel-branch termination is not well-handled (multi-terminal / independent branches) -- a semantic mismatch, not a StepCheck finding."
+  },
+  "note_data_flow": "SC1101 (data-flow / field provenance) has no BPMN control-flow expression; it is StepCheck-unique by construction and is evaluated on the typed corpus (eval/results-dataflow.json), not here.",
+  "classes": {
+    "structural": {
+      "label": "Dangling transition (SC0002)",
+      "expected_code": "SC0002",
+      "control_flow_expressible": true,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 1,
+      "woflan_recall": 1.0,
+      "woflan_ci95": [
+        1.0,
+        1.0
+      ],
+      "bpmn_analyzer_detected": 1,
+      "bpmn_analyzer_recall": 1.0,
+      "bpmn_analyzer_ci95": [
+        1.0,
+        1.0
+      ],
+      "bprove_detected": 1,
+      "bprove_recall": 1.0,
+      "bprove_ci95": [
+        1.0,
+        1.0
+      ]
+    },
+    "contract": {
+      "label": "Broken data binding (SC1003)",
+      "expected_code": "SC1003",
+      "control_flow_expressible": false,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ],
+      "bpmn_analyzer_detected": 0,
+      "bpmn_analyzer_recall": 0.0,
+      "bpmn_analyzer_ci95": [
+        0.0,
+        0.0
+      ],
+      "bprove_detected": 0,
+      "bprove_recall": 0.0,
+      "bprove_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "retry": {
+      "label": "Unsafe retry (SC3001)",
+      "expected_code": "SC3001",
+      "control_flow_expressible": false,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ],
+      "bpmn_analyzer_detected": 0,
+      "bpmn_analyzer_recall": 0.0,
+      "bpmn_analyzer_ci95": [
+        0.0,
+        0.0
+      ],
+      "bprove_detected": 0,
+      "bprove_recall": 0.0,
+      "bprove_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "compensation": {
+      "label": "Missing compensation (SC4001)",
+      "expected_code": "SC4001",
+      "control_flow_expressible": false,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ],
+      "bpmn_analyzer_detected": 0,
+      "bpmn_analyzer_recall": 0.0,
+      "bpmn_analyzer_ci95": [
+        0.0,
+        0.0
+      ],
+      "bprove_detected": 0,
+      "bprove_recall": 0.0,
+      "bprove_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "concurrency": {
+      "label": "Concurrency interference (SC5001)",
+      "expected_code": "SC5001",
+      "control_flow_expressible": false,
+      "applicable": 0,
+      "stepcheck_detected": 0,
+      "stepcheck_recall": null,
+      "stepcheck_ci95": [
+        null,
+        null
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": null,
+      "woflan_ci95": [
+        null,
+        null
+      ],
+      "bpmn_analyzer_detected": 0,
+      "bpmn_analyzer_recall": null,
+      "bpmn_analyzer_ci95": [
+        null,
+        null
+      ],
+      "bprove_detected": 0,
+      "bprove_recall": null,
+      "bprove_ci95": [
+        null,
+        null
+      ]
+    },
+    "temporal": {
+      "label": "Heartbeat/timeout (SC6003)",
+      "expected_code": "SC6003",
+      "control_flow_expressible": false,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ],
+      "bpmn_analyzer_detected": 0,
+      "bpmn_analyzer_recall": 0.0,
+      "bpmn_analyzer_ci95": [
+        0.0,
+        0.0
+      ],
+      "bprove_detected": 0,
+      "bprove_recall": 0.0,
+      "bprove_ci95": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "control_verdicts": [
+    {
+      "file": "corpus/industrial/sab-booking-processbooking.asl.json",
+      "sound": true,
+      "neg": [],
+      "bpmn_analyzer_sound": true,
+      "bprove_sound": true,
+      "bprove_violated": []
+    }
+  ],
+  "rows": [
+    {
+      "file": "corpus/industrial/sab-booking-processbooking.asl.json",
+      "control_sound": true,
+      "control_bprove_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "bpmn_analyzer": true,
+          "bprove": true,
+          "mut_sound": false,
+          "mut_bprove_sound": false,
+          "mut_bprove_violated": [
+            "option-to-complete"
+          ]
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "bpmn_analyzer": false,
+          "bprove": false,
+          "mut_sound": true,
+          "mut_bprove_sound": true,
+          "mut_bprove_violated": []
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "bpmn_analyzer": false,
+          "bprove": false,
+          "mut_sound": true,
+          "mut_bprove_sound": true,
+          "mut_bprove_violated": []
+        },
+        "compensation": {
+          "native": true,
+          "woflan": false,
+          "bpmn_analyzer": false,
+          "bprove": false,
+          "mut_sound": true,
+          "mut_bprove_sound": true,
+          "mut_bprove_violated": []
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "bpmn_analyzer": false,
+          "bprove": false,
+          "mut_sound": true,
+          "mut_bprove_sound": true,
+          "mut_bprove_violated": []
+        }
+      }
+    }
+  ]
+}

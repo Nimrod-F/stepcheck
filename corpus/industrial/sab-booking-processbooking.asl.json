@@ -1,0 +1,266 @@
+{
+  "StartAt": "Reserve Flight",
+  "States": {
+    "Reserve Flight": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName.$": "$.flightTable",
+        "Key": {
+          "id": {
+            "S.$": "$.outboundFlightId"
+          }
+        },
+        "UpdateExpression": "SET seatCapacity = seatCapacity - :dec",
+        "ExpressionAttributeValues": {
+          ":dec": {
+            "N": "1"
+          },
+          ":noSeat": {
+            "N": "0"
+          }
+        },
+        "ConditionExpression": "seatCapacity > :noSeat"
+      },
+      "TimeoutSeconds": 5,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "ProvisionedThroughputExceededException",
+            "RequestLimitExceeded",
+            "ServiceUnavailable",
+            "ThrottlingException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        },
+        {
+          "ErrorEquals": [
+            "ConditionalCheckFailedException"
+          ],
+          "IntervalSeconds": 0,
+          "MaxAttempts": 0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.flightError",
+          "Next": "Notify Booking Failed"
+        }
+      ],
+      "ResultPath": null,
+      "Next": "Reserve Booking"
+    },
+    "Reserve Booking": {
+      "Type": "Task",
+      "Resource": "${ReserveBooking.Arn}",
+      "TimeoutSeconds": 5,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BookingReservationException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.bookingError",
+          "Next": "Cancel Booking"
+        }
+      ],
+      "ResultPath": "$.bookingId",
+      "Next": "Collect Payment"
+    },
+    "Release Flight Seat": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName.$": "$.flightTable",
+        "Key": {
+          "id": {
+            "S.$": "$.outboundFlightId"
+          }
+        },
+        "UpdateExpression": "SET seatCapacity = seatCapacity +:inc",
+        "ExpressionAttributeValues": {
+          ":inc": {
+            "N": "1"
+          }
+        }
+      },
+      "TimeoutSeconds": 5,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "ProvisionedThroughputExceededException",
+            "RequestLimitExceeded",
+            "ServiceUnavailable",
+            "ThrottlingException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.flightError",
+          "Next": "Notify Booking Failed"
+        }
+      ],
+      "ResultPath": null,
+      "Next": "Notify Booking Failed"
+    },
+    "Collect Payment": {
+      "Type": "Task",
+      "Resource": "${CollectPaymentFunction}",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.paymentError",
+          "Next": "Cancel Booking"
+        }
+      ],
+      "ResultPath": "$.payment",
+      "Next": "Confirm Booking"
+    },
+    "Cancel Booking": {
+      "Type": "Task",
+      "Resource": "${CancelBooking.Arn}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BookingCancellationException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.bookingError",
+          "Next": "Release Flight Seat"
+        }
+      ],
+      "ResultPath": null,
+      "Next": "Release Flight Seat"
+    },
+    "Confirm Booking": {
+      "Type": "Task",
+      "Resource": "${ConfirmBooking.Arn}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BookingConfirmationException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.bookingError",
+          "Next": "Refund Payment"
+        }
+      ],
+      "ResultPath": "$.bookingReference",
+      "Next": "Notify Booking Confirmed"
+    },
+    "Refund Payment": {
+      "Type": "Task",
+      "Resource": "${RefundPaymentFunction}",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.paymentError",
+          "Next": "Cancel Booking"
+        }
+      ],
+      "ResultPath": null,
+      "Next": "Cancel Booking"
+    },
+    "Notify Booking Failed": {
+      "Type": "Task",
+      "Resource": "${NotifyBooking.Arn}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BookingNotificationException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.notificationgError",
+          "Next": "Booking DLQ"
+        }
+      ],
+      "ResultPath": "$.notificationId",
+      "Next": "Booking DLQ"
+    },
+    "Notify Booking Confirmed": {
+      "Type": "Task",
+      "Resource": "${NotifyBooking.Arn}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BookingNotificationException"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 2
+        }
+      ],
+      "ResultPath": "$.notificationId",
+      "Next": "Booking Confirmed"
+    },
+    "Booking DLQ": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${BookingsDLQ}",
+        "MessageBody.$": "$"
+      },
+      "ResultPath": "$.deadLetterQueue",
+      "Next": "Booking Failed"
+    },
+    "Booking Failed": {
+      "Type": "Fail"
+    },
+    "Booking Confirmed": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

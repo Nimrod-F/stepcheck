@@ -1,0 +1,4 @@
+[workflow]
+input_schema = "Trigger"
+[schemas.Trigger]
+fields = ["items_s3_uri", "device_id"]

@@ -1,0 +1,154 @@
+{
+  "generated_by": "eval/score-holdout.js",
+  "rule_freeze": {
+    "file": "stepcheck/src/annot.rs",
+    "blob": "536271c1164a3d26267b0dcd5db9e732057b6ad4"
+  },
+  "gold": {
+    "total_workflows": 23,
+    "design_workflows": 10,
+    "holdout_workflows": 13,
+    "annotators": [
+      "A",
+      "B"
+    ],
+    "reconciled": "eval/gold-labels-human.json"
+  },
+  "reframe": "Inference is an advisory adoption aid; the paper's verification weight is on the label-free sound native tier (SC1101) and the declared tier. Hold-out numbers are the reported inference numbers.",
+  "holdout": {
+    "workflows": 13,
+    "properties": {
+      "idempotent": {
+        "precision": 0.557,
+        "recall": 0.944,
+        "false_omission_rate": 0.061,
+        "f1": 0.701,
+        "accuracy": 0.691,
+        "tp": 34,
+        "fp": 27,
+        "fn": 2,
+        "tn": 31,
+        "abstain": 22,
+        "labelled": 116,
+        "coverage": 0.81,
+        "accuracy_ci95": [
+          0.606,
+          0.787
+        ],
+        "kappa": {
+          "kappa": 0.966,
+          "n": 118,
+          "observed_agreement": 0.983
+        }
+      },
+      "persistent": {
+        "precision": 0.944,
+        "recall": 0.694,
+        "false_omission_rate": 0.254,
+        "f1": 0.8,
+        "accuracy": 0.821,
+        "tp": 34,
+        "fp": 2,
+        "fn": 15,
+        "tn": 44,
+        "abstain": 22,
+        "labelled": 117,
+        "coverage": 0.812,
+        "accuracy_ci95": [
+          0.737,
+          0.905
+        ],
+        "kappa": {
+          "kappa": 0.983,
+          "n": 118,
+          "observed_agreement": 0.992
+        }
+      }
+    },
+    "warning_precision": {
+      "SC3001": {
+        "tp": 3,
+        "fp": 0,
+        "precision": 1
+      },
+      "SC4001": {
+        "tp": 27,
+        "fp": 2,
+        "precision": 0.931
+      },
+      "SC4010": {
+        "tp": 4,
+        "fp": 0,
+        "precision": 1
+      }
+    }
+  },
+  "design": {
+    "workflows": 10,
+    "properties": {
+      "idempotent": {
+        "precision": 0.758,
+        "recall": 1,
+        "false_omission_rate": 0,
+        "f1": 0.862,
+        "accuracy": 0.81,
+        "tp": 25,
+        "fp": 8,
+        "fn": 0,
+        "tn": 9,
+        "abstain": 4,
+        "labelled": 46,
+        "coverage": 0.913,
+        "accuracy_ci95": [
+          0.69,
+          0.929
+        ],
+        "kappa": {
+          "kappa": 0.739,
+          "n": 54,
+          "observed_agreement": 0.852
+        }
+      },
+      "persistent": {
+        "precision": 0.846,
+        "recall": 0.688,
+        "false_omission_rate": 0.156,
+        "f1": 0.759,
+        "accuracy": 0.844,
+        "tp": 11,
+        "fp": 2,
+        "fn": 5,
+        "tn": 27,
+        "abstain": 9,
+        "labelled": 54,
+        "coverage": 0.833,
+        "accuracy_ci95": [
+          0.711,
+          0.933
+        ],
+        "kappa": {
+          "kappa": 1,
+          "n": 54,
+          "observed_agreement": 1
+        }
+      }
+    },
+    "warning_precision": {
+      "SC3001": {
+        "tp": 4,
+        "fp": 0,
+        "precision": 1
+      },
+      "SC4001": {
+        "tp": 6,
+        "fp": 2,
+        "precision": 0.75
+      },
+      "SC4010": {
+        "tp": 2,
+        "fp": 0,
+        "precision": 1
+      }
+    }
+  }
+}

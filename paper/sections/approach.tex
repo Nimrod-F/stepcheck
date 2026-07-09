@@ -96,23 +96,27 @@ error object. For JSONata, \tool{} models direct \texttt{\$states.input}, \textt
 and \texttt{\$var} references plus object-valued \texttt{Output}/\texttt{Assign}/\texttt{Arguments}
 fragments; unsupported expressions project to $\top$ and do not produce \code{SC1101}.
 
-A forward iteration joins shapes along normal and \texttt{Catch} edges. Over a fixed key universe, a
-shape only gains keys or lifts to $\top$, so the may-present lattice has finite height. Iteration is
-bounded by $|\mathit{states}|\times(|\mathit{keys}|+2)+2$ rounds. The bounded-depth fragment common
-in workflow definitions reaches this fixpoint. In general, however, a cycle can re-embed
-sub-documents and grow shape \emph{depth} past the bound.
+A forward iteration joins shapes along normal and \texttt{Catch} edges. Cycles can re-embed a
+sub-document under a \texttt{ResultPath} and grow record depth without changing the key set, so
+\tool{} applies depth-$k$ widening after every propagation step: any record nested deeper than $k$
+(the implementation uses $k=12$) is replaced by $\top$. Widening is conservative---it can hide a
+bug behind opacity, but it cannot manufacture a definite absence. With a finite key universe and
+bounded record depth, the lattice has finite height on every workflow topology. The implementation
+uses $|\mathit{states}|\times(|\mathit{keys}|+2)\times(k+1)+2$ rounds as a safety bound and
+telemetry denominator; if a bug ever exceeded it, all known entries would be lifted to $\top$ before
+checking rather than reported from an under-approximation.
 
-To keep soundness independent of that corner case, \tool{} reports only after convergence. If the
-round bound is reached, it suppresses \code{SC1101}/\code{SC1110} for that machine and its
-sub-machines rather than emit a partial, under-approximated report. A depth-$k$ widening to $\top$
-would be a sound drop-in alternative; see the technical report. In practice the bound is never
-approached: all 786 data-flow fixpoints over the 193 AWS and 66 CNCF workflows converge within 7
-rounds.
+In practice the bound is not approached: across the 193 AWS, 66 CNCF, and two DSL workflows, all
+790 data-flow fixpoints converge, with a maximum of 7 rounds and a worst observed bound utilization
+of 2/54 (3.7\%).
 
-The restock loop in Figure~\ref{fig:intro} illustrates why a fixpoint matters. \texttt{CheckStock}
-has one incoming shape from \texttt{ReserveInventory} and one from the \texttt{WaitRestock}
-back-edge; joining them keeps any loop-produced field alive, so \code{SC1101} fires on the
-downstream \texttt{ChargeCard} read only because \emph{no} iteration produces \texttt{total}.
+Figure~\ref{fig:intro} marks the first ASL task, \texttt{Reserve Flight}, reading
+\texttt{\$.flightTable} and \texttt{\$.outboundFlightId} through \texttt{Parameters}; in the upstream
+template, those fields come from the AppSync resolver's execution payload. With a generated or
+declared entry schema, omitting either field is a definite missing-field fault; with raw \asl{} input
+alone, the initial document is $\top$ and the native pass stays silent. Loops use the same
+abstraction: a state with a back-edge joins the pre-loop and loop-carried shapes, so \code{SC1101}
+fires downstream only when \emph{no} iteration can produce the read field.
 
 \begin{theorem}[Sound bug reports for missing-field references]\label{thm:soundness}
 Under the modeled JSONPath/JSONata document-and-variable semantics, if \tool{} reports
@@ -124,9 +128,23 @@ task-output schemas and fixed AWS service-result envelopes. Expressions outside 
 lift to $\top$ and are therefore silent.
 \end{theorem}
 
-The proof is the standard abstract-interpretation argument---each transfer over-approximates its
-concrete reshaping, so definite absence at the fixpoint implies absence on every execution---and
-is given in full in the technical report. \code{SC1110} applies the same definite-absence judgment
+\paragraph{Proof.}
+Let $\gamma$ map each abstract document/variable shape to the concrete JSON values it may denote,
+with $\top$ denoting all values and records denoting exactly their listed keys. Each transfer
+function over-approximates the corresponding \asl{} operation: constructors build closed records;
+opaque tasks, arrays, unsupported selectors, and unsupported JSONata expressions lift to $\top$;
+\texttt{ResultPath} and \texttt{Catch} place over-approximating shapes into the raw input; and
+\texttt{InputPath}/\texttt{OutputPath} either navigate inside the current abstraction or return
+$\top$ for unmodeled selection. Joins are least upper bounds, and depth-$k$ widening is extensive
+because replacing a sub-record by $\top$ only enlarges $\gamma$. Therefore the forward iteration
+computes a post-fixpoint that over-approximates every concrete environment reaching each state,
+including loop iterations. If lookup of $p$ at the relevant read site reaches a missing key before
+$\top$, then no concrete value in $\gamma$ contains that path. The modeled \asl{} read therefore
+raises the runtime missing-reference error. Inputs and task results treated by declared schemas are
+closed-world premises; expressions outside the modeled fragment reach $\top$ and cannot trigger the
+premise of the theorem. \qed
+
+\code{SC1110} applies the same definite-absence judgment
 to \texttt{Choice} guards but stays a warning outside Theorem~\ref{thm:soundness}: rule
 reachability depends on earlier guards such as \texttt{IsPresent}, so it marks a provably dead or
 risky branch rather than an unconditional runtime fault.
@@ -203,16 +221,17 @@ once declared they support error-level findings, and where absent the declared-t
 silent.
 
 \begin{lstlisting}[style=base,caption={A sidecar annotation (TOML), excerpt.},label={lst:sidecar}]
-[tasks.ChargeCard]
+[tasks."Reserve Booking"]
 idempotent = false
 persistent = true
-compensation = "RefundPayment"
-state_in = "OrderReserved"
-state_out = "OrderPaid"
+compensation = "Cancel Booking"
+state_in = "SeatReserved"
+state_out = "BookingReserved"
 \end{lstlisting}
 
-The order saga's complete sidecar is 69 lines of TOML---about eight per-task lines over four tasks,
-plus shared schema and protocol blocks---and the typed DSL emits the same facts by construction.
+The booking saga's complete sidecar is 69 lines of TOML---about eight per-task lines over four
+tasks, plus shared schema and protocol blocks---and the typed DSL emits the same facts by
+construction.
 Optional inference gives existing repositories a zero-effort warning mode: read-like names imply
 idempotent, write-like non-idempotent, resource-acquiring persistent, and notifications
 non-idempotent but not persistent; with no signal it abstains, and explicit annotations override it.
