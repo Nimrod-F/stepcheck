@@ -33,6 +33,9 @@ fn refs_of(st: &State) -> Vec<String> {
     if let Some(p) = &st.parameters {
         collect_jsonpath_refs(p, &mut out);
     }
+    if let Some(a) = &st.assign {
+        collect_jsonpath_refs(a, &mut out);
+    }
     for c in &st.choices {
         collect_jsonpath_refs(&c.condition, &mut out);
     }

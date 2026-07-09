@@ -1,0 +1,280 @@
+{
+  "StartAt": "CheckBudgetTask",
+  "States": {
+    "CheckBudgetTask": {
+      "Next": "BudgetDecision",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Type": "Task",
+      "ResultPath": "$.budget",
+      "ResultSelector": {
+        "budget_ok.$": "$.Payload.budget_ok",
+        "spend_usd.$": "$.Payload.spend_usd",
+        "user_arn.$": "$.Payload.user_arn"
+      },
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:000000000000:function:CheckBudget82EB7F4D",
+        "Payload": {
+          "user_arn.$": "$.user_arn",
+          "estimated_cost_usd.$": "$.profile.cost_estimate.typical_cost_usd"
+        }
+      }
+    },
+    "BudgetDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.budget.budget_ok",
+          "BooleanEquals": false,
+          "Next": "BudgetExceeded"
+        }
+      ],
+      "Default": "ExtractDatasetTask"
+    },
+    "ExtractDatasetTask": {
+      "Next": "RouteCompute",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "HandleFailureTask"
+        }
+      ],
+      "Type": "Task",
+      "TimeoutSeconds": 300,
+      "ResultPath": "$.extract",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:Extract9BA700EA"
+    },
+    "RouteCompute": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.profile.backend",
+          "StringEquals": "lambda",
+          "Next": "ComputeLambdaTask"
+        },
+        {
+          "And": [
+            {
+              "Variable": "$.profile.backend",
+              "StringEquals": "emr_serverless"
+            },
+            {
+              "Variable": "$.enable_emr",
+              "BooleanEquals": true
+            }
+          ],
+          "Next": "EmrNotEnabled"
+        }
+      ],
+      "Default": "EmrNotEnabled"
+    },
+    "EmrNotEnabled": {
+      "Type": "Fail",
+      "Error": "EmrNotEnabled",
+      "Cause": "EMR Serverless is not enabled in this deployment"
+    },
+    "ComputeLambdaTask": {
+      "Next": "DeliverResultsTask",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "HandleFailureTask"
+        }
+      ],
+      "Type": "Task",
+      "TimeoutSeconds": 900,
+      "ResultPath": "$.compute",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:RunnerA54BCE97"
+    },
+    "DeliverResultsTask": {
+      "Next": "RecordSpendTask",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "HandleFailureTask"
+        }
+      ],
+      "Type": "Task",
+      "TimeoutSeconds": 120,
+      "ResultPath": "$.deliver",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:Deliver72E7B226"
+    },
+    "RecordSpendTask": {
+      "Next": "NotifyUser",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Type": "Task",
+      "ResultPath": "$.spend",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:RecordSpendEA073771"
+    },
+    "NotifyUser": {
+      "Next": "AuditLogSucceeded",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:lambda:us-east-1:000000000000:function:NotificationTopicEB7A0DF1",
+        "Message.$": "States.Format('Your {} analysis is complete. Results are available as a new dataset in Quick Sight: {}', $.profile.display_name, $.deliver.result_dataset_name)",
+        "Subject.$": "States.Format('Your {} analysis is ready', $.profile.display_name)"
+      }
+    },
+    "AuditLogSucceeded": {
+      "End": true,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Type": "Task",
+      "ResultPath": "$.audit",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:AuditLogA5B7094E",
+      "Parameters": {
+        "execution_id.$": "$.execution_id",
+        "user_arn.$": "$.user_arn",
+        "profile.$": "$.profile",
+        "dataset_uri.$": "$.dataset_uri",
+        "params.$": "$.params",
+        "deliver.$": "$.deliver",
+        "compute.$": "$.compute",
+        "status": "SUCCEEDED"
+      }
+    },
+    "HandleFailureTask": {
+      "Next": "NotifyFailure",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Type": "Task",
+      "ResultPath": "$.failure",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:HandleFailureE6469B1D"
+    },
+    "NotifyFailure": {
+      "Next": "AuditLogFailed",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:lambda:us-east-1:000000000000:function:NotificationTopicEB7A0DF1",
+        "Message.$": "States.Format('Your {} analysis could not be completed. Error: {}', $.profile.display_name, $.failure.error_message)",
+        "Subject.$": "States.Format('Analysis job failed: {}', $.profile.display_name)"
+      }
+    },
+    "AuditLogFailed": {
+      "End": true,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ClientExecutionTimeoutException",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Type": "Task",
+      "ResultPath": "$.audit",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:AuditLogA5B7094E",
+      "Parameters": {
+        "execution_id.$": "$.execution_id",
+        "user_arn.$": "$.user_arn",
+        "profile.$": "$.profile",
+        "dataset_uri.$": "$.dataset_uri",
+        "params.$": "$.params",
+        "status": "FAILED"
+      }
+    },
+    "BudgetExceeded": {
+      "Type": "Fail",
+      "Error": "BudgetExceeded",
+      "Cause": "Monthly compute budget exceeded"
+    }
+  },
+  "TimeoutSeconds": 14400
+}

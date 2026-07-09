@@ -1,0 +1,129 @@
+name: Release
+
+# Cut a release by pushing a version tag, e.g. `git tag v0.1.0 && git push --tags`.
+# Each platform build uploads its binary as a workflow artifact; a single release
+# job then attaches all of them to the GitHub release (one writer, no upload race).
+# When the matching token secret is present, the crate is published to crates.io
+# and the wrapper package to npm.
+#
+# Required repository secrets for the publish jobs (both optional; each job skips
+# itself when its secret is empty, and skips a version already on the registry):
+#   CARGO_REGISTRY_TOKEN  -- a crates.io API token (for `cargo publish`)
+#   NPM_TOKEN             -- an npm automation token (for `npm publish`)
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  target: x86_64-unknown-linux-gnu, asset: stepcheck-linux-x64 }
+          # Intel-Mac binary is cross-compiled on the Apple-Silicon runner: the
+          # scarce macos-13 (Intel) runner queues for a long time, whereas
+          # macos-14 targets x86_64-apple-darwin fine and is readily available.
+          - { os: macos-14,       target: x86_64-apple-darwin,      asset: stepcheck-darwin-x64 }
+          - { os: macos-14,       target: aarch64-apple-darwin,     asset: stepcheck-darwin-arm64 }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc,   asset: stepcheck-win32-x64.exe }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build
+        working-directory: stepcheck
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Stage binary (unix)
+        if: runner.os != 'Windows'
+        run: cp stepcheck/target/${{ matrix.target }}/release/stepcheck "${{ matrix.asset }}"
+      - name: Stage binary (windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: cp stepcheck/target/${{ matrix.target }}/release/stepcheck.exe "${{ matrix.asset }}"
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: attach binaries to the GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+
+  publish-crate:
+    name: publish to crates.io
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo publish (skips without token or if version exists)
+        working-directory: stepcheck
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CARGO_REGISTRY_TOKEN not set; skipping crates.io publish."
+            exit 0
+          fi
+          VER=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if curl -s -H "User-Agent: stepcheck-release" "https://crates.io/api/v1/crates/stepcheck/$VER" | grep -q '"num"'; then
+            echo "stepcheck $VER already on crates.io; skipping."
+            exit 0
+          fi
+          cargo publish --locked
+
+  publish-npm:
+    name: publish to npm
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: npm publish (skips without token or if version exists)
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "NPM_TOKEN not set; skipping npm publish."
+            exit 0
+          fi
+          VER="${GITHUB_REF_NAME#v}"
+          npm version --no-git-tag-version --allow-same-version "$VER"
+          NAME=$(node -p "require('./package.json').name")
+          echo "authenticated as: $(npm whoami || echo '<whoami failed>')"
+          # Skip only if the registry actually returns a version string. An
+          # authenticated `npm view` of a not-yet-published version in your own
+          # scope can exit 0 with EMPTY output, so check the output, not $?.
+          if [ -n "$(npm view "$NAME@$VER" version 2>/dev/null)" ]; then
+            echo "$NAME@$VER already on npm; skipping."
+            exit 0
+          fi
+          echo "publishing $NAME@$VER to npm ..."
+          npm publish --access public

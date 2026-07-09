@@ -1,0 +1,678 @@
+{
+  "generated_by": "eval/mutation_stats.py",
+  "method": "Clopper-Pearson exact 95% CI on per-class recall k/n over the full 193-workflow corpus; Fisher exact vs each formal verifier.",
+  "verifier_comparison": "Woflan (van der Aalst & Verbeek) via pm4py 2.7.23.1",
+  "verifier_comparison2": "BPMN Analyzer 2.0 (Kraeuter 2024) via rust_bpmn_analyzer CLI",
+  "verifier_comparison3": "BProVe/BPMNOS (Corradini et al.) via BPMNOS parser + Maude",
+  "classes": {
+    "structural": {
+      "label": "Dangling transition (SC0002)",
+      "n": 166,
+      "stepcheck": {
+        "detected": 166,
+        "recall": 1.0,
+        "cp95": [
+          0.978,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 158,
+        "recall": 0.952,
+        "cp95": [
+          0.907,
+          0.979
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 0.007166597359159426,
+      "bpmn_analyzer": {
+        "detected": 144,
+        "recall": 0.867,
+        "cp95": [
+          0.806,
+          0.915
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 2.2647177206630257e-07,
+      "bprove": {
+        "detected": 114,
+        "recall": 0.687,
+        "cp95": [
+          0.61,
+          0.756
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 3.826105438361335e-18
+    },
+    "contract": {
+      "label": "Broken data binding (SC1003)",
+      "n": 141,
+      "stepcheck": {
+        "detected": 141,
+        "recall": 1.0,
+        "cp95": [
+          0.974,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.026
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 5.421765417675389e-84,
+      "bpmn_analyzer": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.026
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 5.421765417675389e-84,
+      "bprove": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.026
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 5.421765417675389e-84
+    },
+    "retry": {
+      "label": "Unsafe retry (SC3001)",
+      "n": 103,
+      "stepcheck": {
+        "detected": 103,
+        "recall": 1.0,
+        "cp95": [
+          0.965,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.035
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 3.502446353057121e-61,
+      "bpmn_analyzer": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.035
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 3.502446353057121e-61,
+      "bprove": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.035
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 3.502446353057121e-61
+    },
+    "compensation": {
+      "label": "Missing compensation (SC4001)",
+      "n": 19,
+      "stepcheck": {
+        "detected": 19,
+        "recall": 1.0,
+        "cp95": [
+          0.824,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 7,
+        "recall": 0.368,
+        "cp95": [
+          0.163,
+          0.616
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 3.722139428479807e-05,
+      "bpmn_analyzer": {
+        "detected": 7,
+        "recall": 0.368,
+        "cp95": [
+          0.163,
+          0.616
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 3.722139428479807e-05,
+      "bprove": {
+        "detected": 2,
+        "recall": 0.105,
+        "cp95": [
+          0.013,
+          0.331
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 1.1882780176052894e-08
+    },
+    "concurrency": {
+      "label": "Concurrency interference (SC5001)",
+      "n": 21,
+      "stepcheck": {
+        "detected": 21,
+        "recall": 1.0,
+        "cp95": [
+          0.839,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.161
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 3.715691111961505e-12,
+      "bpmn_analyzer": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.161
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 3.715691111961505e-12,
+      "bprove": {
+        "detected": 1,
+        "recall": 0.048,
+        "cp95": [
+          0.001,
+          0.238
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 8.174520446315312e-11
+    },
+    "temporal": {
+      "label": "Heartbeat/timeout (SC6003)",
+      "n": 166,
+      "stepcheck": {
+        "detected": 166,
+        "recall": 1.0,
+        "cp95": [
+          0.978,
+          1.0
+        ]
+      },
+      "woflan": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.022
+        ]
+      },
+      "fisher_exact_vs_woflan_p": 5.224292014648609e-99,
+      "bpmn_analyzer": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.022
+        ]
+      },
+      "fisher_exact_vs_bpmn_analyzer_p": 5.224292014648609e-99,
+      "bprove": {
+        "detected": 0,
+        "recall": 0.0,
+        "cp95": [
+          0.0,
+          0.022
+        ]
+      },
+      "fisher_exact_vs_bprove_p": 5.224292014648609e-99
+    }
+  },
+  "aggregate_metrics": {
+    "method": "Full 193-workflow aggregate over seven StepCheck mutation classes. AP is macro operating-point precision for deterministic binary tools, not ranked average precision; clean over-report is reported separately.",
+    "tools": {
+      "stepcheck": {
+        "all_seven_classes": {
+          "macro_operating_point_ap": 1.0,
+          "macro_operating_point_ap_ci95": [
+            1.0,
+            1.0
+          ],
+          "macro_f1": 0.975,
+          "macro_f1_ci95": [
+            0.966,
+            0.982
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 166,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "contract": {
+              "applicable": 141,
+              "detected": 141,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "dataflow": {
+              "applicable": 126,
+              "detected": 88,
+              "precision": 1.0,
+              "recall": 0.698,
+              "f1": 0.822
+            },
+            "retry": {
+              "applicable": 103,
+              "detected": 103,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "compensation": {
+              "applicable": 19,
+              "detected": 19,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "concurrency": {
+              "applicable": 21,
+              "detected": 21,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "temporal": {
+              "applicable": 166,
+              "detected": 166,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            }
+          }
+        },
+        "strict_bpmn_soundness_subset": {
+          "macro_operating_point_ap": 1.0,
+          "macro_operating_point_ap_ci95": [
+            1.0,
+            1.0
+          ],
+          "macro_f1": 1.0,
+          "macro_f1_ci95": [
+            1.0,
+            1.0
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 166,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            }
+          }
+        }
+      },
+      "woflan": {
+        "all_seven_classes": {
+          "macro_operating_point_ap": 0.286,
+          "macro_operating_point_ap_ci95": [
+            0.286,
+            0.286
+          ],
+          "macro_f1": 0.216,
+          "macro_f1_ci95": [
+            0.178,
+            0.245
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 158,
+              "precision": 1.0,
+              "recall": 0.952,
+              "f1": 0.975
+            },
+            "contract": {
+              "applicable": 141,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "dataflow": {
+              "applicable": 126,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "retry": {
+              "applicable": 103,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "compensation": {
+              "applicable": 19,
+              "detected": 7,
+              "precision": 1.0,
+              "recall": 0.368,
+              "f1": 0.538
+            },
+            "concurrency": {
+              "applicable": 21,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "temporal": {
+              "applicable": 166,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            }
+          }
+        },
+        "strict_bpmn_soundness_subset": {
+          "macro_operating_point_ap": 1.0,
+          "macro_operating_point_ap_ci95": [
+            1.0,
+            1.0
+          ],
+          "macro_f1": 0.975,
+          "macro_f1_ci95": [
+            0.956,
+            0.991
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 158,
+              "precision": 1.0,
+              "recall": 0.952,
+              "f1": 0.975
+            }
+          }
+        }
+      },
+      "bpmn_analyzer": {
+        "all_seven_classes": {
+          "macro_operating_point_ap": 0.286,
+          "macro_operating_point_ap_ci95": [
+            0.286,
+            0.286
+          ],
+          "macro_f1": 0.21,
+          "macro_f1_ci95": [
+            0.171,
+            0.239
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 144,
+              "precision": 1.0,
+              "recall": 0.867,
+              "f1": 0.929
+            },
+            "contract": {
+              "applicable": 141,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "dataflow": {
+              "applicable": 126,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "retry": {
+              "applicable": 103,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "compensation": {
+              "applicable": 19,
+              "detected": 7,
+              "precision": 1.0,
+              "recall": 0.368,
+              "f1": 0.538
+            },
+            "concurrency": {
+              "applicable": 21,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "temporal": {
+              "applicable": 166,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            }
+          }
+        },
+        "strict_bpmn_soundness_subset": {
+          "macro_operating_point_ap": 1.0,
+          "macro_operating_point_ap_ci95": [
+            1.0,
+            1.0
+          ],
+          "macro_f1": 0.929,
+          "macro_f1_ci95": [
+            0.897,
+            0.956
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 144,
+              "precision": 1.0,
+              "recall": 0.867,
+              "f1": 0.929
+            }
+          }
+        }
+      },
+      "bprove": {
+        "all_seven_classes": {
+          "macro_operating_point_ap": 0.429,
+          "macro_operating_point_ap_ci95": [
+            0.143,
+            0.429
+          ],
+          "macro_f1": 0.156,
+          "macro_f1_ci95": [
+            0.117,
+            0.196
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 114,
+              "precision": 1.0,
+              "recall": 0.687,
+              "f1": 0.814
+            },
+            "contract": {
+              "applicable": 141,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "dataflow": {
+              "applicable": 126,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "retry": {
+              "applicable": 103,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            },
+            "compensation": {
+              "applicable": 19,
+              "detected": 2,
+              "precision": 1.0,
+              "recall": 0.105,
+              "f1": 0.19
+            },
+            "concurrency": {
+              "applicable": 21,
+              "detected": 1,
+              "precision": 1.0,
+              "recall": 0.048,
+              "f1": 0.091
+            },
+            "temporal": {
+              "applicable": 166,
+              "detected": 0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
+            }
+          }
+        },
+        "strict_bpmn_soundness_subset": {
+          "macro_operating_point_ap": 1.0,
+          "macro_operating_point_ap_ci95": [
+            1.0,
+            1.0
+          ],
+          "macro_f1": 0.814,
+          "macro_f1_ci95": [
+            0.761,
+            0.859
+          ],
+          "per_class": {
+            "structural": {
+              "applicable": 166,
+              "detected": 114,
+              "precision": 1.0,
+              "recall": 0.687,
+              "f1": 0.814
+            }
+          }
+        }
+      }
+    },
+    "fair_class": {
+      "structural": {
+        "code": "SC0002",
+        "bpmn_fair_class": true,
+        "formal_applicable": 166
+      },
+      "contract": {
+        "code": "SC1003",
+        "bpmn_fair_class": false,
+        "formal_applicable": 141
+      },
+      "dataflow": {
+        "code": "SC1101",
+        "bpmn_fair_class": false,
+        "formal_applicable": 0,
+        "reason": "No ASL data-flow field-provenance expression in the BPMN soundness encoding."
+      },
+      "retry": {
+        "code": "SC3001",
+        "bpmn_fair_class": false,
+        "formal_applicable": 103
+      },
+      "compensation": {
+        "code": "SC4001",
+        "bpmn_fair_class": false,
+        "formal_applicable": 19
+      },
+      "concurrency": {
+        "code": "SC5001",
+        "bpmn_fair_class": false,
+        "formal_applicable": 21
+      },
+      "temporal": {
+        "code": "SC6003",
+        "bpmn_fair_class": false,
+        "formal_applicable": 166
+      }
+    },
+    "scope_interpretation": {
+      "do_not_claim": "Do not phrase the result as a percentage-win comparison against BProVe.",
+      "preferred_claim": "BProVe's soundness checking and StepCheck's ASL-native analyses are complementary: BProVe has no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe failure.",
+      "stepcheck_native_only": [
+        "SC1003",
+        "SC1101",
+        "SC3001",
+        "SC6003"
+      ],
+      "formal_soundness_overlap": [
+        "SC0002"
+      ],
+      "formal_structural_side_effects": [
+        "SC4001",
+        "SC5001"
+      ]
+    }
+  },
+  "clean_baseline_overreport": {
+    "workflows": 193,
+    "woflan_unsound": 16,
+    "woflan_overreport_rate": 0.083,
+    "bpmn_analyzer_unsound": 16,
+    "bpmn_analyzer_overreport_rate": 0.083,
+    "bprove_unsound": 56,
+    "bprove_overreport_rate": 0.29,
+    "note": "A formal workflow verifier flags a valid AWS serverless workflow unsound when its parallel-branch termination is not well-handled (multi-terminal / independent branches) -- a semantic mismatch, not a StepCheck finding."
+  },
+  "real_bugs": {
+    "curated_fix_commit_pairs": 7,
+    "curated_note": "before/after pairs mined from public fix commits; each confirmed by the fix.",
+    "wild_sound_tier_findings": {
+      "SC1101": 1,
+      "SC5001": 1,
+      "corpus": "corpus/wild-external: 95 ASL workflows from 16 independent repos (outside aws-samples)"
+    },
+    "issue_tracker_user_reported": {
+      "count": 3,
+      "class": "SC1101",
+      "examples": [
+        "aws-samples/serverless-coffee-workshop#56 (official AWS)",
+        "scttfrdmn/campus-compute#32",
+        "dataPlor/turbofan#1"
+      ],
+      "detail": "eval/issue-tracker-defects.json",
+      "note": "user-filed issues whose quoted runtime error is exactly what StepCheck's sound tier prevents (not author-selected diffs); one from an official AWS workshop."
+    },
+    "framing": "7 curated fix-commit defects + 3 user-reported issue-tracker defects (SC1101, one official AWS) are an existence result; the wild corpus adds label-free sound-tier findings (SC1101, SC5001) on independent repositories. We do not claim a population prevalence."
+  }
+}

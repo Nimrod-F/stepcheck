@@ -1,210 +1,240 @@
-\section{Approach}
+\section{Verification Framework}
 \label{sec:approach}
 
-\subsection{A two-layer analysis model}
-
-\tool{} separates what can be checked from \asl{} alone from what needs recovered
-semantics. \emph{Native} analyses (Layer~A) require no annotations and divide by
-confidence. \emph{Two are sound} (no false positives): structural well-formedness, and
-the \emph{data-flow provenance} analysis of
-Section~\ref{sec:approach:dataflow} (which subsumes the \asl{}-semantic binding checks
----a \texttt{waitForTaskToken} task that never passes its token, \texttt{\$\$.Map}
-misuse, invalid JSONPath payloads---and adds field-availability reasoning). \emph{Two
-more are native but deliberately conservative warnings}: the
-\emph{concurrency-interference} check (\texttt{Parallel}/\texttt{Map} branches that
-write a shared resource) and the \emph{retry/timeout-budget} check (unbounded
-callbacks, retries that overrun a timeout, heartbeat/timeout mis-configuration), which
-under-approximate to avoid false alarms rather than claiming soundness.
-\emph{Semantic} analyses (Layer~B) ---typestate, retry safety, compensation, and
-typed contract compatibility--- consume an \emph{annotation} layer that records the
-task semantics \asl{} omits. (Concurrency and retry safety also \emph{read} the
-annotation layer to learn which tasks write or are non-idempotent, so they sharpen as
-annotations are added, but their structural triggers fire natively.) The annotation layer has two sources, in priority
-order: explicit annotations (authored by hand or produced by the typed DSL
-frontend), and \emph{inference} that supplies defaults from naming and resource
-conventions. Findings derived from inferred facts are reported at \emph{warning}
-severity, while findings derived from declared facts are \emph{errors}; this single
-rule keeps confidence visible throughout the tool's output. We are deliberate about
-what ``verification'' means at each layer: the \emph{sound} native checks (structural
-well-formedness and data-flow provenance) need no input and carry a no-false-positive
-guarantee; the conservative native checks (concurrency, temporal budget) raise
-heuristic warnings; whereas the semantic checks are only as strong as the semantics they are
-given---with declared annotations they are precise errors, and in the zero-annotation
-default they degrade gracefully to best-effort, inference-driven \emph{warnings}
-(typestate, having no labels to act on, simply stays silent). \tool{} is thus a sound
-linter that becomes a precise verifier as annotations are added.
-
-\subsection{Workflow model}
-\label{sec:approach:model}
-
-We model a workflow as a graph of states with a designated start. Beyond its
-control-flow successors, a \emph{task} carries four pieces of semantic information.
-\textbf{Contract:} a task $T:A\rightarrow B$ consumes/produces record types (field
-sets); adjacent $T_1:A\rightarrow B$, $T_2:C\rightarrow D$ \emph{compose} only if $B$
-provides every field $C$ requires (natively, without declared types, the layer instead
-checks that JSONPath references resolve to data the workflow binds).
-\textbf{Typestate:} $T$ advances a \emph{business state} $s_{\mathrm{in}}\rightarrow
-s_{\mathrm{out}}$; a workflow is well-ordered when each task consumes the state its
-predecessor produced, and an optional \emph{protocol} (e.g.\
-\emph{created\,$\to$\,reserved\,$\to$\,paid\,$\to$\,shipped}) lists permitted
-transitions. \textbf{Idempotency:} repeating an idempotent task causes no extra external
-effect, so it may be retried freely; a non-idempotent one may not be retried on broad
-error classes. \textbf{Persistence/compensation:} a \emph{persistent} task commits a
-durable resource (reservation, charge, created record) that a later failure should undo,
-so it needs a \emph{compensation}---an explicit handler or a \texttt{Catch} to a
-compensating state. This vocabulary is deliberately lightweight---no separate formal
-calculus---yet exactly what the semantic checks of Section~\ref{sec:analyses} consume.
-
-\subsection{Sound data-flow provenance by abstract interpretation}
-\label{sec:approach:dataflow}
-
-The contract defect of Section~\ref{sec:bg:defects} is a \emph{data-flow} fact:
-\texttt{\$.total} fails not because it is malformed---it is a valid path---but because
-no execution reaching \texttt{ChargeCard} produces a \texttt{total} field. Deciding
-this requires modelling how \asl{} reshapes its state document, which it does through a
-fixed five-stage pipeline per state: \texttt{InputPath} selects a sub-document;
-\texttt{Parameters}/\texttt{ItemSelector} \emph{construct} the task input (each
-\texttt{"k.\$":"\$.p"} entry \emph{reads} \texttt{\$.p}); the task result is combined
-through \texttt{ResultSelector} and merged into the \emph{raw} input at
-\texttt{ResultPath}; and \texttt{OutputPath} selects the state output. We give this an
-abstract interpretation.
-
-\paragraph{Domain.}
-A document shape over-approximates the set of field paths that \emph{may} be present:
-\[
-  \sigma \;::=\; \top \;\mid\; \{\,k_1{:}\sigma_1,\dots,k_n{:}\sigma_n\,\}
-\]
-where $\top$ is opaque (any field may be present---e.g.\ an arbitrary Lambda result or
-the execution input) and a record lists \emph{exactly} the keys that may occur (a key
-absent from the record is absent on every represented document; scalars/arrays are the
-empty record / $\top$). The order is $\sigma\sqsubseteq\top$ and pointwise on records;
-the join $\sqcup$ is the \emph{union} of keys ($\top$ absorbs), so a key present on any
-incoming path survives. A path $\$.p_1.\dots.p_k$ is \emph{definitely absent} in
-$\sigma$ iff descending the records hits a missing key without first reaching $\top$.
-
-\paragraph{Transfer functions.}
-Each stage is a monotone function on shapes: \texttt{InputPath}/\texttt{OutputPath}
-re-root by descent (a missing or non-trivial selection yields $\top$);
-\texttt{Parameters}/\texttt{ItemSelector}/\texttt{ResultSelector} build a record whose
-keys are the constructor's keys (a \texttt{.\$} leaf reads an opaque value, hence
-$\top$); the opaque task result is $\top$ unless a \texttt{ResultSelector} pins its
-keys; \texttt{ResultPath} places the result into the raw input, preserving siblings
-($\$$ replaces, \texttt{null} discards). A state in \emph{JSONata} mode (or one using
-the JSONata \texttt{Arguments}/\texttt{Output} constructs) reshapes its document with
-expressions outside our JSONPath fragment, so it yields $\top$ and its references are
-not checked---trading precision for soundness on JSONata workflows. A forward fixpoint over the
-control-flow graph---joining at merge points and along \texttt{Catch} edges (which
-carry an opaque error object), and converging in a number of rounds bounded by the
-machine's finite key universe (Theorem~\ref{thm:soundness})---computes an entry shape
-for every state. We then check
-exactly the references the \asl{} runtime \emph{evaluates and aborts on when absent}:
-the `.\$' constructors of \texttt{Parameters}/\texttt{ItemSelector} and a \texttt{Map}'s
-\texttt{ItemsPath}. We deliberately do \emph{not} check \texttt{Choice} operands: a
-\texttt{Choice} comparison (\texttt{IsPresent}, \texttt{IsNull}, value comparators) is a
-\emph{test} that returns false on an absent field rather than failing the
-execution---flagging it would be unsound.
-
-\paragraph{Soundness.}
-Let $\gamma(\sigma)$ denote the set of JSON documents a shape $\sigma$ admits:
-$\gamma(\top)$ is every document, and $\gamma(\mathrm{Obj}\,r)$ is the documents whose
-top-level keys lie within $\mathrm{dom}(r)$, each value $v$ at key $k$ lying in
-$\gamma(r(k))$. The analysis reports \code{SC1101} for a reference only when its path is
-\emph{definitely absent} in the state's entry shape. Each transfer over-approximates,
-which gives the central guarantee.
-
-\begin{theorem}[No false positives]\label{thm:soundness}
-If \tool{} reports \code{SC1101} for a path $p$ at a state $s$, then in every concrete
-execution that reaches $s$, $p$ is absent from the state document, so the \asl{}
-runtime fails the reference. Equivalently, the analysis never flags a reference some
-execution could satisfy.
-\end{theorem}
-
-\begin{proof}[sketch]
-Every stage transfer $f^\sharp$ is \emph{sound} for $\gamma$, i.e.\
-$f(d)\in\gamma(f^\sharp(\sigma))$ for all $d\in\gamma(\sigma)$: a \texttt{.\$}
-constructor binds its key to $\top$; the opaque task result and any JSONata-mode state
-yield $\top$; \texttt{ResultPath} writes that result while preserving siblings;
-\texttt{InputPath}/\texttt{OutputPath} descend. The join is the key-union, sound for
-$\gamma$ since $\gamma(\sigma_1)\cup\gamma(\sigma_2)\subseteq\gamma(\sigma_1\sqcup
-\sigma_2)$. By induction over the control-flow graph---taking the join over all
-incoming normal \emph{and} \texttt{Catch} edges---the computed entry shape $\sigma_s$
-satisfies $d\in\gamma(\sigma_s)$ for every document $d$ of every execution reaching $s$.
-If \code{SC1101} fires, $p$ descends $\sigma_s$ to a missing key without meeting $\top$,
-so by the definition of $\gamma$ no $d\in\gamma(\sigma_s)$ contains $p$; hence $p$ is
-absent on every reaching execution. \emph{Termination:} shapes form an ascending chain
-(a join only adds keys or lifts to $\top$) in a lattice whose height is bounded by the
-machine's finite key universe $\kappa$ (keys occur only in the finitely many
-constructor/result literals and the declared input), so the iteration reaches a least
-fixpoint within $|S|\cdot(\kappa+2)$ rounds for $|S|$ states; the implementation
-enforces this bound and reports only at the fixpoint.
-\end{proof}
-
-\noindent The guarantee is thus established, not merely asserted; we additionally
-corroborate it empirically---zero \code{SC1101} on 193 unmodified workflows, and an
-independent per-path \emph{execution oracle} (a second interpreter that shares no code
-with the analysis) confirms all 84 injected-defect findings absent on every reaching
-path, with zero counterexamples (Section~\ref{sec:eval:dataflow}). The
-analysis has two tiers that mirror the tool's two layers. The \textbf{native} tier seeds
-the start document as $\top$ (the execution input is arbitrary), so findings arise only
-where the workflow itself constructs the data it later reads---a \texttt{Pass}
-\texttt{Result}, a \texttt{ResultSelector}, a static \texttt{Parameters} object, or an
-\texttt{OutputPath} that drops a field; the statement above holds \emph{unconditionally}
-for this tier. The \textbf{typed} tier seeds the start as a closed record of the declared
-input schema (sidecar, DSL, or CNCF JSON Schema), which recovers the full ``field never
-produced'' class flow-sensitively through the \texttt{ResultPath} merge---strictly more
-than an adjacent-task field-subset check. There the guarantee is relative to a
-\emph{closed-world reading} of the declared contract: the schema enumerates the fields
-the input may contain. This matches the intent of an author who declares a contract;
-where inputs are genuinely open, the native tier (which assumes nothing) is the sound
-fallback.
-
-\subsection{The annotation layer}
-\label{sec:approach:annot}
-
-Explicit semantics are supplied either through a \emph{sidecar} file attached to an
-existing \asl{} workflow (Listing~\ref{lst:sidecar}) or, for greenfield workflows,
-through a typed builder DSL that emits both the \asl{} and its annotations (one
-\texttt{.task(\dots)} call per state carries its schema, protocol edge, idempotency,
-persistence, and compensation). The two routes resolve to the same internal
-representation, so the analyses are agnostic to how a workflow was authored.
-
-\begin{lstlisting}[style=base,caption={A sidecar annotation (TOML), excerpt.},label={lst:sidecar}]
-[schemas.OrderReserved]
-fields = ["orderId", "amount", "reservationId"]
-[tasks.ChargeCard]
-idempotent = false
-persistent = true
-compensation = "RefundPayment"
-state_in = "OrderReserved"
-state_out = "OrderPaid"
-\end{lstlisting}
-
-\subsection{Inference of default annotations}
-\label{sec:approach:infer}
-
-Most existing workflows carry no annotations, yet their task names and resource ARNs
-are highly conventional. \tool{} exploits this with a documented, configurable
-heuristic that classifies each task from a lowercased \emph{signal} (its name, its
-\texttt{Resource}, and parameters such as \texttt{FunctionName}). The heuristic uses
-four small keyword sets: \emph{read} verbs (\texttt{get}, \texttt{list},
-\texttt{describe}, \texttt{query}, \texttt{validate}, \dots) imply idempotent and
-non-persistent; \emph{write} verbs (\texttt{create}, \texttt{charge}, \texttt{send},
-\dots) imply non-idempotent; \emph{resource-acquiring} verbs (\texttt{reserve},
-\texttt{pay}, \texttt{provision}, \texttt{putItem}, \dots) additionally imply
-persistent; and \emph{notification} verbs/resources (\texttt{notify},
-\texttt{publish}, \texttt{:sns:}, \dots) are non-idempotent but, being
-fire-and-forget, never persistent. When no keyword matches, the heuristic
-\emph{abstains}, leaving the task unclassified rather than guessing. Inference thus
-yields a zero-effort default whose mistakes (Section~\ref{sec:eval}) are visible
-(warnings) and correctable (an explicit annotation always wins).
+\tool{} separates the artifact being checked from the semantic facts available about it: a shared
+intermediate representation records the control flow and data movement that \asl{} exposes, and an
+annotation slot records the contracts, business states, idempotency, persistence, and compensators
+that \asl{} omits. The format-agnostic IR lets analyses run unchanged across input languages;
+layered annotation keeps raw-\asl{} verification zero-migration; optional name/resource inference
+gives existing repositories a non-blocking start; and provenance-based severity keeps CI signals
+interpretable---native and declared violations error, inferred facts warn.
 
 \subsection{Architecture}
+\label{sec:approach:arch}
 
-The pipeline is a straight line: a \emph{frontend} lowers a surface syntax to a
-format-agnostic intermediate representation (IR); annotation resolution attaches
-declared and inferred semantics to the IR; a \emph{pass} pipeline runs the eight
-analyses, each emitting coded diagnostics; and an \emph{emitter} lowers verified
-workflows back to \asl{}. The design is modular along two axes: a new input format is a
-new \texttt{Frontend}, and a new check is a new \texttt{Pass} (Section~\ref{sec:impl})%
----indeed the three analyses new to this paper were each added as a single
-\texttt{Pass} with no change to the IR or the other checks.
+Every front end lowers to the same workflow graph (Figure~\ref{fig:arch-detail}); every analysis is
+a pass over it; and the optional emitter lowers verified DSL-authored workflows back to deployable
+\asl{}. Raw \asl{} is the primary input, parsed tolerantly through generic JSON, so intrinsics,
+context references, SAM placeholders, dialect variants, and JSONata states never cause hard parse
+failures. The typed DSL emits graph and annotations by construction, and the CNCF front end
+exercises the same extension point (Section~\ref{sec:eval:cncf}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.64\textwidth]{figures/figure3-architecture-detailed.pdf}
+\caption{Verification pipeline: all front ends lower to one deployed-artifact IR shared by the
+eight passes, rather than running independent lints.}
+\label{fig:arch-detail}
+\end{figure}
+
+The pass families are summarized in Table~\ref{tab:passes}. Native structural and data-flow checks
+need only the \asl{} artifact. \emph{Conservative} native checks report only provable conflicts
+and may miss others---the opposite polarity to the over-approximating, sound data-flow analysis of
+Section~\ref{sec:approach:dataflow}---and therefore warn, except the definite misconfiguration
+\code{SC6003}. Semantic checks verify consistency with supplied premises; they do not prove those
+premises true.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\caption{\tool{}'s eight passes. Native sound checks report errors without annotations;
+conservative checks report warnings except \code{SC6003}; semantic checks are relative to
+supplied facts.}
+\label{tab:passes}
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{2.2cm}
+  >{\raggedright\arraybackslash}p{2.0cm}
+  >{\raggedright\arraybackslash}p{5.0cm}
+  >{\raggedright\arraybackslash}p{2.0cm}@{}}
+\toprule
+\textbf{Pass} & \textbf{Codes} & \textbf{What it catches} & \textbf{Claim} \\
+\midrule
+Structural and annotation hygiene & \code{SC0001--0012} & undefined targets,
+unreachable/dead-end states, non-exhaustive \texttt{Choice}, stale sidecar references &
+well-formedness; \code{SC0007} policy warning \\
+Data-flow provenance & \code{SC1001--1003}, \code{SC1101}, \code{SC1110} & missing-field
+references, binding faults, absent-operand \texttt{Choice} guards (warning) & sound bug finding
+(Thm.~\ref{thm:soundness}) \\
+Concurrency & \code{SC5001--5002} & fan-out branches or iterations overwrite the same external
+resource & conservative warning \\
+Temporal & \code{SC6001--6003} & unbounded callback, retry budget past timeout,
+heartbeat\,$\geq$\,timeout & conservative; \code{SC6003} error \\
+Typed contract & \code{SC1010} & successor requires a field its immediate predecessor does not
+produce & declared-tier precise (Prop.~\ref{prop:typecheck}) \\
+Typestate & \code{SC2001--2002} & out-of-order task composition or illegal protocol edge &
+declared-tier precise (Prop.~\ref{prop:typecheck}) \\
+Retry-safety & \code{SC3001} & broad retry of a non-idempotent task & relative to idempotency
+premise \\
+Saga compensation & \code{SC4001--4002}, \code{SC4010--4011} & missing/incomplete
+compensation for persistent effects & relative to declared model (Thm.~\ref{thm:saga}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The IR itself is a recursive graph of named states with a designated start. Each state records its
+\asl{} kind, normal successors, \texttt{Catch} edges, the five-stage I/O pipeline, retry and
+timeout controls, JSONPath-vs-JSONata mode, nested \texttt{Map}/\texttt{Parallel} sub-machines, and
+the annotation slot. This is enough for every pass; surface syntax stays in the front ends.
+
+\subsection{Native Data-Flow Verification}
+\label{sec:approach:dataflow}
+
+The native layer is a sound bug finder, not a complete verifier. If \tool{} reports \code{SC1101},
+the referenced field is absent on every execution reaching that read. If it is silent, the field may
+still be absent for some inputs hidden behind $\top$. This is the right direction for a raw-artifact
+checker facing arbitrary input and opaque task results.
+
+The analysis tracks \emph{document and variable shapes}: either $\top$ (opaque: any field may be
+present) or a finite record of fields that may occur. Joins union keys, with $\top$ absorbing; a
+path is definitely absent when record descent reaches a missing key before $\top$. The transfer
+functions mirror the \asl{} I/O pipeline: \texttt{InputPath}/\texttt{OutputPath} re-root the shape,
+\texttt{Parameters}/\texttt{ItemSelector} constructors bind static fields and checked \texttt{.\$}
+reads, opaque task results become $\top$, \texttt{ResultPath} merges into raw input preserving
+siblings, \texttt{Assign} updates workflow-variable shapes, and \texttt{Catch} edges merge an opaque
+error object. For JSONata, \tool{} models direct \texttt{\$states.input}, \texttt{\$states.result},
+and \texttt{\$var} references plus object-valued \texttt{Output}/\texttt{Assign}/\texttt{Arguments}
+fragments; unsupported expressions project to $\top$ and do not produce \code{SC1101}.
+
+A forward iteration joins shapes along normal and \texttt{Catch} edges. Cycles can re-embed a
+sub-document under a \texttt{ResultPath} and grow record depth without changing the key set, so
+\tool{} applies depth-$k$ widening after every propagation step: any record nested deeper than $k$
+(the implementation uses $k=12$) is replaced by $\top$. Widening is conservative---it can hide a
+bug behind opacity, but it cannot manufacture a definite absence. With a finite key universe and
+bounded record depth, the lattice has finite height on every workflow topology. The implementation
+uses $|\mathit{states}|\times(|\mathit{keys}|+2)\times(k+1)+2$ rounds as a safety bound and
+telemetry denominator; if a bug ever exceeded it, all known entries would be lifted to $\top$ before
+checking rather than reported from an under-approximation.
+
+In practice the bound is not approached: across the 193 AWS, 66 CNCF, and two DSL workflows, all
+790 data-flow fixpoints converge, with a maximum of 7 rounds and a worst observed bound utilization
+of 2/54 (3.7\%).
+
+Figure~\ref{fig:intro} marks the first ASL task, \texttt{Reserve Flight}, reading
+\texttt{\$.flightTable} and \texttt{\$.outboundFlightId} through \texttt{Parameters}; in the upstream
+template, those fields come from the AppSync resolver's execution payload. With a generated or
+declared entry schema, omitting either field is a definite missing-field fault; with raw \asl{} input
+alone, the initial document is $\top$ and the native pass stays silent. Loops use the same
+abstraction: a state with a back-edge joins the pre-loop and loop-carried shapes, so \code{SC1101}
+fires downstream only when \emph{no} iteration can produce the read field.
+
+\begin{theorem}[Sound bug reports for missing-field references]\label{thm:soundness}
+Under the modeled JSONPath/JSONata document-and-variable semantics, if \tool{} reports
+\code{SC1101} for a path $p$ at state $s$, then every concrete execution reaching $s$ lacks $p$ in
+the document or variable selected by that read site, so the \asl{} runtime fails that reference. In
+the native tier this holds for arbitrary execution input; in the typed tier it holds relative to the
+closed-world reading of declared input schemas and, when result-shape modeling is enabled, declared
+task-output schemas and fixed AWS service-result envelopes. Expressions outside the modeled fragment
+lift to $\top$ and are therefore silent.
+\end{theorem}
+
+\paragraph{Proof.}
+Let $\gamma$ map each abstract document/variable shape to the concrete JSON values it may denote,
+with $\top$ denoting all values and records denoting exactly their listed keys. Each transfer
+function over-approximates the corresponding \asl{} operation: constructors build closed records;
+opaque tasks, arrays, unsupported selectors, and unsupported JSONata expressions lift to $\top$;
+\texttt{ResultPath} and \texttt{Catch} place over-approximating shapes into the raw input; and
+\texttt{InputPath}/\texttt{OutputPath} either navigate inside the current abstraction or return
+$\top$ for unmodeled selection. Joins are least upper bounds, and depth-$k$ widening is extensive
+because replacing a sub-record by $\top$ only enlarges $\gamma$. Therefore the forward iteration
+computes a post-fixpoint that over-approximates every concrete environment reaching each state,
+including loop iterations. If lookup of $p$ at the relevant read site reaches a missing key before
+$\top$, then no concrete value in $\gamma$ contains that path. The modeled \asl{} read therefore
+raises the runtime missing-reference error. Inputs and task results treated by declared schemas are
+closed-world premises; expressions outside the modeled fragment reach $\top$ and cannot trigger the
+premise of the theorem. \qed
+
+\code{SC1110} applies the same definite-absence judgment
+to \texttt{Choice} guards but stays a warning outside Theorem~\ref{thm:soundness}: rule
+reachability depends on earlier guards such as \texttt{IsPresent}, so it marks a provably dead or
+risky branch rather than an unconditional runtime fault.
+
+\subsection{Concurrency and Temporal Analyses}
+\label{sec:approach:conservative}
+
+The two remaining native passes are conservative engineering checks. \texttt{Parallel} branches
+and concurrent \texttt{Map} iterations receive document copies, so only external resources can
+race. \tool{} records statically known resource keys (\texttt{TableName}, \texttt{QueueUrl},
+\texttt{Bucket}, and other named targets; full list in the technical report). It emits \code{SC5001}
+only for provably overwriting operations---\texttt{PutItem}/\texttt{PutObject} and statically named
+\texttt{states:startExecution} collisions---leaving keyed, append-only, and compute-only operations
+silent.
+
+The temporal pass checks resilience knobs the platform does not cross-check. \code{SC6001} warns
+when a callback or Activity task lacks a timeout or heartbeat and can wait to the platform maximum.
+\code{SC6002} warns when a retry budget can exceed the machine timeout. \code{SC6003} errors on the
+definite misconfiguration \texttt{HeartbeatSeconds}\,$\geq$\,\texttt{TimeoutSeconds}.
+
+\subsection{Semantic Verification}
+\label{sec:approach:types}
+
+The semantic layer consumes task facts \asl{} does not contain: a contract $T:A\rightarrow B$
+(fields consumed and produced), a typestate transition
+$s_{\mathrm{in}}^T\rightarrow s_{\mathrm{out}}^T$ in protocol $\delta$, idempotency (whether a retry
+repeats an external effect), and persistence with an optional compensator. These are premises
+(Section~\ref{sec:approach:annot}); \tool{} checks the workflow relative to them.
+
+\begin{proposition}[Declared-tier consistency]\label{prop:typecheck}
+For a fully declared workflow $W$, \code{SC1010}/\code{SC2001}/\code{SC2002} emit no finding iff
+every normal-flow task adjacency $T_1\to T_2$ satisfies
+$\mathit{in}(T_2)\subseteq\mathit{out}(T_1)$ and
+$s_{\mathrm{out}}^{T_1}=s_{\mathrm{in}}^{T_2}$, and every task transition belongs to the declared
+protocol $\delta$. On the series-parallel fragment, this edge condition is equivalent to a standard
+field/typestate typing judgment. Completeness is relative to the supplied annotations.
+\end{proposition}
+
+Here $\mathit{out}(T_1)$ is $T_1$'s declared output set---including fields it forwards, not only
+those it computes---and $\mathit{in}(T_2)$ is $T_2$'s declared input set; under this closed-world
+convention the edge-local check does not false-positive on a field merged upstream and passed
+through. The checks are edge-local: a ship-before-pay reordering in the order workflow yields
+typestate mismatches plus field-contract misses. Retry-safety is likewise premise-relative: a broad
+\texttt{States.ALL}/\texttt{States.TaskFailed} retry of a task declared non-idempotent is
+\code{SC3001}, while retries narrowed to specific transient classes are left alone.
+
+Compensation is about downstream error flow. Per-task checks (\code{SC4001}/\code{SC4010}) can see
+that a persistent task has no compensating path, but they miss a later state failing after the
+effect has committed. For a declared persistent task $P$ with compensator $C$, \code{SC4011} scans
+the post-commit region reachable from $P$ before $C$ and asks whether every fallible state's generic
+failure routes through a broad \texttt{Catch} to $C$, and whether no normal path reaches
+\texttt{Fail} while bypassing $C$.
+
+The declared Saga model assumes a single post-commit fault, feasible normal paths, a unique generic
+catcher for \texttt{States.TaskFailed}, and linear handlers whose reachability to $C$ means
+execution of $C$. These assumptions exclude failing compensators and branching recovery handlers.
+\begin{theorem}[Relative soundness and completeness of the compensation check]\label{thm:saga}
+For a workflow with declared persistence and compensators, under the declared Saga model,
+\code{SC4011} emits no finding for persistent task $P$ with compensator $C$ iff every modeled
+post-commit failure after $P$ executes $C$. Thus \code{SC4011} is sound and complete relative to
+the declared model.
+\end{theorem}
+Outside these assumptions, \code{SC4011} remains a reachability check but is no longer sound or
+complete. The model-independent \code{SC4001}/\code{SC4010} checks still flag any persistent effect
+with no compensating path. Coverage therefore degrades to the per-task tier rather than going
+silent; the built-in and corpus sagas satisfy the assumptions.
+
+\subsection{Recovering Workflow Semantics}
+\label{sec:approach:annot}
+\label{sec:approach:infer}
+
+Declared facts enter through a sidecar for existing \asl{} or the typed DSL for greenfield workflows;
+once declared they support error-level findings, and where absent the declared-tier checks are
+silent.
+
+\begin{lstlisting}[style=base,caption={A sidecar annotation (TOML), excerpt.},label={lst:sidecar}]
+[tasks."Reserve Booking"]
+idempotent = false
+persistent = true
+compensation = "Cancel Booking"
+state_in = "SeatReserved"
+state_out = "BookingReserved"
+\end{lstlisting}
+
+The booking saga's complete sidecar is 69 lines of TOML---about eight per-task lines over four
+tasks, plus shared schema and protocol blocks---and the typed DSL emits the same facts by
+construction.
+Optional inference gives existing repositories a zero-effort warning mode: read-like names imply
+idempotent, write-like non-idempotent, resource-acquiring persistent, and notifications
+non-idempotent but not persistent; with no signal it abstains, and explicit annotations override it.
+Stale sidecar and schema references are caught syntactically (\code{SC0011}/\code{SC0012}). The
+residual risk, semantic drift between a declared premise and the deployed Lambda, is outside
+\tool{}'s scope; generating the sidecar from code or IaC keeps declared facts in sync.

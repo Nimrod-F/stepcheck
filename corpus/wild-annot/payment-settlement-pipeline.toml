@@ -1,0 +1,21 @@
+# Faithful sidecar for the independent payment-settlement pipeline
+# (Thrubit/payment-settlement-workflow). Declares the business facts ASL omits:
+# a payment authorization and a settlement are DURABLE money-moving effects that
+# must be reversed if a later step fails (classic Saga). No compensator exists in
+# the workflow, so the declared tier reports the missing reversals as errors.
+
+[tasks.AuthorizePayment]
+idempotent = false
+persistent = true
+state_in = "PaymentValidated"
+state_out = "PaymentAuthorized"
+
+[tasks.SettlePayment]
+idempotent = false
+persistent = true
+state_in = "PaymentAuthorized"
+state_out = "PaymentSettled"
+
+[tasks.FlagFraudulentPayment]
+idempotent = false
+persistent = true

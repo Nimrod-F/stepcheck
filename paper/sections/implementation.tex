@@ -1,79 +1,102 @@
 \section{Implementation}
 \label{sec:impl}
 
-\tool{} is implemented in Rust as a single command-line tool, \texttt{stepcheck}
-(4{,}394 lines). We chose Rust deliberately: a standalone
-analyzer with a \texttt{serde}-based parser is what makes it possible to ingest the
-\emph{existing} \asl{} JSON found in real repositories ---rather than only workflows
-authored in a new embedded language--- and it yields a single dependency-light binary
-with predictable, sub-millisecond performance.
+The framework of Section~\ref{sec:approach} is realised directly as \texttt{stepcheck}, a single
+dependency-light Rust command-line tool of \textbf{6{,}728} source lines (excluding a 900-line test
+suite) that follows the pipeline of
+Figure~\ref{fig:arch-detail}, covering eight analysis passes, four front ends, the \asl{}
+emitter, and the self-validation tooling.
 
-\subsection{A modular frontend/pass pipeline}
+Table~\ref{tab:sccodes} maps each diagnostic family to its defect class, default severity,
+\emph{soundness tier}, and required premise. This is the reader's lookup table: it separates
+must-fix errors from warning-level adoption checks, and proven native facts from declared or advisory
+premises.
 
-Extensibility rests on two traits (Listing~\ref{lst:traits}): a \texttt{Frontend}
-lowers a surface syntax to the IR, a \texttt{Pass} reads only the IR and writes
-diagnostics. Adding an input format is a new \texttt{Frontend}; a check, a new
-\texttt{Pass}. We exercised this directly---the tool ships three frontends (typed DSL,
-raw \asl, CNCF~\cite{cncfServerlessWorkflow}), the last added \emph{without changing the
-IR or any pass} (Section~\ref{sec:eval:cncf}).
-
-\begin{lstlisting}[style=rust,caption={The two extension points.},label={lst:traits}]
-pub trait Frontend { fn load(&self, src: &str) -> Result<Workflow>; }
-
-pub trait Pass {
-    fn id(&self) -> &'static str;
-    fn run(&self, wf: &Workflow, sink: &mut DiagnosticSink);
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{Diagnostic codes by class, severity, and soundness tier. \emph{Sound}: no false positives under the
+stated premise (Theorem~\ref{thm:soundness}). \emph{Conservative}: a heuristic that abstains rather
+than over-reports. \emph{Declared}: exact relative to supplied annotations. \emph{Advisory}:
+inference-driven, non-blocking adoption aid (Section~\ref{sec:eval:wild}). Mixed severities mean the
+family contains both blocking errors and non-blocking warnings.}
+\label{tab:sccodes}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Code(s) & Class & Severity & Tier & Required premise \\
+\midrule
+\code{SC0001}--\code{SC0010} & structural well-formedness & error/warn & sound & --- \\
+\code{SC0011}/\code{SC0012} & sidecar consistency & error & declared & supplied sidecar \\
+\code{SC1001}--\code{SC1003} & native data binding & error/warn & sound & valid ASL grammar \\
+\code{SC1101}/\code{SC1110} & data-flow field provenance & error/warn & sound & modeled fragment (else $\top$) \\
+\code{SC1010}/\code{SC2001}/\code{SC2002} & contracts / typestate & error & declared & declared schemas/protocol \\
+\code{SC5001}--\code{SC5003} & concurrency interference & warning & conservative & static resource/child key \\
+\code{SC6001}--\code{SC6003} & temporal bounds & error/warn & sound & declared bounds \\
+\code{SC4002}/\code{SC4011} & declared saga consistency & error & declared & declared compensator \\
+\code{SC3001}/\code{SC4001}/\code{SC4010} & retry / compensation & error/warn & advisory/declared & inferred or declared effects \\
+\bottomrule
+\end{tabular}
 }
-\end{lstlisting}
+\end{table}
 
-\subsection{Components}
+Two small extension interfaces realise the architecture: a \texttt{Frontend} lowers an input
+format to the IR, and a \texttt{Pass} analyses that IR and emits diagnostics. Behind them sit the
+typed DSL, raw \asl{}, CNCF Serverless Workflow~\cite{cncfServerlessWorkflow}, and a
+\textbf{CloudFormation / SAM / CDK} front end; all share the same IR and pass implementations
+(Section~\ref{sec:eval:cncf}). The raw-\asl{} front end lowers
+generic JSON with a stack-growing deserializer, parsing all 193 corpus workflows and the
+nested-\texttt{Map} stress cases without error.
 
-The \textbf{workflow IR} is a format-agnostic graph of states
-(\texttt{Task}, \texttt{Choice}, \texttt{Parallel}, \texttt{Map}, \texttt{Wait},
-\texttt{Pass}, \texttt{Succeed}, \texttt{Fail}) with control flow, JSONPath data-flow
-fields, retry/catch policies, nested sub-machines, and a slot for resolved annotations.
-The \textbf{\asl{} frontend} lowers from a generic \texttt{serde\_json} value rather than
-rigid structs---so the diversity of real \asl{} (intrinsics, \texttt{.\$} parameters,
-the \texttt{\$\$} context, SAM \texttt{\$\{\}} placeholders, classic \texttt{Iterator}
-vs.\ distributed \texttt{ItemProcessor}, JSONata) never causes a hard failure---and
-parses all 193 corpus workflows without error. \textbf{Annotation resolution} loads a
-TOML sidecar, resolves schema names to field sets, and fills gaps with the heuristic of
-Section~\ref{sec:approach:infer}. The \textbf{passes and diagnostics} implement the eight
-analyses plus an engine that renders findings for a terminal or as JSON; the data-flow
-pass is the largest at $\approx$400 lines (the shape lattice, transfer functions, and
-control-flow fixpoint), the rest a few dozen lines each. The
-\textbf{\asl{} emitter} lowers a verified IR back to deployable \asl{} JSON; it is the
-DSL frontend's code-generator and the basis of the AWS round-trip
-(Section~\ref{sec:eval})---deploying its output surfaced (and we fixed) a real bug where
-an explicit \texttt{End} was emitted on \texttt{Succeed}/\texttt{Fail} states, which
-Step Functions rejects. The emitter faithfully reproduces control flow, retries,
-catches, and per-state timeouts; it is currently \emph{lossy} for a workflow's pure
-I/O-processing fields (it does not re-emit \texttt{InputPath}/\texttt{OutputPath}/%
-\texttt{ResultSelector} or the machine-level \texttt{TimeoutSeconds}). The round-trip
-deploys a DSL-authored workflow that uses none of those fields, so the deployed machine
-is behaviourally equivalent; full-fidelity emission for arbitrary ingested \asl{} is a
-small extension we note rather than claim.
+\paragraph{Running on the deployment artifact.}
+A serverless team rarely commits a standalone \asl{} file: the state machine lives inside a
+CloudFormation or SAM template (a \texttt{DefinitionString} with \texttt{!Sub}/\texttt{!GetAtt}
+intrinsics) or is generated by CDK. The CloudFormation front end reads such a template---or a
+\texttt{cdk synth} output template---directly: it finds every
+\texttt{AWS::StepFunctions::StateMachine}, resolves the intrinsics (keeping the AWS pseudo-parameters
+exact so service-integration ARNs survive, mapping resource references to placeholder ARNs), follows
+local \texttt{DefinitionUri} references, and lowers each machine to the same IR.
+\texttt{stepcheck check template.yaml} and
+\texttt{stepcheck check cdk.out/Stack.template.json} therefore work with no manual extraction, which
+makes the build-time gate (Section~\ref{sec:eval:industrial}) a drop-in check on the deployed
+artifact rather than on a separately prepared definition.
 
-\paragraph{Execution oracle.}
-An independent \emph{execution oracle} (\texttt{concrete.rs}) re-interprets a workflow
-concretely---enumerating the document along each acyclic path, with opaque task results
-modelled explicitly---and cross-checks every data-flow finding against this second,
-code-disjoint implementation (Section~\ref{sec:eval:dataflow}). It witnesses the
-soundness theorem by agreement between two independent algorithms.
+\paragraph{Running the verifier.}
+\tool{} is a single self-contained binary, packaged for \texttt{crates.io} and \texttt{npm}
+(packaging details in the technical report). A developer runs \texttt{stepcheck check workflow.json}
+on an existing definition; \texttt{--infer} lights up the semantic checks from name and resource
+conventions, \texttt{--annot sidecar.toml} supplies declared schemas/protocol/effects
+(Section~\ref{sec:approach:annot}), and \texttt{--result-shapes} enables closed output records for
+declared task results and common AWS service envelopes. Findings render for a terminal or, with
+\texttt{--json}, as a stable machine record (code, severity, state, message, remediation).
 
-\paragraph{CLI and error injection.}
-\texttt{stepcheck} exposes \texttt{check}, \texttt{infer}, \texttt{scan},
-\texttt{stats}, \texttt{eval}, \texttt{oracle}, \texttt{eval-pairs}, \texttt{mutate}, and
-\texttt{demo} (the last emits the built-in typed-DSL example to \asl{}). The
-\texttt{eval-pairs} command drives the real-bug benchmark (pre-fix/post-fix replay);
-\texttt{oracle} runs the soundness cross-check above. The \texttt{mutate} command injects exactly one
-defect of a chosen class into a workflow---a broken JSONPath binding, a reference
-redirected to an absent field (data-flow), a broad retry on a non-idempotent task, a
-removed compensation, a dangling transition, two \texttt{Parallel} branches made to
-write one resource, or a heartbeat~$\geq$~timeout---and re-emits deployable \asl{}; it
-drives the mutation study of Section~\ref{sec:eval}.
+By default the exit status is \texttt{0} (clean), \texttt{1} (any \emph{error}), or \texttt{2}
+(parse failure). The \emph{recommended CI policy} fails a build on errors---the sound native and
+declared-tier findings---while leaving \emph{inferred warnings} non-blocking. This lets a repository
+adopt \tool{} without triaging heuristic findings up front. \texttt{--deny-warnings} tightens the
+gate once a repository wants warnings to block. The artifact ships a runnable GitHub Actions gate
+(\texttt{.github/workflows/gate.yml}) that enforces this policy on every push/PR and self-tests, via
+an injected defect, that the gate actually blocks it.
 
-The \textbf{4{,}394} lines divide as: workflow IR 323; three frontends (\asl{}
-parse/emit, typed DSL, CNCF) 766; annotations\,+\,inference 275; the eight analysis
-passes\,+\,manager 1{,}615; diagnostics 115; the execution oracle 269; mutation engine
-316; and CLI\,+\,statistics\,+\,evaluation\,+\,oracle harness 715.
+Nothing else is deployed: the check reads the ingested \asl{} and never re-emits it, so raw-\asl{}
+verification is entirely independent of the emitter.
+
+The remaining components validate the verifier itself. First, a data-flow certificate checker
+recomputes the widened invariant and checks finite proof obligations: the start invariant, every
+normal/catch transfer as a post-fixpoint condition, and every emitted \code{SC1101} as a definite
+absence query in that invariant. This discharges loops by induction over the fixpoint rather than by
+bounded unrolling (Section~\ref{sec:eval:dataflow}). Second, a code-disjoint execution oracle
+re-interprets a workflow concretely along bounded loop-unrolled paths and cross-checks the same
+conclusion; this is an empirical differential check in the sense of test oracles and translation
+validation~\cite{oracleproblem,difftestanalyzers,translationvalidation}, not the proof itself.
+A mutation command injects one defect of a chosen class and re-emits deployable \asl{} for the study
+in Section~\ref{sec:eval}.
+
+\paragraph{Implementation limitations.}
+Distributed \texttt{Map} item contexts are modelled coarsely. The \asl{} emitter---used as the
+DSL's code generator and in evaluation harnesses---now carries uninterpreted \asl{} fields through
+the IR. Round-tripping 193 workflows preserves $100\%$ of states and all measured I/O-processing
+fields (including JSONPath, JSONata, and Map item-selection fields), gives exact \asl{}-object
+equality for $99.5\%$ of workflows, and leaves \texttt{emit} idempotent on all 193
+(Section~\ref{sec:eval:roundtrip}). This is an \asl{} round-trip guarantee; deployment wrappers such
+as CloudFormation metadata remain outside the emitter.

@@ -1,0 +1,46 @@
+{
+  "Comment": "testfailedmap ",
+  "Type": "statemachine",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "Default": {},
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Resource": "activity:unittest/add",
+      "Parameters": {
+        "x": 1,
+        "y": 2
+      },
+      "ResultPath": "$.z",
+      "Next": "M1"
+    },
+    "M1": {
+      "Type": "Map",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.shipped",
+      "MaxConcurrency": 2,
+      "Iterator": {
+        "StartAt": "MS1",
+        "States": {
+          "MS1": {
+            "Type": "Task",
+            "Resource": "activity:unittest/add",
+            "Parameters": {
+              "x": 3,
+              "y": 4
+            },
+            "Next": "MS2"
+          },
+          "MS2": {
+            "Type": "Task",
+            "Resource": "activity:unittest/returnfailed",
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.detail.shipped",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,1144 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{microtype}
+\setlength{\emergencystretch}{3em}
+
+% ---- shared macros (mirroring the main paper) --------------------------
+\newcommand{\code}[1]{\textsf{\small #1}}
+\newcommand{\tool}{\textsc{StepCheck}}
+\newcommand{\asl}{\textsc{Asl}}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\Obj}{\mathsf{Obj}}
+\newcommand{\narrow}{\mathit{narrow}}
+\newcommand{\place}{\mathit{place}}
+\newcommand{\eff}{\mathit{eff}}
+\newcommand{\Env}{\mathcal{E}}
+\newcommand{\jval}{\mathit{jval}}
+\newcommand{\jout}{\mathit{jout}}
+\newcommand{\bind}{\mathit{bind}}
+\newcommand{\asgn}{\mathit{asgn}}
+% double square brackets without depending on stmaryrd
+\providecommand{\llbracket}{\mathopen{[\![}}
+\providecommand{\rrbracket}{\mathclose{]\!]}}
+
+% ---- colours / listings -----------------------------------------------
+\definecolor{kw}{RGB}{0,86,179}
+\definecolor{cmt}{RGB}{0,128,0}
+\definecolor{bg}{RGB}{248,248,248}
+\definecolor{rule}{RGB}{120,120,120}
+\lstdefinestyle{pseudo}{
+  basicstyle=\ttfamily\small, backgroundcolor=\color{bg},
+  frame=single, framesep=4pt, rulecolor=\color{rule!40},
+  breaklines=true, columns=fullflexible, keepspaces=true,
+  showstringspaces=false, xleftmargin=4pt, xrightmargin=4pt,
+  commentstyle=\color{cmt}\itshape, keywordstyle=\color{kw}\bfseries,
+  morekeywords={for,each,if,then,else,return,while,in,and,or,not,fire,let,do,foreach},
+}
+
+% ---- theorem environments ---------------------------------------------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{\textbf{Static Verification of AWS Step Functions with Sound
+Data-Flow Analysis and Workflow Semantics}\\[4pt]\large Technical Report:
+Formal Development and Proofs}
+\author{Anonymous Author(s)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This technical report is the formal companion to the paper \emph{Static Verification of
+AWS Step Functions with Sound Data-Flow Analysis and Workflow Semantics}~\cite{stepcheck},
+which presents \tool, a static verifier for the Amazon States Language (\asl). The paper
+states three guarantees and gives their intuition; here we give the complete development
+behind them: the abstract interpretation underlying the sound data-flow provenance analysis
+(domain, concretization, transfer functions, fixpoint, and the termination/convergence
+guard), the workflow type discipline for contracts and typestate, and the downstream-aware
+Saga-compensation check, with full proofs of all three theorems. Theorems~1--3 below are
+numbered to match Theorems~1--3 of the main paper. We also give the \code{SC4011} algorithm
+in full and note the conservative basis of the concurrency and temporal analyses. Section
+and code references (e.g.\ \code{SC1101}) follow the main paper; this report is released with
+the artifact and is self-contained with respect to the formal development, deferring only
+the empirical material (the execution oracle and the evaluation) to the main paper.
+\end{abstract}
+
+\tableofcontents
+
+\section{Scope and relation to the main paper}
+\label{sec:scope}
+
+The main paper keeps theorem statements and one-paragraph intuitions inline and defers their
+proofs and the supporting formalism here, so the body stays within venue limits. This report
+adds nothing to the claims; it discharges them.
+
+We assume the \asl{} data plane as fixed in the paper's background~\cite{awsasl}. A workflow
+is a state machine over eight state types (\texttt{Task}, \texttt{Choice}, \texttt{Parallel},
+\texttt{Map}, \texttt{Wait}, \texttt{Pass}, \texttt{Succeed}, \texttt{Fail}). A single JSON
+document is threaded between states and reshaped by the five-stage I/O pipeline
+\texttt{InputPath}\,$\to$\,\texttt{Parameters}/\texttt{ItemSelector}\,$\to$\,%
+\texttt{ResultSelector}\,$\to$\,\texttt{ResultPath}\,$\to$\,\texttt{OutputPath}. A
+\texttt{.\$} field reference reads a JSONPath~\cite{jsonpath} into the current document, and
+the runtime \emph{fails} the execution if such a reference resolves to an absent field.
+
+The development below is faithful to the implementation (module \texttt{passes/dataflow.rs}
+for Section~\ref{sec:tr:df}, \texttt{passes/contract.rs} and \texttt{passes/typestate.rs} for
+Section~\ref{sec:tr:types}, and \texttt{passes/compensation.rs} for
+Section~\ref{sec:tr:saga}); the execution oracle (\texttt{concrete.rs}) that empirically
+witnesses Theorem~\ref{thm:soundness} is described in the main paper. Nested machines
+(\texttt{Map} iterators and \texttt{Parallel} branches) are treated in
+Remark~\ref{rmk:nested}.
+
+Table~\ref{tab:tr:facts} records, for each fact a check needs, whether \asl{} exposes it
+natively and where \tool{} obtains it otherwise (summarized in prose in the main paper's
+background section).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{4.6cm}p{2.4cm}p{5.6cm}@{}}
+\toprule
+\textbf{Fact a check needs} & \textbf{In \asl{}?} & \textbf{Source in \tool{}} \\
+\midrule
+Control flow and terminals & yes & native structural pass \\
+JSONPath data movement & yes & native data-flow pass \\
+Contracts and typestate & no & sidecar / DSL / schema metadata \\
+Idempotency, persistence, compensator & no & declared premises; optional warning inference \\
+Shared resources and time bounds & partial & conservative native passes \\
+\bottomrule
+\end{tabular}
+\caption{Facts needed by \tool{} and where they come from.}
+\label{tab:tr:facts}
+\end{table}
+
+\section{The data-flow abstract interpretation}
+\label{sec:tr:df}
+
+The provenance analysis is a forward abstract interpretation~\cite{cousot1977} over a lattice of
+JSON \emph{document and variable shapes}: it over-approximates, at each state, the document and
+workflow-variable store with which the state may be entered, and flags a reference that is absent on
+every such environment.
+
+\subsection{The concrete property}
+
+Fix a workflow with state set $S$. A concrete execution threads a JSON document \emph{and} a store
+of workflow variables (written by \texttt{Assign}); write $\mathcal{D}$ for the set of JSON values.
+For a state $s$, let $\llbracket s\rrbracket$ be the set of \emph{environments}---a document paired
+with a variable store---with which $s$ is entered over all executions that reach $s$. A path
+$p=k_1.k_2.\dots.k_m$ is \emph{present} in a JSON value $d$ if $d$ is an object with key $k_1$ whose
+value has $k_2$, and so on to $k_m$; otherwise $p$ is \emph{absent}. Each read site selects one
+source---the document, or, for a \texttt{\$}\emph{name} reference, the variable store. The analysis
+answers a single question soundly: \emph{is the read path $p$ absent in that selected source on every
+environment in $\llbracket s\rrbracket$?} If so, the reference evaluated at $s$ fails on every
+execution (a JSONPath path-not-found, an unresolved variable, or a JSONata
+\texttt{States.QueryEvaluationError}), and \tool{} reports \code{SC1101}.
+
+\subsection{Abstract domain}
+
+A \emph{document shape} abstracts a set of documents by the field paths that \emph{may} be
+present.
+
+\begin{definition}[Shapes]
+The set of shapes $\Sigma$ is generated by
+\[
+  \sigma \;::=\; \top \;\mid\; \Obj\,r, \qquad r : \mathit{Key}\rightharpoonup\Sigma
+  \text{ a finite partial map.}
+\]
+$\top$ is opaque (any field may be present). $\Obj\,r$ constrains an object to the keys in
+$\dom(r)$: every top-level key that \emph{may} occur is listed, so a key outside $\dom(r)$ is
+present on no represented \emph{object}. The abstraction functions send a scalar to
+$\Obj\,\emptyset$ (no fields) and an array to $\top$ (its elements are unconstrained); this is
+a choice of the abstraction, not a claim that $\gamma(\Obj\,r)$ contains only objects---indeed
+$\gamma(\Obj\,r)$ admits every non-object (Definition~\ref{def:gamma}), so $\Obj\,r$ is a
+constraint on the object case alone.
+\end{definition}
+
+\begin{definition}[Order and join]
+The join $\sqcup$ is
+\[
+  \top\sqcup\sigma=\sigma\sqcup\top=\top,\qquad
+  \Obj\,r_1 \sqcup \Obj\,r_2 = \Obj\,r,\ \
+  \dom(r)=\dom(r_1)\cup\dom(r_2),
+\]
+where $r(k)=r_1(k)\sqcup r_2(k)$ if $k\in\dom(r_1)\cap\dom(r_2)$, and $r(k)=r_i(k)$ if $k$
+occurs only in $r_i$. The induced order is $\sigma_1\sqsubseteq\sigma_2 \iff
+\sigma_1\sqcup\sigma_2=\sigma_2$; equivalently $\sigma\sqsubseteq\top$ for all $\sigma$, and
+$\Obj\,r_1\sqsubseteq\Obj\,r_2$ iff $\dom(r_1)\subseteq\dom(r_2)$ and
+$r_1(k)\sqsubseteq r_2(k)$ for all $k\in\dom(r_1)$.
+\end{definition}
+
+\noindent Intuitively a shape is \emph{higher} when it admits \emph{more} documents: $\top$
+is the top, $\Obj\,\emptyset$ the most precise object shape, and the join is the least upper
+bound. The join is exactly the key-union of the implementation (clone the left record, then
+for each key of the right record join or insert).
+
+\begin{definition}[Definite absence]
+A path $p=k_1.\dots.k_m$ is \emph{definitely absent} in $\sigma$ if descending $\sigma$ by
+$k_1,\dots$ reaches some $\Obj\,r$ with $k_i\notin\dom(r)$ \emph{before} encountering $\top$.
+Descent stops at $\top$: a path under $\top$ is never definitely absent.
+\end{definition}
+
+\subsection{Concretization}
+
+\begin{definition}[Concretization $\gamma$]\label{def:gamma}
+$\gamma:\Sigma\to\mathcal{P}(\mathcal{D})$ is
+\[
+  \gamma(\top)=\mathcal{D},\qquad
+  \gamma(\Obj\,r)=\bigl\{\,d\in\mathcal{D}\ \big|\ d \text{ object} \Rightarrow
+  \forall k\in\mathit{keys}(d).\ k\in\dom(r)\ \wedge\ d(k)\in\gamma(r(k))\,\bigr\}.
+\]
+A non-object $d$ (scalar, array) has no top-level keys, so it lies in $\gamma(\Obj\,r)$ for
+every $r$.
+\end{definition}
+
+\begin{lemma}[Absence is captured]\label{lem:absence}
+If $p$ is definitely absent in $\sigma$, then $p$ is absent in every $d\in\gamma(\sigma)$.
+\end{lemma}
+\begin{proof}
+Induction on $|p|$. If $p=k_1.\dots$ and $\sigma=\Obj\,r$ with $k_1\notin\dom(r)$, then by
+definition of $\gamma$ no $d\in\gamma(\Obj\,r)$ has top-level key $k_1$, so $p$ is absent in
+$d$. Otherwise $k_1\in\dom(r)$ and $k_2.\dots.k_m$ is definitely absent in $r(k_1)$; for any
+$d\in\gamma(\Obj\,r)$, either $d$ lacks $k_1$ (so $p$ absent) or $d(k_1)\in\gamma(r(k_1))$,
+and by the induction hypothesis $k_2.\dots.k_m$ is absent in $d(k_1)$, so $p$ is absent in
+$d$. Definite absence cannot pass through $\top$, so the case $\sigma=\top$ never arises along
+the descent.
+\end{proof}
+
+\begin{lemma}[$\gamma$ is monotone, $\sqcup$ is sound]\label{lem:join}
+$\sigma_1\sqsubseteq\sigma_2\Rightarrow\gamma(\sigma_1)\subseteq\gamma(\sigma_2)$, and
+$\gamma(\sigma_1)\cup\gamma(\sigma_2)\subseteq\gamma(\sigma_1\sqcup\sigma_2)$.
+\end{lemma}
+\begin{proof}
+Monotonicity is by induction on shape structure: if $\sigma_2=\top$ it is immediate; for
+$\Obj\,r_1\sqsubseteq\Obj\,r_2$ we have $\dom(r_1)\subseteq\dom(r_2)$ and
+$r_1(k)\sqsubseteq r_2(k)$, so any $d$ admitted by $\Obj\,r_1$ has $\mathit{keys}(d)\subseteq
+\dom(r_1)\subseteq\dom(r_2)$ and $d(k)\in\gamma(r_1(k))\subseteq\gamma(r_2(k))$ by the
+induction hypothesis. Soundness of $\sqcup$ follows since
+$\sigma_i\sqsubseteq\sigma_1\sqcup\sigma_2$ and $\gamma$ is monotone.
+\end{proof}
+
+\subsection{Environments: document and variables}
+\label{sec:tr:env}
+
+Current \asl{} threads not one but \emph{two} pieces of state: the JSON document and a store of
+workflow \emph{variables}, written by \texttt{Assign} and read as \texttt{\$}\emph{name} (JSONPath
+mode) or as \texttt{\$}\emph{name} inside a \texttt{\{\%\ \%\}} expression (JSONata mode). Because a
+field can now travel through a variable instead of the document, provenance must track the variable
+store to stay sound: a read the analysis cannot see satisfied would otherwise be flagged as a
+missing document field. We abstract the store by a \emph{single} shape---the record whose keys are
+the variable names that may be bound, each mapped to its own shape---drawn from the \emph{same}
+lattice $\Sigma$. An abstract \emph{environment} is then a pair
+\[
+  \Env \;=\; \Sigma \times \Sigma, \qquad e = (\sigma_{\mathrm d},\,\sigma_{\mathrm v}),
+\]
+with document component $\sigma_{\mathrm d}$ and variable-store component $\sigma_{\mathrm v}$.
+Order, join, and concretization are componentwise:
+$(\sigma_{\mathrm d},\sigma_{\mathrm v})\sqsubseteq(\sigma_{\mathrm d}',\sigma_{\mathrm v}')$ iff
+$\sigma_{\mathrm d}\sqsubseteq\sigma_{\mathrm d}'$ and
+$\sigma_{\mathrm v}\sqsubseteq\sigma_{\mathrm v}'$;
+$(\sigma_{\mathrm d},\sigma_{\mathrm v})\sqcup(\sigma_{\mathrm d}',\sigma_{\mathrm v}')=
+(\sigma_{\mathrm d}\sqcup\sigma_{\mathrm d}',\ \sigma_{\mathrm v}\sqcup\sigma_{\mathrm v}')$; and
+\[
+  \gamma_{\Env}(\sigma_{\mathrm d},\sigma_{\mathrm v})=
+  \bigl\{\,(d,\nu)\ \big|\ d\in\gamma(\sigma_{\mathrm d}),\ \nu\in\gamma(\sigma_{\mathrm v})\,\bigr\},
+\]
+a concrete environment $(d,\nu)$ pairing the document $d$ with the variable store $\nu$ (itself a
+JSON object mapping names to values). The empty store $\Obj\,\emptyset$ (no variable bound) seeds
+$\sigma_{\mathrm v}$. Because $\Env$ is a finite product of the finite-height lattice $\Sigma$, it
+is again finite-height, and Lemmas~\ref{lem:absence} and~\ref{lem:join} lift componentwise. All
+transfers below act on environments; one that touches only the document leaves $\sigma_{\mathrm v}$
+unchanged, and \texttt{Assign} touches only $\sigma_{\mathrm v}$.
+
+\subsection{Transfer functions}
+
+Each stage is a monotone function on shapes. We write $\narrow(\sigma,\pi)$ for re-rooting
+along a path expression $\pi$ (used by \texttt{InputPath}/\texttt{OutputPath}),
+$\mathit{ctor}(v)$ for the record built from a constructor value $v$ (used by
+\texttt{Parameters}/\texttt{ItemSelector}/\texttt{ResultSelector}), and
+$\place(\sigma,\rho,\sigma_r)$ for merging a result shape $\sigma_r$ at a
+\texttt{ResultPath} $\rho$.
+
+\paragraph{Re-rooting.}
+Write $\varepsilon$ for the empty (absent) path and $k\!::\!\mathit{rest}$ for the split of a
+path into its first key and remainder. Then $\narrow(\sigma,\varepsilon)=\sigma$ (no path) and
+$\narrow(\sigma,\$)=\sigma$ (the bare root); $\narrow(\sigma,\texttt{null})=\Obj\,\emptyset$,
+sound because \asl{} maps an \texttt{InputPath}/\texttt{OutputPath} of \texttt{null} to the
+empty object $\{\}\in\gamma(\Obj\,\emptyset)$. For a precise member path
+$\pi=k_1.\dots.k_n$---written either in dotted form or quoted-bracket member form---$\narrow$
+descends via $\mathit{nav}$: $\mathit{nav}(\top,\_)=\top$ and
+$\mathit{nav}(\Obj\,r,k\!::\!\mathit{rest})=\mathit{nav}(r(k),\mathit{rest})$ if $k\in\dom(r)$,
+and $=\top$ otherwise (a missing intermediate key yields $\top$, over-approximating). Any path
+outside this member-path fragment (wildcards, filters, functions, array indexes, the \texttt{\$\$}
+context) yields $\top$; a non-string, non-\texttt{null} path value is treated as the identity
+($\narrow(\sigma,\cdot)=\sigma$), a case \asl{} deploy-time validation rejects and which is
+therefore unreachable in practice.
+
+\paragraph{Constructors and literals.}
+Two builders recurse over a JSON value $v$. The \emph{constructor} $\mathit{ctor}(v)$ models a
+payload template (\texttt{Parameters}/\texttt{ItemSelector}/\texttt{ResultSelector}): for an
+object it builds $\Obj\,r$ where a key ``$k$\texttt{.\$}'' contributes $r(k)=\top$ (it
+\emph{reads} an opaque value into field $k$), a static key $k$ contributes
+$r(k)=\mathit{ctor}(v(k))$, a scalar leaf is $\Obj\,\emptyset$, and an array is $\top$. The
+\emph{literal} builder $\mathit{lit}(v)$ models verbatim data (a \texttt{Pass} \texttt{Result}),
+which \asl{} copies uninterpreted: it agrees with $\mathit{ctor}$ \emph{except} that it does no
+\texttt{.\$} stripping---a key literally named ``$k$\texttt{.\$}'' stays a key of that exact
+name. Distinguishing the two is necessary for soundness: for
+\texttt{Result}$=\{$``\texttt{a.\$}''$:v\}$ the concrete document has the top-level key
+``\texttt{a.\$}'', which is \emph{not} in $\dom(\mathit{ctor})=\{a\}$, so $\mathit{ctor}$ would
+under-approximate the key set.
+
+\paragraph{Result and merge.}
+The result shape $\sigma_{\mathit{res}}$ of a state, built from its effective input $\eff$, is:
+$\top$ for an opaque \texttt{Map}/\texttt{Parallel} result and for a \texttt{Task} result with no
+modeled result shape; $\mathit{ctor}(\textsf{ResultSelector})$ when a \texttt{ResultSelector} pins
+it; a closed record when the optional result-shape model supplies a declared task-output contract or
+a fixed AWS service-result envelope; and for a \texttt{Pass}, $\mathit{lit}(\textsf{Result})$ if it
+carries a literal \texttt{Result}, else $\mathit{ctor}(\textsf{Parameters})$ if it carries only
+\texttt{Parameters}, else $\eff$ itself (a bare \texttt{Pass} forwards its effective input
+unchanged). Merging is
+\[
+  \place(\sigma,\rho,\sigma_r)=
+  \begin{cases}
+    \sigma_r & \rho=\textsf{Default}\ \text{or}\ \rho=\$ \quad(\text{result replaces the document}),\\
+    \sigma & \rho=\textsf{Discard}\ (\texttt{null})\quad(\text{result dropped, input kept}),\\
+    \place_{\mathit{in}}(\sigma,\pi,\sigma_r) & \rho=\textsf{Path}(\pi),
+  \end{cases}
+\]
+where $\place_{\mathit{in}}$ descends $\pi$, cloning each record and \emph{preserving
+siblings}, and writes $\sigma_r$ at the leaf; a $\top$ parent stays $\top$, and an
+unparseable $\pi$ yields $\top$. (This is why a field can survive a task that never mentions
+it: a sub-path merge leaves the rest of the document intact.)
+
+\paragraph{Variable assignment.}
+An \texttt{Assign} block updates the variable store, \emph{overwriting} any earlier binding of the
+same name (bindings from distinct control-flow paths are joined only where they merge, at the
+fixpoint). Write $\bind(\sigma_{\mathrm v},k,\sigma)$ for the store that agrees with
+$\sigma_{\mathrm v}$ except that key $k$ maps to $\sigma$ (identity when $\sigma_{\mathrm v}=\top$).
+In JSONPath mode an entry ``$k$\texttt{.\$}''$:\pi$ binds
+$k\mapsto\narrow(\sigma_{\mathrm{src}},\pi)$ and a static entry $k:v$ binds $k\mapsto\mathit{ctor}(v)$,
+where the source shape $\sigma_{\mathrm{src}}$ is the value \asl{} reads an \texttt{Assign} against
+for that state kind---the raw result ($\top$, unless result-shape modeling supplies a task result
+record) for \texttt{Task}, $\top$ for \texttt{Map}/\texttt{Parallel}, the \texttt{Pass} result
+shape, or the effective input $\eff$ for \texttt{Choice}/\texttt{Wait}. In
+JSONata mode an entry $k:v$ binds $k\mapsto\jval(v)$ (below). The whole block $\asgn(\sigma_{\mathrm
+v},\textsf{Assign})$ is the composition of these single-key binds.
+
+\paragraph{JSONata expressions.}
+A JSONata value---a string ``\texttt{\{\%}\,$e$\,\texttt{\%\}}'', or a JSON object/array containing
+such strings---denotes a shape $\jval$ against the current sources: the entry document, the state's
+raw result, an opaque error object, and the variable store, each itself a shape. On the
+\emph{modeled fragment} a \emph{direct reference} \texttt{\$states.input}$.\pi$,
+\texttt{\$states.result}$.\pi$, \texttt{\$states.errorOutput}$.\pi$, or \texttt{\$}\emph{name}$.\pi$
+navigates ($\mathit{nav}$) the corresponding source shape at $\pi$; an \emph{object literal}
+$\{\,\text{'}k_1\text{'}\!:e_1,\dots\}$ builds $\Obj\{k_i\mapsto\jval(e_i)\}$; a surrounding JSON
+object/array recurses into its members. Every other expression---functions such as
+\texttt{\$exists}, filters, arithmetic, string operators, and \texttt{\$states.context}---yields
+$\top$. A modeled read thus resolves against exactly one source shape and an unmodeled one is opaque:
+the JSONata analogue of the simple-path fragment. This is what lets a field move through a variable
+in JSONata mode (\texttt{Assign}$\{k:\text{\{\%}\,\texttt{\$states.input}.\pi\,\text{\%\}}\}$ then a
+later \texttt{\$}$k$ read) without a spurious finding, while still flagging a read of a name no path
+ever assigns.
+
+\paragraph{State transfer and error edges.}
+For a state with entry environment $e=(\sigma_{\mathrm d},\sigma_{\mathrm v})$, the output
+environment $\mathit{out}(e)=(\sigma_{\mathrm d}',\sigma_{\mathrm v}')$ updates both components. The
+variable store becomes $\sigma_{\mathrm v}'=\asgn(\sigma_{\mathrm v},\textsf{Assign})$ (identity when
+the state has no \texttt{Assign}). The document becomes
+\[
+  \sigma_{\mathrm d}'=
+  \begin{cases}
+    \jout(e) & \text{JSONata mode (query state),}\\
+    \narrow\!\bigl(\place(\sigma_{\mathrm d},\rho,\sigma_{\mathit{res}}),\ \textsf{OutputPath}\bigr)
+      & \texttt{Task}/\texttt{Pass}/\texttt{Map}/\texttt{Parallel},\\
+    \narrow(\eff,\ \textsf{OutputPath}) & \text{otherwise,}
+  \end{cases}
+\]
+with $\eff=\narrow(\sigma_{\mathrm d},\textsf{InputPath})$ the \texttt{InputPath}-selected input from
+which the result shape $\sigma_{\mathit{res}}$ is built, and $\rho$ the state's \texttt{ResultPath}.
+The JSONPath result is merged into the \emph{raw} entry document $\sigma_{\mathrm d}$, \emph{not}
+$\eff$---exactly as \asl{} writes \texttt{ResultPath} into the pre-\texttt{InputPath} document, so a
+field the \texttt{InputPath} selection dropped still survives. In JSONata mode the successor document
+is the shape of the state's \texttt{Output}, $\jout(e)=\jval(\textsf{Output})$---an object literal
+closes the successor shape precisely, and a query \texttt{Task} with no \texttt{Output} yields its
+modeled raw-result shape when result-shape modeling is enabled, otherwise $\top$ (as do
+\texttt{Map}/\texttt{Parallel}); \asl{}'s JSONata mode has no \texttt{InputPath}/\texttt{OutputPath}
+to re-root. A \texttt{Catch} edge from entry $e$ propagates
+$\mathit{catch}(e,\rho)=\bigl(\place(\sigma_{\mathrm d},\rho,\top),\ \asgn(\sigma_{\mathrm
+v},\textsf{Catch.Assign})\bigr)$: the error object is opaque ($\top$), merged at the catch's
+\texttt{ResultPath}, and the catcher's own \texttt{Assign} (if any) updates the store. A
+\texttt{Retry} re-executes the same state on the same entry environment, so it leaves entry shapes
+unchanged and the analysis ignores it.
+
+\begin{lemma}[Local soundness]\label{lem:local}
+Writing a subscript $\mathrm{c}$ for the concrete counterpart of each stage, every transfer is
+sound on its own arguments:
+\begin{itemize}
+\item[(re-root)] $d\in\gamma(\sigma)\Rightarrow \narrow_{\mathrm{c}}(d,\pi)\in\gamma(\narrow(\sigma,\pi))$;
+\item[(build)] the concrete payload built over a document $d$ from a template $v$ lies in
+$\gamma(\mathit{ctor}(v))$, and from a literal $v$ in $\gamma(\mathit{lit}(v))$;
+\item[(merge)] $d\in\gamma(\sigma)\wedge d_r\in\gamma(\sigma_r)\Rightarrow
+\place_{\mathrm{c}}(d,\rho,d_r)\in\gamma(\place(\sigma,\rho,\sigma_r))$;
+\item[(jsonata)] if each source value lies in the $\gamma$ of its source shape, the concrete value
+of a JSONata expression $e$ lies in $\gamma(\jval(e))$;
+\item[(assign)] $\nu\in\gamma(\sigma_{\mathrm v})\Rightarrow
+\asgn_{\mathrm c}(\nu,\textsf{Assign})\in\gamma(\asgn(\sigma_{\mathrm v},\textsf{Assign}))$;
+\item[(state/catch)] $(d,\nu)\in\gamma_{\Env}(e)\Rightarrow
+\mathit{out}_{\mathrm{c}}(d,\nu)\in\gamma_{\Env}(\mathit{out}(e))$ and
+$\mathit{catch}_{\mathrm{c}}(d,\nu)\in\gamma_{\Env}(\mathit{catch}(e,\rho))$.
+\end{itemize}
+\end{lemma}
+\begin{proof}
+By cases. \emph{Re-rooting:} if $\sigma=\top$ or $\pi$ is non-simple, $\narrow(\sigma,\pi)=\top$
+and $\gamma(\top)=\mathcal{D}$; for a simple path, $\mathit{nav}$ keeps $d(k)\in\gamma(r(k))$ by
+Definition~\ref{def:gamma}, and a missing intermediate key yields $\top$ (vacuously sound);
+$\narrow(\sigma,\texttt{null})=\Obj\,\emptyset$ is sound because the selected concrete value is
+the empty object $\{\}$, which has no keys and hence lies in $\gamma(\Obj\,\emptyset)$.
+\emph{Constructor:} the concrete payload object has top-level keys exactly the template's keys
+$\subseteq\dom(\mathit{ctor}(v))$; a \texttt{.\$} key binds a runtime-read value in
+$\gamma(\top)$, and a static key's value lies in $\gamma(\mathit{ctor}(v(k)))$ by induction.
+\emph{Literal:} the concrete value is $v$ copied verbatim, whose keys are exactly
+$\dom(\mathit{lit}(v))$---including any literal ``\texttt{.\$}'' key---and each child lies in the
+corresponding $\gamma$ by induction. \emph{Result:} an opaque result lies in $\gamma(\top)$; a
+pinned \texttt{ResultSelector} reduces to the constructor case; a bare \texttt{Pass} forwards
+$\eff$, and $d\in\gamma(\eff)$ by hypothesis. \emph{Merge:} $\rho\in\{\textsf{Default},\$\}$
+replaces, and the concrete output is the result, which lies in $\gamma(\sigma_r)$;
+$\rho=\textsf{Discard}$ keeps the input; for $\rho=\textsf{Path}(\pi)$, $\place_{\mathit{in}}$
+writes $\sigma_r$ at $\pi$ and preserves siblings, matching the concrete merge, and a $\top$
+parent (or unparseable $\pi$) stays $\top$ (sound). \emph{JSONata:} a modeled direct reference
+navigates one source shape and is sound by the re-root case ($\mathit{nav}$ is $\narrow$'s
+descent); an object literal is the constructor case over $\jval$-typed children; every unmodeled
+expression yields $\top$, whose $\gamma$ admits the concrete value. \emph{Assign:} each $\bind$
+replaces one store key by a shape that---by the (build), (jsonata), or (re-root) case---
+over-approximates the concrete bound value while leaving the other keys' admission unchanged, so
+the updated store lies in $\gamma$ of the updated store shape; composing the entries yields
+$\asgn$. \emph{State transfer} pairs the document update (the JSONPath composition above, or
+$\jout$ in JSONata mode) with the variable update $\asgn$; since $\gamma_{\Env}$ is the
+componentwise conjunction, soundness of each component gives soundness of the pair. \emph{Catch}
+places $\top$ (the error object) at $\rho$ in the document---sound since
+$\gamma(\top)=\mathcal{D}$---and applies $\asgn$ for the catcher's \texttt{Assign}.
+\end{proof}
+
+\subsection{The fixpoint}
+
+The analysis maintains a \emph{partial} map $\Phi:S\rightharpoonup\Env$, seeding only the
+start state with $e_0=(\sigma_0,\Obj\,\emptyset)$ (document seed as below, empty variable store);
+a state acquires an environment the first time an edge reaches it, and a state never reached stays
+outside $\dom(\Phi)$ and is read as $(\top,\top)$ at check time (an unreached state constrains
+nothing, and reporting against $\top$ never fires). One \emph{round}
+updates, for every $s\in\dom(\Phi)$ with current entry $\Phi(s)$: for each normal successor
+$t$, $\Phi(t)\leftarrow\Phi(t)\sqcup\mathit{out}(\Phi(s))$ (inserting $\mathit{out}(\Phi(s))$
+when $t\notin\dom(\Phi)$); for each \texttt{Catch} target $u$ with result path $\rho$,
+$\Phi(u)\leftarrow\Phi(u)\sqcup\mathit{catch}(\Phi(s),\rho)$. Updates are in place
+(Gauss--Seidel) in an unspecified state order; the least fixpoint, once reached, is independent
+of that order. Rounds repeat until a round changes nothing.
+
+\begin{lemma}[Widened convergence]\label{lem:term}
+The forward iteration with depth-$k$ widening is monotone and reaches a post-fixpoint on every
+workflow topology. The implementation uses $k=12$ and records the safety bound
+$N=|S|\cdot(\kappa_0+2)\cdot(k+1)+2$ rounds, where $\kappa_0$ is the implementation's key count.
+If the safety bound were exceeded because of an implementation bug, all known entries would be
+lifted to $(\top,\top)$ before checking, preserving soundness by losing precision rather than
+reporting from an under-approximation.
+\end{lemma}
+\begin{proof}
+Every normal or catch-edge update is a join, so each $\Phi(s)$ is non-decreasing
+(Lemma~\ref{lem:join}). Let $\kappa$ be the workflow's finite \emph{key universe}: keys occurring
+in constructors (\texttt{Parameters}, \texttt{Result}, \texttt{ResultSelector},
+\texttt{ItemSelector}), in \texttt{Assign}/\texttt{Arguments}/\texttt{Output} templates or JSONata
+object literals, in declared input or output schemas, and as segments of \texttt{ResultPath} and
+catch \texttt{ResultPath} fields. Define $W_k$ over shapes by replacing every record nested deeper
+than $k$ by $\top$ and recursing otherwise. $W_k$ is extensive and monotone: for every shape
+$\sigma$, $\gamma(\sigma)\subseteq\gamma(W_k(\sigma))$, and if $\sigma_1\sqsubseteq\sigma_2$ then
+$W_k(\sigma_1)\sqsubseteq W_k(\sigma_2)$. The implementation applies $W_k$ to every propagated
+environment and again after each join.
+
+After widening, every environment component ranges over records of depth at most $k$ over the
+finite key universe, plus $\top$; the product environment lattice therefore has finite height. A
+monotone in-place iteration over a finite-height lattice stabilises at a post-fixpoint independent
+of state order. Cyclic re-embedding can still push a growing tail through a loop, but once the tail
+passes depth $k$ it becomes $\top$, so the chain stops growing. The emergency lift to $(\top,\top)$
+is also an over-approximation: subsequent propagation can only join smaller transfer results into
+$\top$ entries, so no definite-absence report can arise from the lifted region.
+\end{proof}
+
+\begin{remark}[Empirical headroom]
+The widened bound is deliberately conservative. On the current corpus---193 AWS workflows, 66 CNCF
+workflows, and two DSL workflows, including nested machines and both native and typed seeding---all
+790 data-flow fixpoints converge, with a maximum of 7 rounds and a worst observed bound utilization
+of 2/54 (3.7\%). The synthetic scale sweep remains near-linear; acyclic chains converge in one
+forward pass by construction.
+\end{remark}
+
+\subsection{Reference checking}
+
+At the widened fixpoint (Lemma~\ref{lem:term}), the analysis checks,
+at each state $s$ with entry environment $\Phi(s)=(\sigma_{\mathrm d},\sigma_{\mathrm v})$ and
+effective document $\eff=\narrow(\sigma_{\mathrm d},\textsf{InputPath})$, the reads the runtime
+evaluates and aborts on when absent. These fall into three classes.
+
+\emph{(i) JSONPath payload reads.} The \texttt{.\$} keys (at any depth) of \texttt{Parameters} and
+\texttt{ItemSelector} and a \texttt{Map}'s \texttt{ItemsPath}, resolved against $\eff$; and the
+\texttt{.\$} keys of a JSONPath \texttt{Assign}, resolved against that state's assign source. A
+reference \texttt{\$}\emph{name}$.\pi$ that names a workflow \emph{variable} (a leading \texttt{\$}
+not followed by ``\texttt{.}'', hence not a document path \texttt{\$.\dots}) is resolved against the
+store $\sigma_{\mathrm v}$ rather than $\eff$---so a field that travelled through a variable is seen
+where it is read, and only a variable no path assigns is flagged.
+
+\emph{(ii) Modeled JSONata reads.} In a JSONata state, a field-value string whose \emph{entire}
+body is a direct reference (\texttt{\$states.input}$.\pi$, \texttt{\$states.result}$.\pi$,
+\texttt{\$states.errorOutput}$.\pi$, or \texttt{\$}\emph{name}$.\pi$)---in \texttt{Arguments},
+\texttt{Output}, \texttt{Assign}, or a \texttt{Choice} \texttt{Condition}---resolved against its
+source shape (effective document, raw result, error object, or store). Such an expression returns
+\texttt{undefined} on a missing path, which \asl{} raises as
+\texttt{States.QueryEvaluationError}~\cite{awsasl} (``failure to return a result'')---a definite
+runtime fault, exactly the \code{SC1101} contract. A reference nested inside a JSONata \emph{object
+constructor} $\{\,\text{'}k\text{'}\!:e\}$ is deliberately \emph{not} in this class: JSONata omits a
+key whose value is undefined, so the constructor yields a value and does not fail; such a reference
+shapes the successor document (\S\ref{sec:tr:df}) but is never itself flagged.
+
+\emph{(iii) Excluded (opaque) reads.} Any string not beginning with \texttt{\$}, the context object
+\texttt{\$\$}/\texttt{\$states.context}, \texttt{States.*} intrinsics, the bare root \texttt{\$}, any
+JSONPath outside the simple-path fragment, and any JSONata expression outside the modeled
+direct-reference/object fragment (functions such as \texttt{\$exists}, filters, arithmetic). All
+resolve to $\top$ and never fire.
+
+For a checked reference to a path $p$ against its selected source shape $\sigma$ (document or
+variable store), \tool{} reports \code{SC1101} iff $p$ is definitely absent in $\sigma$ (the lookup
+returns \textsf{Missing}; a path into a $\top$ or otherwise unconstrained region returns
+\textsf{Maybe} and is never flagged). A JSONPath \texttt{Choice} operand is handled as a
+\emph{warning}, not an error; see Section~\ref{sec:tr:deadguard}.
+
+\begin{assumption}[Runtime resolution on non-objects]\label{asm:jsonpath}
+The \asl{} JSONPath engine resolves a dotted reference $k_1.\dots.k_m$ by successive object-key
+lookup: applying a key to a non-object (scalar or array) fails with a path-not-found error, and
+a numeric segment denotes a property name rather than an array index~\cite{awsasl,jsonpath}.
+Under this assumption the concrete \emph{present} relation of Section~\ref{sec:tr:df}
+(object-key descent) coincides with runtime resolution, and $\gamma$'s admission of arbitrary
+non-objects under $\Obj\,r$ is sound: a reference descending into a non-object simply fails,
+exactly as ``absent'' predicts.
+\end{assumption}
+
+\begin{theorem}[No false positives]\label{thm:soundness}
+If \tool{} reports \code{SC1101} for a path $p$ at a state $s$, then in every concrete execution
+that reaches $s$, $p$ is absent from the document \emph{or variable store} that the read site
+selects, so the \asl{} runtime fails the reference---a JSONPath path-not-found, an unresolved
+variable, or a JSONata \texttt{States.QueryEvaluationError}. Equivalently, the analysis never flags
+a reference some execution could satisfy.
+\end{theorem}
+\begin{proof}
+First, the fixpoint over-approximates the reachable environments: for every $s$ and every reachable
+$(d,\nu)\in\llbracket s\rrbracket$ (document $d$ paired with variable store $\nu$),
+$(d,\nu)\in\gamma_{\Env}(\Phi(s))$. Induction on the length of the execution prefix reaching $s$.
+\emph{Base:} the seed $e_0=(\sigma_0,\Obj\,\emptyset)$ satisfies it---the document part as before
+(native tier $\sigma_0=\top$ and $\gamma(\top)=\mathcal{D}$; typed tier $\sigma_0=\Obj\,r_0$ over the
+declared input fields, under the closed-world reading of the contract), and the initial store is
+empty, so $\nu_0=\{\}\in\gamma(\Obj\,\emptyset)$. Closed task-result records are sound relative to
+the declared output contract or fixed AWS service envelope they model. \emph{Step:} suppose $s$ is
+reached from $s'$. On a
+normal transition the concrete environment is $\mathit{out}_{\mathrm c}(d',\nu')$ for some
+$(d',\nu')\in\llbracket s'\rrbracket$; by the induction hypothesis
+$(d',\nu')\in\gamma_{\Env}(\Phi(s'))$, by Lemma~\ref{lem:local} (state/catch, which composes the
+document transfer with the \texttt{Assign} store update)
+$\mathit{out}_{\mathrm c}(d',\nu')\in\gamma_{\Env}(\mathit{out}(\Phi(s')))$, and since the round
+joined $\mathit{out}(\Phi(s'))$ into $\Phi(s)$, by the componentwise lift of Lemma~\ref{lem:join}
+the concrete environment lies in $\gamma_{\Env}(\Phi(s))$. A \texttt{Catch} transition is identical
+using $\mathit{catch}$, which places $\top$ in the document and applies the catcher's \texttt{Assign}.
+The \texttt{InputPath} narrowing at $s$ is sound (Lemma~\ref{lem:local}), so effective documents lie
+in $\gamma(\eff)$ and stores in $\gamma(\sigma_{\mathrm v})$.
+
+Now suppose \code{SC1101} fires for $p$ at $s$, against its selected source shape $\sigma$---the
+effective document $\eff$ for a document read, or the store $\sigma_{\mathrm v}$ for a variable read.
+The check fires only when $p$ is definitely absent in $\sigma$, so by Lemma~\ref{lem:absence} no
+value in $\gamma(\sigma)$ contains $p$; since every concrete source at $s$ lies in $\gamma(\sigma)$,
+$p$ is absent on all of them. A JSONPath payload read then fails by Assumption~\ref{asm:jsonpath}
+(path-not-found); a JSONPath variable read has no binding to resolve; and a modeled JSONata direct
+reference evaluates to \texttt{undefined}, which \asl{} raises as \texttt{States.QueryEvaluationError}.
+In every case the runtime aborts the reference. A finding is emitted only when the machine converged
+(Lemma~\ref{lem:term}), i.e.\ at a genuine fixpoint, so the conclusion holds whenever \code{SC1101}
+is reported.
+\end{proof}
+
+\begin{corollary}[Native unconditionality]
+On the native tier ($\sigma_0=\top$), Theorem~\ref{thm:soundness} holds for an arbitrary
+execution input. On the typed tier it holds relative to the closed-world reading of the
+declared input schema; when result-shape modeling is enabled it also holds relative to the
+closed-world reading of declared task-output schemas and fixed AWS service-result envelopes. Where
+inputs or results are open, the native opaque shape is the sound fallback. (The typed seed also
+admits a second closed-world source: when a workflow declares no input schema but its start task
+declares an input contract, the start seed is that contract's field record.)
+\end{corollary}
+
+\subsection{Nested machines}
+\label{sec:tr:nested}
+
+A \texttt{Map}'s iterator and a \texttt{Parallel}'s branches are themselves state machines, each
+analysed by the same procedure under a seed derived from the enclosing state's entry.
+
+\begin{remark}[Nested-machine seeds]\label{rmk:nested}
+The nested analysis runs under seeds derived from the enclosing machine's widened fixpoint; if the
+safety guard ever lifted an enclosing entry to $\top$, the nested seed is correspondingly opaque and
+conservative. Each \texttt{Map}
+iteration is seeded with $\mathit{ctor}(\textsf{ItemSelector})$ when an \texttt{ItemSelector} is
+declared and $\top$ otherwise; each \texttt{Parallel} branch is seeded with
+$\mathit{ctor}(\textsf{Parameters})$ when the state declares \texttt{Parameters} and with the
+effective input $\eff=\narrow(\Phi(s),\textsf{InputPath})$ otherwise---exactly the document
+\asl{} hands each branch. Each seed over-approximates the corresponding per-iteration/per-branch
+document (Lemma~\ref{lem:local}), so Theorem~\ref{thm:soundness} extends unconditionally to
+findings emitted inside a nested machine.
+\end{remark}
+
+\subsection{The dead-guard refinement (\code{SC1110})}
+\label{sec:tr:deadguard}
+
+The same shapes support a path-sensitive \emph{warning}. Unlike a \texttt{.\$} payload
+reference, a \texttt{Choice} comparator is a \emph{guard} evaluated in rule order: the runtime
+tries each rule until one matches and follows its branch. A value comparator on an unresolvable
+operand does not silently return false---\asl{} raises a \texttt{States.Runtime}
+error~\cite{awsasl}, which is precisely why \texttt{IsPresent} exists. We nonetheless report only
+a \emph{warning}, not an \code{SC1101} error, for two reasons: the rule may never be reached (an
+earlier rule can match first and divert control), so we cannot promise a runtime abort; and the
+finding's real content is that a branch whose guard \emph{requires} a definitely absent field
+can never be taken---dead logic. \code{SC1110} fires when a \texttt{Choice} rule's condition
+requires presence of a field definitely absent in the state's effective (post-\texttt{InputPath})
+shape. Presence is required by value comparators, \texttt{IsNull}, the type predicates, and
+\texttt{IsPresent:true}; it is \emph{not} required by \texttt{IsPresent:false}. The check is
+conservative on Boolean structure: a conjunction is dead if any conjunct is dead, a disjunction
+only if \emph{all} disjuncts are dead, and a negation is never flagged. Soundness of the
+underlying ``definitely absent'' judgment is exactly Lemma~\ref{lem:absence}.
+
+\subsection{Coverage of the modeled fragment}
+\label{sec:tr:coverage}
+
+The analysis resolves precisely exactly the reads inside the member-path fragment ($\$$, $\$.a$,
+$\$.a.b$, $\$[\text{'}a\text{'}]$); every operand outside it lifts to $\top$ and can never produce a finding. To quantify
+how much of real ASL this covers, the \texttt{stepcheck path-coverage} command classifies every
+field-read a workflow evaluates---the \texttt{.\$} operands of
+\texttt{Parameters}/\texttt{ItemSelector}/\texttt{Assign} and a \texttt{Map}'s \texttt{ItemsPath},
+i.e.\ the read sites the \code{SC1101} check consumes---into the dotted/quoted-member fragment, the whole-document
+$\$$, complex JSONPath (wildcard/filter/function/array-index), the \texttt{\$\$} context object,
+\texttt{\$}\emph{name} workflow-variable reads, and \texttt{States.*} intrinsics.
+Table~\ref{tab:tr:coverage} reports the split over the AWS corpus, the CNCF examples, and the
+independent repositories of Section~\ref{sec:tr:external}. JSONata \texttt{\{\%\ \%\}} reads form a
+separate modeled fragment---direct references and object literals (\S\ref{sec:tr:df})---and are not
+counted in this JSONPath surface.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\caption{Field-read coverage by the modeled JSONPath fragment (\texttt{stepcheck path-coverage}).
+``Doc.\ reads'' are the genuine document-field references (member $+$ whole-$\$$ $+$ complex),
+excluding the \texttt{\$\$} context and \texttt{States.*} operands, which are not document
+references and cannot miss a field. ``Precise'' is dotted or quoted-member access $+$ whole-$\$$.}
+\label{tab:tr:coverage}
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+Corpus & Reads & Dotted & Whole-$\$$ & Complex & \texttt{\$\$} & \texttt{\$}var & \texttt{States.*} & Precise / doc.\ reads \\
+\midrule
+AWS (193)        & 1168 & 596 & 146 & 61 & 225 & 0 & 140 & 742/803 = \textbf{92.4\%} \\
+CNCF (66)        &    2 &   0 &   0 &  0 &   0 & 0 &   2 & --- (runtime expr.) \\
+Independent (95) &  420 & 296 &  57 & 17 &  20 & 0 &  30 & 353/370 = \textbf{95.4\%} \\
+\midrule
+Combined         & 1590 & 892 & 203 & 78 & 245 & 0 & 172 & 1095/1173 = \textbf{93.4\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Of the genuine document-field references, $92$--$95\%$ fall inside the modeled member fragment;
+only $6.6\%$ (combined) use wildcard, filter, array-index, or other nonmember syntax that the
+analysis soundly abstracts to $\top$. No workflow in these JSONPath corpora issues a \texttt{\$}\emph{name} variable read (the
+\texttt{\$}var column is zero); the variable and JSONata-fragment provenance is exercised instead by
+the regression suite and the JSONata-mode workflows in the corpus. The CNCF corpus exercises almost no \texttt{.\$} reads because Serverless Workflow uses
+runtime expressions rather than JSONPath provenance, consistent with the ASL-specific data-flow
+checks staying silent there.
+
+\subsection{External validity: independent repositories}
+\label{sec:tr:external}
+
+Beyond the three aws-samples collections that make up the main corpus, we ran \tool{} unmodified on
+\textbf{95} ASL definitions mined (\texttt{eval/mine\_wild.js}) from \textbf{16} public repositories
+outside them---50 domain workflows across 13 repositories, the remainder validator/library
+fixtures. Two findings from the sound and conservative native tiers illustrate that the analyses are
+not overfit to AWS's samples.
+
+\paragraph{A sound \code{SC1101} in the wild.} In a credit-card \emph{transaction-reversal} workflow,
+a \texttt{Map} state \texttt{ApplyReversalEntries} iterates \texttt{ItemsPath: \$.ledgerEntries}. The
+start state \texttt{SetReversalDefaults} is a \texttt{Pass} whose \texttt{Parameters} reconstruct the
+document as a closed record of seven fields (\texttt{transactionId}, \texttt{amount},
+\texttt{currency}, \texttt{accountId}, \texttt{reason}, \texttt{reversalId}, \texttt{reversalStatus});
+\texttt{ledgerEntries} is not among them, and the two intervening states merge only their own results
+under \texttt{\$.validation} and \texttt{\$.screening}. By the transfer functions of
+Section~\ref{sec:tr:df}, the shape at \texttt{ApplyReversalEntries} is a closed record with
+$\texttt{ledgerEntries}\notin\dom$, so $\mathrm{present}(\$.ledgerEntries)$ is definitely false and
+\code{SC1101} fires soundly---at run time the \texttt{Map} fails to resolve \texttt{ItemsPath}.
+Because \texttt{SetReversalDefaults} \emph{reconstructs} the document rather than augmenting it, even
+a caller that supplies \texttt{ledgerEntries} has it dropped; an adjacent-task field-subset check,
+which never models the \texttt{Parameters} reconstruction, cannot see this.
+
+\paragraph{A conservative \code{SC5001} in the wild.} In an IoT firmware-upgrade workflow, a
+\texttt{Parallel} state runs three branches that each write the DynamoDB table \texttt{FWUTaskTokens}
+(\texttt{PutItem}); the branches receive document copies, so the shared external table is the only
+race, and the concurrency pass reports the provable last-writer-wins collision.
+
+\paragraph{Declared-tier evidence.} The declared tier is silent on the wild corpus only because no
+workflow ships a compensator. Supplying the missing facts recovers it: for an independent
+payment-settlement pipeline, a sidecar declaring the payment authorization and the settlement as
+persistent effects (both are durable money movements) promotes \tool{}'s finding from an inferred
+warning to a declared-tier \emph{error}---\code{SC4001} on the uncompensated \texttt{FlagFraudulentPayment}
+and \code{SC4010} on \texttt{AuthorizePayment}/\texttt{SettlePayment}, whose \texttt{Catch} paths only
+reach a \texttt{Fail} state, so a settlement failure leaves an authorized hold that is never voided.
+The sidecar and reproduction command ship in the artifact (\texttt{corpus/wild-annot/}).
+
+\section{The workflow type discipline}
+\label{sec:tr:types}
+
+\subsection{Signatures, judgment, and validity}
+
+Let $\Gamma$ collect the declared task signatures. Each task $T$ has a \emph{contract}
+$A\rightarrow B$ (it consumes the field-record $A$ and produces $B$) and a
+\emph{typestate}~\cite{stromYemini,delineFahndrich} transition
+$s_{\mathrm{in}}^{T}\!\to\!s_{\mathrm{out}}^{T}$ over business states $S_{\mathrm B}$;
+we bundle the two into one signature $T:(A,s_{\mathrm{in}}^T)\to(B,s_{\mathrm{out}}^T)$. The
+well-typedness judgment $\Gamma\vdash W:(A,s)\Rightarrow(B,s')$ carries a \emph{pair} type---a
+field-record and a business state---and is generated by:
+\begin{gather*}
+\frac{(T:(A,s_{\mathrm{in}})\to(B,s_{\mathrm{out}}))\in\Gamma}
+     {\Gamma\vdash T:(A,s_{\mathrm{in}})\Rightarrow(B,s_{\mathrm{out}})}\;(\textsc{Task})
+\qquad
+\frac{\Gamma\vdash T:(A,s)\Rightarrow(B,s')\quad A\subseteq A'}
+     {\Gamma\vdash T:(A',s)\Rightarrow(B,s')}\;(\textsc{Sub})
+\\[2.2ex]
+\frac{\Gamma\vdash T_1:(A,s)\Rightarrow(B,s')\quad\Gamma\vdash T_2:(B,s')\Rightarrow(C,s'')}
+     {\Gamma\vdash T_1;T_2:(A,s)\Rightarrow(C,s'')}\;(\textsc{Seq})
+\\[2.2ex]
+\frac{\Gamma\vdash T_1:(A,s)\Rightarrow(B,s')\quad\Gamma\vdash T_2:(A,s)\Rightarrow(B,s')}
+     {\Gamma\vdash \mathtt{Choice}(T_1,T_2):(A,s)\Rightarrow(B,s')}\;(\textsc{Choice})
+\end{gather*}
+The width-subsumption rule (\textsc{Sub}) widens the \emph{available} input fields---a task
+needing $A$ still runs when more fields $A'\supseteq A$ are present---and leaves the business
+state untouched. It is what lets the field component be matched by \emph{containment} while the
+typestate component is matched by \emph{equality}, mirroring the two checks below; without it the
+\textsc{Seq} rule would force the middle field-record to match exactly, which the tool does not
+require.
+
+The judgment is read over the workflow's \emph{task-adjacency} structure: \tool{} projects the
+control-flow graph onto its \texttt{Task} states, following \emph{normal} edges through the
+\emph{transparent} states (\texttt{Choice}, \texttt{Pass}, \texttt{Wait}) that carry no
+contract, so $T_1;T_2$ denotes a task immediately followed---through any transparent
+states---by another and $\mathtt{Choice}(T_1,T_2)$ a branch whose arms rejoin. \texttt{Catch}
+(error) edges are \emph{not} projected, and \texttt{Map}/\texttt{Parallel} states are opaque
+adjacency endpoints whose sub-machines are checked separately, so the discipline governs the
+normal-flow task graph only. A declared \emph{protocol} $\delta\subseteq S_{\mathrm B}\times
+S_{\mathrm B}$ lists the legal business-state transitions, and
+$\mathrm{Valid}(W)\iff\forall T\in W.\,(s_{\mathrm{in}}^{T},s_{\mathrm{out}}^{T})\in\delta$.
+
+The checks are edge-local. For each task-adjacency $T_1\!\to\!T_2$ whose endpoints both carry
+the relevant declarations: the typed-contract check \code{SC1010} fires iff some required field
+of $T_2$ is missing from $T_1$'s produced fields
+($\mathit{in}(T_2)\not\subseteq\mathit{out}(T_1)$); the typestate check \code{SC2001} fires iff
+$s_{\mathrm{out}}^{T_1}\neq s_{\mathrm{in}}^{T_2}$; and \code{SC2002} fires iff
+$(s_{\mathrm{in}}^{T_2},s_{\mathrm{out}}^{T_2})\notin\delta$ when a non-empty protocol is
+declared. A \texttt{Choice} imposes the predecessor's premise on each branch head. An edge
+missing an endpoint declaration is passed over---the checks are vacuous there---so the guarantee
+below is stated for \emph{fully declared} workflows.
+
+\begin{theorem}[Declared-tier consistency]\label{thm:typecheck}
+Let $W$ be \emph{fully declared}: every \texttt{Task} carries a contract and both typestate
+labels, and a protocol $\delta$ is declared. Then \code{SC1010}, \code{SC2001}, and \code{SC2002}
+emit no finding \emph{iff}
+\begin{equation}
+\begin{aligned}
+  &\mathit{in}(T_2)\subseteq\mathit{out}(T_1)\ \text{and}\ s_{\mathrm{out}}^{T_1}=s_{\mathrm{in}}^{T_2}
+  \ \text{for every adjacency } T_1\!\to\!T_2,\\
+  &\text{and}\ (s_{\mathrm{in}}^{T},s_{\mathrm{out}}^{T})\in\delta \ \text{for every task } T.
+\end{aligned}
+\tag{$\ast$}\label{eq:edgecond}
+\end{equation}
+The three checks are therefore a \emph{sound and complete} decision procedure for
+\eqref{eq:edgecond}: every $W$ satisfying \eqref{eq:edgecond} is accepted, and every violation is
+reported by a finding naming the offending edge (\code{SC1010}/\code{SC2001}) or task
+(\code{SC2002}). On the \emph{series-parallel fragment}---acyclic task graphs built from
+sequencing and fully rejoining binary \texttt{Choice} whose arms share a common branch-point and
+rejoin pair type---condition \eqref{eq:edgecond} is moreover equivalent to derivability
+$\Gamma\vdash W:(A,s)\Rightarrow(B,s')$ together with $\mathrm{Valid}(W)$, so on that fragment the
+checks decide well-typedness in the calculus above.
+\end{theorem}
+\begin{proof}
+The equivalence ``no finding $\iff$ \eqref{eq:edgecond}'' is immediate: each check is exactly the
+negation of one clause of \eqref{eq:edgecond}, evaluated independently per edge (per task for
+\code{SC2002}), and full declaration leaves no edge vacuous. This holds for an arbitrary
+normal-flow task graph, cyclic ones included---a back-edge is simply another adjacency subject to
+\eqref{eq:edgecond}.
+
+For the series-parallel fragment we show \eqref{eq:edgecond}$\iff\Gamma\vdash
+W:(A,s)\Rightarrow(B,s')\wedge\mathrm{Valid}(W)$. ($\Leftarrow$) A derivation types each adjacency
+by \textsc{Seq}, whose shared middle type $(B,s')$ forces $\mathit{in}(T_2)\subseteq\mathit{out}(T_1)$
+on the field component (a preceding \textsc{Sub} step only enlarges the available fields) and
+$s_{\mathrm{out}}^{T_1}=s_{\mathrm{in}}^{T_2}$ on the typestate component; \textsc{Choice} imposes
+the same shared type on both arms, extending the equalities across a branch and its rejoin.
+$\mathrm{Valid}(W)$ supplies the protocol clause, giving \eqref{eq:edgecond}. ($\Rightarrow$)
+Assume \eqref{eq:edgecond}. Build the derivation bottom-up: \textsc{Task} gives each task
+$T:(\mathit{in}(T),s_{\mathrm{in}}^T)\Rightarrow(\mathit{out}(T),s_{\mathrm{out}}^T)$. For a
+sequential adjacency $T_1;T_2$ take the middle type
+$(B,s')=(\mathit{out}(T_1),s_{\mathrm{out}}^{T_1})$: by \eqref{eq:edgecond},
+$\mathit{in}(T_2)\subseteq\mathit{out}(T_1)=B$ and $s_{\mathrm{in}}^{T_2}=s_{\mathrm{out}}^{T_1}=s'$,
+so \textsc{Sub} lifts the \textsc{Task} axiom of $T_2$ to $(B,s')\Rightarrow(\mathit{out}(T_2),
+s_{\mathrm{out}}^{T_2})$ and \textsc{Seq} applies. A fragment \texttt{Choice} types both arms at
+the common branch-point type $(A,s)$ and common rejoin type $(B,s')$ (each arm as above), so
+\textsc{Choice} applies. The result derives $\Gamma\vdash W$, and the per-task protocol
+membership gives $\mathrm{Valid}(W)$. Outside the fragment---non-rejoining or multiway branches,
+type-misaligned rejoins, or cycles---no finite derivation in this three-constructor calculus need
+exist even when \eqref{eq:edgecond} holds; there the edge-condition statement is the operative
+one, and it is exactly what the tool decides.
+
+Both readings are \emph{relative to the declared annotations}, and here that scoping is exact:
+contracts and typestate labels are never inferred---only the idempotence/persistence/effect
+annotations of Section~\ref{sec:tr:saga} are---so on this tier $\Gamma$ \emph{is} the declared
+data and the three checks are unconditionally error-level. A workflow lacking a declaration is
+outside the theorem's scope (the corresponding check is vacuous on that edge), not silently
+downgraded to a warning.
+\end{proof}
+
+\section{Downstream-aware Saga compensation}
+\label{sec:tr:saga}
+
+\subsection{Model of failure and the post-commit region}
+
+Let $W$ declare which tasks are \emph{persistent} and, for each persistent $P$, a declared
+\emph{compensator} $C$ (the Saga pattern~\cite{garciaMolina1987}). Every \emph{fallible} state---a \texttt{Task}, \texttt{Map}, or
+\texttt{Parallel}---may raise the generic error \texttt{States.TaskFailed}; an error caught by a
+\emph{broad} \texttt{Catch} (one whose \texttt{ErrorEquals} contains \texttt{States.ALL} or
+\texttt{States.TaskFailed}) is routed to the catch target, otherwise it propagates to workflow
+failure. \texttt{Parallel} and \texttt{Map} are fallible black boxes; a nested persistent task is
+analysed within its own sub-machine by the same procedure.
+
+The completeness half of the guarantee below is stated relative to an explicit model of
+execution, made precise here so the theorem is neither over- nor under-claimed.
+
+\begin{assumption}[Failure model]\label{asm:saga-model}
+\emph{(A1) Single post-commit fault}: on each execution we reason about the \emph{first} failure
+after $P$ commits, and the compensation flow it triggers is itself fault-free---a standard
+single-fault Saga assumption. \emph{(A2) Path feasibility}: \texttt{Choice} guards are abstracted,
+so every normal edge is feasible (the analysis is path-insensitive). \emph{(A3) Unique generic
+catcher}: no fallible state has two \texttt{Catch} clauses both matching \texttt{States.TaskFailed},
+so the existential test over catchers coincides with \asl's first-match resolution for the modeled
+error. \emph{(A4) Linear handlers}: from a broad \texttt{Catch} target, control follows a unique
+normal successor until it reaches $C$ (as the typed DSL builds compensation chains), so
+``reaches~$C$'' means ``executes~$C$''.
+\end{assumption}
+
+\begin{definition}[Post-commit region]
+$R(P)$ is the set of states reachable from $P$'s normal successors by following \emph{normal}
+(non-error) control-flow edges \emph{without passing through} $C$. These are exactly the states
+that execute after $P$ has committed its durable effect and before any compensation.
+\end{definition}
+
+\begin{definition}[Saga-completeness]
+A persistent task $P$ with compensator $C$ is \emph{Saga-complete} when every execution in which
+$P$ commits its effect and a subsequent \emph{post-commit failure} occurs---a fallible state in
+$R(P)$ raising the generic error, or a \texttt{Fail} terminal reached on a normal path in
+$R(P)$---also executes $C$.
+\end{definition}
+
+\subsection{The \code{SC4011} algorithm}
+
+\begin{lstlisting}[style=pseudo,caption={Downstream-aware Saga check (per persistent task).},label={lst:sc4011}]
+SC4011(W, P, C):
+  region = post_commit_region(W, P, C)         # the region R(P)
+  foreach Q in region:
+    if is_fallible(Q) and not failure_reaches(Q, C):
+        fire SC4011 at Q                         # a post-commit failure at Q escapes C
+    if is_fail_terminal(Q):
+        fire SC4011 at Q                         # a normal path commits P then ends in failure
+
+post_commit_region(W, P, C):                     # normal-flow closure of P's successors,
+  return forward_closure(normal_successors(P),   #   not passing through C
+                         edges = normal, without = {C})
+
+failure_reaches(Q, C):
+  # Q's own generic failure is caught broadly and the handler reaches C by normal flow
+  return exists c in catches(Q):
+           broad(c.error_equals) and reaches(c.target, C, edges = normal)
+
+is_fallible(Q):      return Q.kind in {Task, Map, Parallel}
+is_fail_terminal(Q): return Q.kind == Fail
+broad(errs):         return "States.ALL" in errs or "States.TaskFailed" in errs
+reaches(s, C, e):    return C in forward_closure({s}, edges = e)
+\end{lstlisting}
+
+\begin{theorem}[Compensation completeness under the declared model]\label{thm:saga}
+Fix a workflow $W$ with \emph{declared} persistence and compensators, and adopt
+Assumption~\ref{asm:saga-model}. For a persistent task $P$ with compensator $C$, \code{SC4011}
+(Listing~\ref{lst:sc4011}) emits no finding \emph{iff} $P$ is Saga-complete---iff every fallible
+$Q\in R(P)$ has a broad \texttt{Catch} whose target reaches $C$, and no normal path from $P$
+reaches a \texttt{Fail} terminal in $R(P)$. Under the model, \code{SC4011} is a \emph{sound and
+complete} decision procedure for Saga-completeness.
+\end{theorem}
+\begin{proof}
+\emph{Soundness} (every finding is real, relative to A2). Suppose \code{SC4011} fires. In the
+first case it fires at a fallible $Q\in R(P)$ with $\neg\,\mathit{failure\_reaches}(Q,C)$. By A2
+the normal path $P\to\cdots\to Q$ is feasible, so some execution runs $P$ to commitment and
+reaches $Q$; being fallible, $Q$ raises \texttt{States.TaskFailed} (A1: the single post-commit
+fault). By A3 the catcher the test inspects is the one \asl{} would match, and it is absent,
+non-broad, or routes to a handler not reaching $C$; by A4 ``reaches~$C$'' is exact, so $C$ does
+not execute. This is a concrete post-commit failure that leaks $P$'s effect. In the second case
+\code{SC4011} fires at a \texttt{Fail} terminal $Q\in R(P)$: the feasible normal path
+$P\to\cdots\to Q$ commits $P$ and then fails with no compensation---a more direct witness.
+
+\emph{Completeness} (every defect is found). Suppose $P$ is \emph{not} Saga-complete: some
+execution commits $P$ and then a post-commit failure occurs without $C$. By A1 consider that
+first failure. If it is a fallible state $Q$, then $Q\in R(P)$; by A3 its generic error resolves
+to the single catcher the test inspects, and since $C$ did not run, that catcher does not route
+to $C$ (A4 makes ``reaches'' exact), so $\neg\,\mathit{failure\_reaches}(Q,C)$ and \code{SC4011}
+fires at $Q$. If instead the execution reaches a \texttt{Fail} terminal on a normal path without
+$C$, that terminal lies in $R(P)$ and \code{SC4011} fires there. Conversely, if every fallible
+$Q\in R(P)$ has its (unique, by A3) broad catcher reaching $C$ and no normal path bypasses $C$ to
+a \texttt{Fail}, then by A4 every post-commit fault routes into a chain that runs $C$, so $P$ is
+Saga-complete. Hence \code{SC4011} fires exactly on the non-Saga-complete workflows.
+
+The guarantee is \emph{relative to the declared facts}: a compensator is never \emph{inferred},
+so under pure inference the premise is absent and \code{SC4011} stays silent (in contrast to the
+name-based, warning-level \code{SC4010}).
+\end{proof}
+
+\begin{remark}[Where the assumptions bite]\label{rmk:saga-limits}
+Relaxing Assumption~\ref{asm:saga-model} costs completeness, not soundness. Without A1, a fault
+\emph{inside} the compensation chain (e.g.\ a fallible compensator) can leak an earlier effect,
+which \code{SC4011} does not model. Without A3, a fallible state whose first catcher matches
+\texttt{States.TaskFailed} but routes away from $C$, shadowing a later broad catcher, is missed.
+Without A4, a broad catcher whose handler \emph{may} reach $C$ on one branch and a \texttt{Fail}
+on another passes the existential test yet can skip $C$; deciding this exactly needs $C$ to
+\emph{postdominate} the handler, which the check approximates by reachability. Non-generic errors
+(\texttt{States.Timeout}, service faults) caught by narrow catchers, and cross-branch aborts of a
+\texttt{Parallel}/\texttt{Map} that strand a sibling's committed effect, are likewise outside the
+model. Closing these is future work; the corpus in the main paper satisfies A1--A4.
+\end{remark}
+
+\subsection{Reverse-order chains}
+
+Saga-completeness of a single $(P,C)$ pair is local, but a multi-step Saga must unwind \emph{all}
+prior effects on a late failure. Take persistent tasks $P_1,\dots,P_n$ committed in order with
+compensators $C_1,\dots,C_n$ wired as a \emph{reverse-order chain}: each $C_i$'s \emph{unique}
+normal successor is $C_{i-1}$, and $C_1$'s is the failure terminal. Under this linear-chain
+hypothesis---exactly A4 of Assumption~\ref{asm:saga-model} applied to the chain---running $C_i$
+runs the whole prefix $C_i,C_{i-1},\dots,C_1$ in order, so applying the single-pair check of
+Theorem~\ref{thm:saga} to each $(P_i,C_i)$ certifies that any post-commit failure unwinds the
+full committed prefix. The hypothesis is essential: without the unique-successor wiring, per-pair
+reachability certifies neither the \emph{order} nor the \emph{completeness} of the unwind---a
+branch in the chain could skip some $C_j$ while still reaching a later $C_k$. This is how the
+typed DSL builds a Saga by construction, which is why a correctly built DSL Saga raises no
+\code{SC4011} and a one-edge break (redirecting one compensator to the failure terminal) makes
+\code{SC4011} fire on precisely the upstream steps whose effects would then leak (the chain-break
+experiment in the main paper's evaluation).
+
+\section{Conservative analyses: concurrency and temporal (notes)}
+\label{sec:tr:cons}
+
+The concurrency and temporal analyses are native but deliberately \emph{conservative}: they
+under-approximate to avoid false alarms and make no soundness claim. All but one of their
+findings are warnings; the sole exception is the definite mis-configuration \code{SC6003}
+(below), reported as an error.
+
+\paragraph{Concurrency (\code{SC5001}/\code{SC5002}).}
+\texttt{Parallel} branches and concurrent \texttt{Map} iterations each receive their own copy
+of the document, so the document cannot race; only \emph{external} resources can. The check
+mines each task's resource key---service plus the named target: \texttt{TableName},
+\texttt{QueueUrl}, \texttt{TopicArn}, \texttt{Bucket}, \texttt{EventBusName}, ECS cluster/task
+identifiers, Bedrock \texttt{ModelId}, and nested-workflow \texttt{StateMachineArn}/\texttt{Name}
+pairs (statically named \texttt{states:startExecution} calls that provably share a child workflow
+and execution name also collide)---and considers only \emph{overwriting}
+writes---\texttt{PutItem}/\texttt{PutObject}, which are last-writer-wins. For child workflows, the
+CloudFormation/SAM front end links sibling state machines through logical ids, \texttt{Ref}/\texttt{GetAtt},
+\texttt{DefinitionSubstitutions}, and \texttt{StateMachineName}-derived ARNs, so the child's own write
+set is recursively flattened when the definition is present in the artifact; externally deployed
+children with no local definition remain a scope boundary. A task counts as a
+write only when it is annotated non-idempotent (or persistent): an unannotated \texttt{PutItem}
+is not flagged, a deliberate precision trade that keeps the analysis silent absent an
+effect declaration and contributes to its zero-false-positive record. The check also
+excludes \texttt{UpdateItem} (an atomic merge that commutes for disjoint attributes) and
+fire-and-forget \texttt{Publish}/\texttt{SendMessage} (independent messages). \code{SC5001}
+flags two \texttt{Parallel} branches that overwrite the same resource; \code{SC5002} a
+concurrent \texttt{Map} (\texttt{MaxConcurrency}\,$\neq 1$) whose iterations overwrite a shared
+resource while threading \emph{no} per-item data (no \texttt{.\$} reference in the write, so
+every iteration clobbers the same item). Restricting to overwriting writes with a provably
+shared key is what makes the analysis report a conflict only when two branches \emph{provably}
+touch the same key---hence zero in-the-wild false positives, at the cost of not claiming
+completeness.
+
+\paragraph{Temporal (\code{SC6001}--\code{SC6003}).}
+\code{SC6001} warns when a callback (\texttt{waitForTaskToken}) or Activity task has neither
+\texttt{TimeoutSeconds} nor \texttt{HeartbeatSeconds}, so it can wait up to the platform's
+one-year maximum. \code{SC6002} warns when a task's worst-case retry budget---the geometric
+back-off sum $\sum_{k=0}^{a-1}\mathit{interval}\cdot\mathit{backoff}^{\,k}$ over $a$ attempts
+(defaults $\mathit{interval}=1\mathrm{s}$, $\mathit{backoff}=2$, $a=3$)---exceeds a declared
+machine \texttt{TimeoutSeconds}. \code{SC6003} is a definite mis-configuration:
+\texttt{HeartbeatSeconds}\,$\geq$\,\texttt{TimeoutSeconds}, which the platform itself rejects
+only at deploy time. \code{SC6001} is a warning because a missing timeout is occasionally
+acceptable for a short-lived task; \code{SC6003} is the one error-level temporal finding, as
+it is unambiguous.
+
+\begin{remark}[Residual opacity beyond the modeled fragments]
+\tool{} tracks workflow variables and a JSONata fragment---direct
+\texttt{\$states}/\texttt{\$}\emph{name} references and object literals---as first-class provenance,
+on equal footing with JSONPath: the document and variable shapes share one lattice and one fixpoint
+(\S\ref{sec:tr:env}). What remains lifted to $\top$---soundly, at a cost in precision---is the
+genuinely opaque residue: JSONata functions, filters, and arithmetic (\texttt{\$exists}, path
+predicates, \texttt{\$merge}, string and math operators), the \texttt{\$states.context} object, and
+the opaque results of external tasks. A richer JSONata value abstraction (for instance, tracking the
+keys \texttt{\$merge} preserves) would recover some of this precision under the same lattice and
+fixpoint; it is the natural next step, and the shape machinery already accommodates it.
+\end{remark}
+
+\section{Artifact and implementation notes}
+\label{sec:tr:impl}
+
+This section records the implementation and reproduction detail deferred from the main paper's
+implementation and artifact sections. The artifact contains the verifier, the corpora used in the
+paper, the mutation engine, the concrete execution oracle, the validator-panel scripts, the timing
+harness, the real-bug replay harness, and the scripts that regenerate the main paper's figures and
+tables. The AWS corpus has 193 Step Functions workflows; the cross-format corpus has 66 CNCF
+Serverless Workflow examples.
+
+Excluding tests, \tool{} is 4{,}552 lines of Rust, divided as follows: the workflow IR,
+323 lines; the three frontends (\asl{} parse and emit, the typed DSL, and CNCF~\cite{cncf}), 784; annotation
+resolution and inference, 275; the eight analysis passes and their manager, 1{,}730;
+diagnostics, 115; the execution oracle, 269; the mutation engine, 316; and the command-line
+interface together with the statistics, evaluation, and oracle harnesses, 740; a further 383
+lines of in-tree tests are not counted above. The data-flow pass is by far the largest analysis
+at 584 lines---the shape lattice of Section~\ref{sec:tr:df}, its transfer functions, and the
+control-flow fixpoint---while the other seven passes range from roughly 85 to 240 lines each.
+(These counts are for the artifact revision and drift with continued development.)
+
+\paragraph{Packaging and distribution.}
+The artifact ships a continuous-integration pipeline that builds and tests the binary on Linux,
+macOS, and Windows on every change, and a release pipeline that packages it for language package
+managers---a \texttt{crates.io} crate (\texttt{cargo install stepcheck}) and an \texttt{npm}
+wrapper package that fetches the platform binary---so a Rust- or Node-centric CI adopts it with
+one command; a copy-pasteable GitHub Actions gate is included. With \texttt{--json}, findings
+emit one stable object per finding carrying a code, severity, offending state, message, and
+remediation note (e.g.\ \code{SC1101} at \code{ChargeCard}: ``reads \texttt{\$.total}, a field no
+execution reaching it can have produced,'' noting that no state on any path binds it).
+
+The command-line tool exposes \texttt{check}, \texttt{infer}, \texttt{scan}, \texttt{stats},
+\texttt{eval}, \texttt{oracle}, \texttt{eval-pairs}, \texttt{mutate}, \texttt{emit}, and
+\texttt{demo}. \texttt{check} runs the eight passes; \texttt{emit} round-trips a workflow
+through the \asl{} emitter unchanged, the control form against which the multi-validator
+baseline of the main paper scores each injected defect; \texttt{oracle} runs the data-flow
+soundness cross-check; \texttt{eval-pairs} drives the real-bug benchmark by replaying each
+pre-fix and post-fix workflow; \texttt{mutate} injects one defect of a chosen class; and
+\texttt{demo} emits a built-in typed-DSL example to \asl.
+
+The data-flow commands also expose the \texttt{--result-shapes} ablation used in the main paper's
+evaluation. This flag leaves the default opaque-task transfer unchanged but, for the ablation run,
+treats declared task-output schemas and a small table of AWS service-result envelopes as closed
+records. On the strict-input missing-field mutation study, this improves \code{SC1101} recall from
+84/126 to 88/126; the paired bounded-loop oracle run confirms all 92 \code{SC1101} reports emitted
+under the ablation with zero counterexamples.
+
+The evaluation is reproducible offline on a commodity laptop. A Rust~1.96 toolchain builds the
+verifier and runs the mutation study, data-flow oracle, timing experiments, and real-bug replay.
+Node.js and Ruby drive the two local third-party validators used in the baseline
+(\texttt{asl-validator} and \texttt{statelint}), and Python renders the figures. No AWS account or
+credentials are required to reproduce the paper's tables, figures, mutation results, data-flow
+oracle, timing results, or local validator baselines. AWS's server-side
+\texttt{ValidateStateMachineDefinition} check is opt-in (\texttt{STEPCHECK\_AWS=1}), creates no
+resources, and has recorded outputs committed with the artifact so its numbers reproduce offline.
+The only steps that touch an AWS account are the optional deployment checks reported in
+the main paper (Express, Standard, and live-callback runs; scripts
+\texttt{infra/deploy\_run\{,\_standard,\_callback\}.sh}); no other result depends on them, and the
+captured execution evidence is committed with the artifact.
+
+The \asl{} emitter is currently lossy for a workflow's pure I/O-processing fields: among others
+it does not re-emit \texttt{InputPath}, \texttt{OutputPath}, or \texttt{ResultSelector}, nor the
+machine-level \texttt{TimeoutSeconds}; it also drops the \texttt{QueryLanguage} directive (a
+JSONata machine re-emits without it) and canonicalises a \texttt{Map}'s \texttt{ItemProcessor} to
+the older \texttt{Iterator} form. The AWS round-trip is therefore exercised on DSL-authored
+workflows that use none of these fields, where the deployed state machine is behaviourally
+equivalent to the verified IR.
+
+\section{Extended limitations}
+\label{sec:tr:limits}
+
+This section expands the threats-to-validity discussion of the main paper's evaluation.
+
+\paragraph{Corpus composition.}
+The corpus comes from public AWS and CNCF sample repositories and skews small (median 6 states,
+maximum 33). We do not include proprietary industrial definitions because workflow files are
+sensitive artifacts: they expose resource names, account topology, and business-process
+structure, and no anonymization we are aware of preserves the semantic features the analyses
+consume (JSONPath references, resource keys, task names for inference). The generated chain,
+fan-out, and nested-\texttt{Map} sweeps exercise scale and topology, but they cannot stand in
+for industrial semantic diversity---richer contracts, deeper Saga chains, and organization-specific
+naming conventions that inference has not been tuned on.
+
+\paragraph{Deployment check.}
+The AWS deployment check exercises three execution models on StepCheck-verified definitions, each
+deployed unmodified (only \texttt{FunctionName} bound to a stand-in echo Lambda) and each reaching
+\texttt{SUCCEEDED} before teardown: (i)~the DSL-authored order workflow as a synchronous
+\emph{Express} machine; (ii)~the same definition as a \emph{Standard} machine executed
+asynchronously, whose durable history retains all 24 events (Express retains none); and (iii)~a
+DSL-verified order variant with a bounded \texttt{.waitForTaskToken} approval gate deployed as
+Standard (Express cannot run this integration), where the execution pauses at the callback, an
+external \texttt{SendTaskSuccess} resumes it, and it completes in 30 events. The callback carries a
+\texttt{TimeoutSeconds} bound, so the temporal pass raises no \code{SC6001}; removing the bound makes
+StepCheck flag it before deployment, tying the check to the deployed behaviour. To confirm the
+verified artifact runs correctly beyond a single execution, we additionally run the order workflow
+\textbf{100} times in each non-callback mode: all complete successfully (Express 100/100, Standard
+100/100), with per-execution wall time of p50/p95/p99 $\approx$72/130/165\,ms (Express, mean
+$\approx$84\,ms) and $\approx$345/456/484\,ms (Standard, mean $\approx$361\,ms, five state
+transitions per run). We report these distributions as evidence of stable completion across
+execution models, not as a cross-mode AWS performance benchmark. StepCheck itself is also wired as a
+live gate: \texttt{.github/workflows/gate.yml} runs the blocking check (\texttt{-{}-deny-warnings})
+on every push/PR over the deployment artifacts and includes a negative test that injects a defect and
+fails the job unless the gate blocks it. What the deployment check still does \emph{not} exercise is
+Activity workers, service-integration failures, or a broad multi-workflow performance benchmark;
+those behaviours remain covered by the static analyses and the offline oracle rather than by live
+execution.
+
+\paragraph{Semantic drift.}
+Declared premises are checked for syntactic rot (\code{SC0011}/\code{SC0012}) but not for truth:
+a sidecar that says a Lambda is idempotent when its implementation is not will pass the
+declared-tier checks. Generating the sidecar from code or infrastructure-as-code---the
+generated-metadata premise source---is the deployment pattern that keeps declared facts in sync;
+inference is the fallback and always stays at warning level.
+
+\begin{thebibliography}{9}
+\bibitem{stepcheck} Anonymous Author(s). Static Verification of AWS Step Functions with Sound
+Data-Flow Analysis and Workflow Semantics. Under submission to ICSOC, 2026. (The main paper this
+report accompanies.)
+\bibitem{cousot1977} P.~Cousot and R.~Cousot. Abstract interpretation: a unified lattice
+model for static analysis of programs by construction or approximation of fixpoints.
+In \emph{POPL}, 1977.
+\bibitem{garciaMolina1987} H.~Garcia-Molina and K.~Salem. Sagas.
+In \emph{ACM SIGMOD}, 1987.
+\bibitem{stromYemini} R.~E.~Strom and S.~Yemini. Typestate: a programming language concept for
+enhancing software reliability. \emph{IEEE Transactions on Software Engineering}, 12(1), 1986.
+\bibitem{delineFahndrich} R.~DeLine and M.~F\"ahndrich. Typestates for objects.
+In \emph{ECOOP}, 2004.
+\bibitem{jsonpath} S.~G\"ossner, G.~Normington, and C.~Bormann (eds.).
+\emph{RFC 9535: JSONPath --- Query Expressions for JSON}. IETF, 2024.
+\bibitem{cncf} Cloud Native Computing Foundation. \emph{Serverless Workflow Specification}.
+\url{https://serverlessworkflow.io/}.
+\bibitem{awsasl} Amazon Web Services. \emph{AWS Step Functions Developer Guide / Amazon
+States Language specification}. \url{https://states-language.net/spec.html}.
+\end{thebibliography}
+
+\end{document}

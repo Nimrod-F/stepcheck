@@ -1,0 +1,4 @@
+{"Comment":"reproduces dataPlor/turbofan#1: first-step fan-out reads $.input absent from trigger",
+ "StartAt":"ChunkFanOut","States":{
+  "ChunkFanOut":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+    "Parameters":{"FunctionName":"chunking","Payload":{"uri.$":"$.input"}},"End":true}}}

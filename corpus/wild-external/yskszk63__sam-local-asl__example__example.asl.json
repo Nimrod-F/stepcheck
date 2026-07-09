@@ -1,0 +1,11 @@
+{
+  "Comment": "Example State Machine",
+  "StartAt": "Run",
+  "States": {
+    "Run": {
+      "Type": "Task",
+      "Resource": "${MyFunction}",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "Comment": "An example of using Bedrock to chain prompts and their responses together.",
+  "StartAt": "Invoke model with first prompt",
+  "States": {
+    "Invoke model with first prompt": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeModel",
+      "Parameters": {
+        "ModelId": "global.amazon.nova-2-lite-v1:0",
+        "Body": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "text.$": "$.prompt_one"
+                }
+              ]
+            }
+          ],
+          "inferenceConfig": {
+            "maxTokens": 2000
+          }
+        }
+      },
+      "Next": "Add first result to conversation history",
+      "ResultPath": "$.result_one",
+      "ResultSelector": {
+        "result_one.$": "$.Body.output.message.content[0].text"
+      }
+    },
+    "Add first result to conversation history": {
+      "Type": "Pass",
+      "Next": "Invoke model with second prompt",
+      "Parameters": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "text.$": "$.prompt_one"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text.$": "$.result_one.result_one"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": "Now write a short story based on the above."
+              }
+            ]
+          }
+        ]
+      },
+      "ResultPath": "$.conversation"
+    },
+    "Invoke model with second prompt": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeModel",
+      "Parameters": {
+        "ModelId": "global.amazon.nova-2-lite-v1:0",
+        "Body": {
+          "messages.$": "$.conversation.messages",
+          "inferenceConfig": {
+            "maxTokens": 2000
+          }
+        }
+      },
+      "ResultSelector": {
+        "result_two.$": "$.Body.output.message.content[0].text"
+      },
+      "ResultPath": "$.result_two",
+      "End": true
+    }
+  }
+}

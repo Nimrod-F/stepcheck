@@ -1,0 +1,342 @@
+{
+  "generated_by": "eval/industrial/aws_solutions_cdk_gate.py",
+  "stepcheck_bin": "stepcheck/target/release/stepcheck.exe",
+  "platform_validator": "asl-validator",
+  "corpus": "corpus/aws-solutions",
+  "population": "AWS Solutions Library CDK synth templates",
+  "patterns": [
+    "instance-scheduler-on-aws__*.template.json",
+    "automated-security-response-on-aws__*.template.json",
+    "distributed-load-testing-on-aws__*.template.json",
+    "account-assessment-for-aws-organizations__*.template.json"
+  ],
+  "templates": 6,
+  "build_time_gate": {
+    "metric": "at 0/1/5 defects injected after CDK synth: StepCheck gate catch-rate is a new finding on the mutant template vs the original template; platform silent-pass means asl-validator accepts the same emitted ASL definition. For mutant silent-pass, the denominator excludes templates the platform validator already rejects clean.",
+    "by_injected_defects": {
+      "0": {
+        "applied": 0,
+        "caught": 0,
+        "platform_silent_pass": 2,
+        "platform_n": 6,
+        "gate_latency_ms": {
+          "p50": 16.1,
+          "p95": 19.1,
+          "p99": 20.3
+        },
+        "catch_rate": null,
+        "platform_silent_pass_rate": 0.333
+      },
+      "1": {
+        "applied": 6,
+        "caught": 6,
+        "platform_silent_pass": 2,
+        "platform_n": 2,
+        "gate_latency_ms": {
+          "p50": 15.7,
+          "p95": 20.9,
+          "p99": 36.5
+        },
+        "catch_rate": 1.0,
+        "platform_silent_pass_rate": 1.0
+      },
+      "5": {
+        "applied": 5,
+        "caught": 5,
+        "platform_silent_pass": 0,
+        "platform_n": 1,
+        "gate_latency_ms": {
+          "p50": 15.8,
+          "p95": 20.0,
+          "p99": 28.7
+        },
+        "catch_rate": 1.0,
+        "platform_silent_pass_rate": 0.0
+      }
+    }
+  },
+  "templates_detail": [
+    {
+      "file": "corpus/aws-solutions/account-assessment-for-aws-organizations__hub.template.json",
+      "name": "account-assessment-for-aws-organizations__hub.template",
+      "topology": {
+        "states": 5,
+        "tasks": 2,
+        "retries": 2,
+        "catches": 1,
+        "parallel": 0,
+        "map": 1,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "temporal"
+          ],
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 5,
+          "applied_kinds": [
+            "temporal",
+            "contract",
+            "structural",
+            "temporal",
+            "contract"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        }
+      },
+      "platform_clean_accepts": true
+    },
+    {
+      "file": "corpus/aws-solutions/automated-security-response-on-aws__SolutionDeployStack.template.json",
+      "name": "automated-security-response-on-aws__SolutionDeployStack.template",
+      "topology": {
+        "states": 3,
+        "tasks": 0,
+        "retries": 0,
+        "catches": 0,
+        "parallel": 0,
+        "map": 1,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 2,
+        "codes": {
+          "SC3001": 1,
+          "SC6001": 1
+        }
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": false
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "contract"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        },
+        "5": {
+          "injected": 5,
+          "applied_kinds": [
+            "contract",
+            "structural",
+            "contract",
+            "structural",
+            "contract"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        }
+      },
+      "platform_clean_accepts": false
+    },
+    {
+      "file": "corpus/aws-solutions/distributed-load-testing-on-aws__distributed-load-testing-on-aws-alb-ecs.template.json",
+      "name": "distributed-load-testing-on-aws__distributed-load-testing-on-aws-alb-ecs.template",
+      "topology": {
+        "states": 19,
+        "tasks": 8,
+        "retries": 8,
+        "catches": 4,
+        "parallel": 0,
+        "map": 5,
+        "choice": 2
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": false
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        },
+        "5": {
+          "injected": 5,
+          "applied_kinds": [
+            "retry",
+            "temporal",
+            "contract",
+            "structural",
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        }
+      },
+      "platform_clean_accepts": false
+    },
+    {
+      "file": "corpus/aws-solutions/distributed-load-testing-on-aws__distributed-load-testing-on-aws-headless.template.json",
+      "name": "distributed-load-testing-on-aws__distributed-load-testing-on-aws-headless.template",
+      "topology": {
+        "states": 19,
+        "tasks": 8,
+        "retries": 8,
+        "catches": 4,
+        "parallel": 0,
+        "map": 5,
+        "choice": 2
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": false
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        },
+        "5": {
+          "injected": 5,
+          "applied_kinds": [
+            "retry",
+            "temporal",
+            "contract",
+            "structural",
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        }
+      },
+      "platform_clean_accepts": false
+    },
+    {
+      "file": "corpus/aws-solutions/distributed-load-testing-on-aws__distributed-load-testing-on-aws.template.json",
+      "name": "distributed-load-testing-on-aws__distributed-load-testing-on-aws.template",
+      "topology": {
+        "states": 19,
+        "tasks": 8,
+        "retries": 8,
+        "catches": 4,
+        "parallel": 0,
+        "map": 5,
+        "choice": 2
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": false
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        },
+        "5": {
+          "injected": 5,
+          "applied_kinds": [
+            "retry",
+            "temporal",
+            "contract",
+            "structural",
+            "retry"
+          ],
+          "caught": true,
+          "platform_accepts": false
+        }
+      },
+      "platform_clean_accepts": false
+    },
+    {
+      "file": "corpus/aws-solutions/instance-scheduler-on-aws__main.template.json",
+      "name": "instance-scheduler-on-aws__main.template",
+      "topology": {
+        "states": 2,
+        "tasks": 2,
+        "retries": 1,
+        "catches": 1,
+        "parallel": 0,
+        "map": 0,
+        "choice": 0
+      },
+      "clean": {
+        "errors": 0,
+        "warnings": 0,
+        "codes": {}
+      },
+      "levels": {
+        "0": {
+          "injected": 0,
+          "applied_kinds": [],
+          "caught": null,
+          "platform_accepts": true
+        },
+        "1": {
+          "injected": 1,
+          "applied_kinds": [
+            "temporal"
+          ],
+          "caught": true,
+          "platform_accepts": true
+        },
+        "5": {
+          "injected": 2,
+          "applied_kinds": [
+            "temporal",
+            "temporal"
+          ],
+          "caught": true,
+          "platform_accepts": true
+        }
+      },
+      "platform_clean_accepts": true
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@nimrod-f/stepcheck",
+  "version": "0.1.3",
+  "description": "Static verifier for AWS Step Functions / Amazon States Language workflows: sound data-flow (field-provenance) analysis plus typed-contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checks. Installs a self-contained native binary.",
+  "keywords": [
+    "aws",
+    "step-functions",
+    "amazon-states-language",
+    "asl",
+    "workflow",
+    "verification",
+    "static-analysis",
+    "serverless"
+  ],
+  "license": "Apache-2.0",
+  "bin": {
+    "stepcheck": "bin/stepcheck.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/stepcheck.js",
+    "install.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

@@ -1,42 +1,22 @@
 \section{Conclusion}
 \label{sec:concl}
 
-Serverless workflow orchestration has become a backbone of cloud-native systems, yet
-its workflows are untyped configuration whose correctness is checked only when they
-run---and the tooling developers have stops at JSONPath \emph{syntax}. We presented
-\tool, a static verifier whose centrepiece is the first \emph{sound}, shape-level
-data-flow analysis for a deployed serverless workflow language: a flow-sensitive
-abstract interpretation over a may-present lattice of document shapes that catches
-missing-field references with a proved no-false-positive guarantee and no annotations. Around it \tool{} adds seven further checks---%
-structural, typed contracts, typestate, retry safety, concurrency interference,
-retry/timeout budget, and Saga compensation---two of them for classes no \asl{} tool had
-addressed, all compiling back to executable \asl{}. The key to analysing the workflows
-that already exist is a two-layer model: sound native checks that need nothing beyond
-\asl, paired with a lightweight annotation layer whose defaults are inferred from the
-naming and resource conventions that pervade real workflows.
+\tool{} shows that useful static verification can run directly on the AWS Step Functions artifact
+developers already deploy. Its native data-flow analysis reports only definite missing-field
+failures. Its layered annotations make retry, typestate, and Saga checks precise relative to
+supplied facts. On real workflows it rediscovers independently fixed bugs, detects targeted semantic
+mutants missed by existing validators, and runs fast enough for CI.
 
-Our evaluation on 193 real Step Functions workflows (plus 66 CNCF) supports the three
-research questions. \tool{} detects the targeted defect classes (100\% recall over 616
-injected defects) where a standard schema validator detects none of the retry,
-compensation, concurrency, or temporal defects, surfaces 33 unbounded-callback
-defects in unmodified workflows, and catches six genuine defects in mined real-world
-fix commits; the sound data-flow analysis fires zero false
-positives in the wild, as does the conservative concurrency check (RQ1). It recovers persistence at 87\% and idempotency at 70\% accuracy at zero authoring
-cost against a human-labelled gold set (two independent annotators, $\kappa=1.00$;
-Section~\ref{sec:threats})---enough to make the compensation warnings mostly actionable
-(70\% precision for \code{SC4001}, 100\% for the effect-aware \code{SC4010})---all
-surfaced as correctable warnings, and its typed tier
-recovers two-thirds of injected missing-field defects, the remainder being ASL's
-intrinsic opacity (RQ2); and it verifies a workflow in $\approx$39\,$\mu$s while adding
-zero runtime overhead, with verified workflows running unmodified on real AWS Step
-Functions (RQ3).
+The sound core and the higher-stakes semantic checks sit in different tiers by design. Missing-field
+faults are caught with certainty on the raw artifact; the rediscovered and in-the-wild
+\code{SC1101} bugs show how they escape testing behind \texttt{Choice} branches. Retry, race, and
+compensation faults instead begin as provenance-graded warnings and harden into declared-tier errors
+as effects are annotated or inferred. The layering is a migration path, not a fixed line. Serverless
+orchestration need not wait until execution to expose data, ordering, retry, timing, and
+compensation mistakes.
 
-The broader message mirrors the history of type systems: just as static typing moved
-classes of error from run time to compile time, lightweight static verification---rooted
-in a sound data-flow core---can do the same for serverless orchestration, on the
-platforms developers already use. Future work includes further frontends (SAM, CDK),
-richer effect/ownership information to sharpen the compensation and concurrency analyses,
-a precise element-level shape for \texttt{Map}/\texttt{Parallel} item contexts, and a
-labelled-precision study of the concurrency and temporal warnings. We release \tool, the
-corpus, the gold labels and labelling rubric, and the evaluation harness to support
-replication and reuse, with an anonymized artifact link provided for review.
+\paragraph{Artifact availability.}
+An anonymized artifact---\tool{}, the corpus, scripts, figures, and reproduction instructions---is
+at \url{https://anonymous.4open.science/r/StepCheck}. The paper is self-contained; the artifact adds
+a companion technical report with the full formal development, algorithms, feature matrices, and
+extended limitations.

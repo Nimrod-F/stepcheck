@@ -6,6 +6,8 @@
 
 use indexmap::IndexMap;
 use serde_json::Value;
+use std::collections::BTreeMap;
+use std::rc::Rc;
 
 /// The kind of an ASL state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +73,8 @@ pub struct RetryRule {
     pub max_attempts: Option<i64>,
     pub interval_seconds: Option<f64>,
     pub backoff_rate: Option<f64>,
+    /// Retry fields not interpreted by StepCheck, preserved for ASL re-emission.
+    pub extra: serde_json::Map<String, Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -78,6 +82,9 @@ pub struct CatchRule {
     pub error_equals: Vec<String>,
     pub next: String,
     pub result_path: ResultPath,
+    pub assign: Option<Value>,
+    /// Catch fields not interpreted by StepCheck, preserved for ASL re-emission.
+    pub extra: serde_json::Map<String, Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +132,16 @@ pub struct State {
     pub output_path: Option<Value>,
     pub result_path: ResultPath,
     pub parameters: Option<Value>,
+    /// JSONata action arguments (`Arguments`).
+    pub arguments: Option<Value>,
+    /// Workflow-variable assignments (`Assign`). JSONPath states use payload-template
+    /// `.$` bindings; JSONata states use `{% ... %}` expressions. The data-flow
+    /// pass models JSONPath assignments conservatively and treats JSONata ones as opaque.
+    pub assign: Option<Value>,
+    /// JSONata state output (`Output`).
+    pub output: Option<Value>,
+    /// JSONata Map item source (`Items`).
+    pub items: Option<Value>,
     pub result_selector: Option<Value>,
     pub result: Option<Value>,
     pub retry: Vec<RetryRule>,
@@ -142,6 +159,9 @@ pub struct State {
     pub heartbeat_seconds: Option<f64>,
     /// `MaxConcurrency` of a `Map` state (`None` = unbounded).
     pub max_concurrency: Option<i64>,
+    /// Whether this is a Distributed Map (`ItemProcessor` in distributed mode,
+    /// or distributed-only fields such as `ItemReader`).
+    pub distributed_map: bool,
     /// `ItemSelector`/`Parameters` of a `Map` describing the per-item document.
     pub item_selector: Option<Value>,
     /// Effective query language of this state (explicit `QueryLanguage`, else the
@@ -149,6 +169,11 @@ pub struct State {
     /// analysis treats the state opaquely for soundness.
     pub query_language: QueryLang,
     pub anno: Anno,
+    /// State fields not interpreted by StepCheck, preserved for ASL re-emission.
+    pub extra: serde_json::Map<String, Value>,
+    /// Whether the original Map sub-machine was spelled as `ItemProcessor`
+    /// rather than classic `Iterator`; preserves Distributed Map syntax.
+    pub map_uses_item_processor: bool,
 }
 
 impl State {
@@ -164,6 +189,10 @@ impl State {
             output_path: None,
             result_path: ResultPath::Default,
             parameters: None,
+            arguments: None,
+            assign: None,
+            output: None,
+            items: None,
             result_selector: None,
             result: None,
             retry: Vec::new(),
@@ -176,9 +205,12 @@ impl State {
             timeout_seconds: None,
             heartbeat_seconds: None,
             max_concurrency: None,
+            distributed_map: false,
             item_selector: None,
             query_language: QueryLang::JsonPath,
             anno: Anno::default(),
+            extra: serde_json::Map::new(),
+            map_uses_item_processor: false,
         }
     }
 
@@ -239,6 +271,9 @@ pub struct Workflow {
     pub comment: Option<String>,
     pub start_at: String,
     pub states: IndexMap<String, State>,
+    /// Sibling/child state-machine definitions available for static composition.
+    /// Keys are the static `StateMachineArn` strings produced by a frontend.
+    pub linked_children: Rc<BTreeMap<String, Workflow>>,
     /// Optional declared schema of the whole-workflow input (typed contract).
     pub input_schema: Option<String>,
     /// Resolved field set of the declared workflow input schema. When present
@@ -250,6 +285,8 @@ pub struct Workflow {
     /// Allowed business-state transitions `(from -> to)`; empty if no protocol
     /// was declared (typestate pass is then a no-op for ordering checks).
     pub protocol: Vec<(String, String)>,
+    /// Machine-level fields not interpreted by StepCheck, preserved for ASL re-emission.
+    pub extra: serde_json::Map<String, Value>,
 }
 
 impl Workflow {
@@ -259,10 +296,12 @@ impl Workflow {
             comment: None,
             start_at: start_at.into(),
             states: IndexMap::new(),
+            linked_children: Rc::new(BTreeMap::new()),
             input_schema: None,
             input_fields: None,
             timeout_seconds: None,
             protocol: Vec::new(),
+            extra: serde_json::Map::new(),
         }
     }
 

@@ -1,0 +1,46 @@
+{
+  "Comment": "testactivity ",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Resource": "activity:unittest/add",
+      "Parameters": {
+        "x.$": "$.a",
+        "y.$": "$.b"
+      },
+      "ResultPath": "$.z",
+      "Next": "S2"
+    },
+    "S2": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.a",
+        "y.$": "$.b"
+      },
+      "Resource": "activity:unittest/sub",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "SubError"
+          ],
+          "ResultPath": "$.errorinfo",
+          "Next": "S3"
+        }
+      ],
+      "End": true
+    },
+    "S3": {
+      "Type": "Task",
+      "Resource": "activity:unittest/sub",
+      "Parameters": {
+        "x.$": "$.b",
+        "y.$": "$.a"
+      },
+      "ResultPath": "$.z2",
+      "OutputPath": "$",
+      "End": true
+    }
+  }
+}

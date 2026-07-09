@@ -1,0 +1,17 @@
+document:
+  dsl: '1.0.0'
+  namespace: examples
+  name: jq-order-good
+do:
+  - reserveInventory:
+      call: http
+      input:
+        schema:
+          document:
+            properties:
+              orderId: { type: string }
+              amount: { type: number }
+              items: { type: array }
+      with:
+        order: ${ .orderId }
+        total: ${ .amount }

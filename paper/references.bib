@@ -5,9 +5,9 @@
 %   (ICSOC 2026, Springer LNCS / splncs04).
 %
 % Every entry below was verified against arXiv (get_abstract),
-% Crossref, and/or Semantic Scholar on 2026-06-18.
+% Crossref, and/or Semantic Scholar.
 % See bib-verification.md for the per-entry audit trail (VERIFIED /
-% CORRECTED / DROPPED).  38 references, grouped by theme.
+% CORRECTED / DROPPED). References are grouped by theme.
 % =====================================================================
 
 % =====================================================================
@@ -18,8 +18,25 @@
   author       = {{Amazon Web Services}},
   title        = {{AWS} Step Functions Developer Guide (Amazon States Language)},
   year         = {2026},
-  howpublished = {\url{https://docs.aws.amazon.com/step-functions/}},
-  note         = {Accessed 2026-06-17}
+  howpublished = {\url{https://docs.aws.amazon.com/step-functions/}}
+}
+
+@misc{awsServerlessAirline,
+  author       = {{Amazon Web Services}},
+  title        = {{AWS Serverless Airline Booking}},
+  year         = {2019},
+  howpublished = {\url{https://github.com/aws-samples/aws-serverless-airline-booking}},
+  note         = {Public aws-samples application; accessed 2026-07-08}
+}
+
+@article{eismann2022stability,
+  author  = {Eismann, Simon and Costa, Diego Elias and Liao, Lizhi and Bezemer, Cor-Paul and Shang, Weiyi and van Hoorn, Andr{\'e} and Kounev, Samuel},
+  title   = {A Case Study on the Stability of Performance Tests for Serverless Applications},
+  journal = {Journal of Systems and Software},
+  volume  = {189},
+  pages   = {111294},
+  year    = {2022},
+  doi     = {10.1016/j.jss.2022.111294}
 }
 
 @inproceedings{garciaLopez2018faas,
@@ -27,15 +44,13 @@
   title     = {Comparison of {FaaS} Orchestration Systems},
   booktitle = {IEEE/ACM Int. Conf. on Utility and Cloud Computing Companion (UCC)},
   year      = {2018},
-  note      = {arXiv:1807.11248}
 }
 
 @article{arjona2021triggerflow,
   author  = {Arjona, Aitor and Garc{\'\i}a L{\'o}pez, Pedro and Samp{\'e}, Josep and Slominski, Aleksander and Villard, Lionel},
   title   = {Triggerflow: Trigger-based Orchestration of Serverless Workflows},
   journal = {Future Generation Computer Systems},
-  year    = {2021},
-  note    = {arXiv:2106.00583}
+  year    = {2021}
 }
 
 @inproceedings{yu2021pheromone,
@@ -43,7 +58,6 @@
   title     = {Following the Data, Not the Function: Rethinking Function Orchestration in Serverless Computing},
   booktitle = {USENIX Symp. on Networked Systems Design and Implementation (NSDI)},
   year      = {2023},
-  note      = {arXiv:2109.13492}
 }
 
 @article{wen2021empirical,
@@ -51,7 +65,6 @@
   title   = {An Empirical Study on Serverless Workflow Service},
   journal = {arXiv preprint},
   year    = {2021},
-  note    = {arXiv:2101.03513}
 }
 
 @inproceedings{li2023dataflower,
@@ -59,7 +72,6 @@
   title     = {{DataFlower}: Exploiting the Data-flow Paradigm for Serverless Workflow Orchestration},
   booktitle = {Int. Conf. on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
   year      = {2023},
-  note      = {arXiv:2304.14629}
 }
 
 % =====================================================================
@@ -73,7 +85,6 @@
   volume  = {5},
   number  = {OOPSLA},
   year    = {2021},
-  doi     = {10.1145/3485510}
 }
 
 @article{burckhardt2021netherite,
@@ -81,15 +92,13 @@
   title   = {Serverless Workflows with Durable Functions and Netherite},
   journal = {arXiv preprint},
   year    = {2021},
-  note    = {arXiv:2103.00033}
 }
 
 @misc{temporal,
   author       = {{Temporal Technologies}},
   title        = {Temporal: Durable Execution and Workflow Orchestration},
   year         = {2026},
-  howpublished = {\url{https://temporal.io/}},
-  note         = {Accessed 2026-06-17}
+  howpublished = {\url{https://temporal.io/}}
 }
 
 @misc{cadence,
@@ -104,16 +113,103 @@
   author       = {{Cloud Native Computing Foundation}},
   title        = {Serverless Workflow Specification},
   year         = {2026},
-  howpublished = {\url{https://serverlessworkflow.io/}},
-  note         = {Accessed 2026-06-17}
+  howpublished = {\url{https://serverlessworkflow.io/}}
 }
 
 @misc{awsStatelint,
   author       = {{Amazon Web Services Labs}},
   title        = {statelint: A validator for {Amazon} States Language documents},
   year         = {2024},
-  howpublished = {\url{https://github.com/awslabs/statelint}},
-  note         = {Apache-2.0; v0.8.0. Accessed 2026-06-18}
+  howpublished = {\url{https://github.com/awslabs/statelint}}
+}
+
+@misc{aslValidator,
+  author       = {Christophe Boug{\`e}re},
+  title        = {{asl-validator}: A {JSON}-schema validator for {Amazon} States Language documents},
+  year         = {2024},
+  howpublished = {\url{https://github.com/ChristopheBougere/asl-validator}}
+}
+
+@article{oracleproblem,
+  author       = {Earl T. Barr and Mark Harman and Phil McMinn and Muzammil Shahbaz and Shin Yoo},
+  title        = {The Oracle Problem in Software Testing: A Survey},
+  journal      = {IEEE Transactions on Software Engineering},
+  volume       = {41},
+  number       = {5},
+  pages        = {507--525},
+  year         = {2015},
+  doi          = {10.1109/TSE.2014.2372785}
+}
+
+@inproceedings{difftestanalyzers,
+  author       = {Christian Klinger and Maria Christakis and Valentin W{\"u}stholz},
+  title        = {Differentially Testing Soundness and Precision of Program Analyzers},
+  booktitle    = {International Symposium on Software Testing and Analysis (ISSTA)},
+  pages        = {239--250},
+  year         = {2019}
+}
+
+@inproceedings{translationvalidation,
+  author       = {Amir Pnueli and Michael Siegel and Eli Singerman},
+  title        = {Translation Validation},
+  booktitle    = {Tools and Algorithms for the Construction and Analysis of Systems (TACAS)},
+  series       = {LNCS},
+  volume       = {1384},
+  pages        = {151--166},
+  year         = {1998}
+}
+
+@article{suliu2024,
+  author       = {Guoxin Su and Li Liu},
+  title        = {Workflow Trace Profiling and Execution Time Analysis in Quantitative Verification},
+  journal      = {Future Internet},
+  volume       = {16},
+  number       = {9},
+  pages        = {319},
+  year         = {2024},
+  doi          = {10.3390/fi16090319}
+}
+
+@article{woflan,
+  author       = {H. M. W. Verbeek and Twan Basten and Wil M. P. van der Aalst},
+  title        = {Diagnosing Workflow Processes using {Woflan}},
+  journal      = {The Computer Journal},
+  volume       = {44},
+  number       = {4},
+  pages        = {246--279},
+  year         = {2001},
+  publisher    = {Oxford University Press}
+}
+
+@inproceedings{pm4py,
+  author       = {Alessandro Berti and Sebastiaan J. van Zelst and Wil M. P. van der Aalst},
+  title        = {Process Mining for {Python} ({PM4Py}): Bridging the Gap Between Process- and Data Science},
+  booktitle    = {International Conference on Process Mining (ICPM) Demos},
+  year         = {2019}
+}
+
+@inproceedings{bpmnanalyzer,
+  author       = {Tim Kr{\"a}uter and Patrick St{\"u}nkel and Adrian Rutle and Yngve Lamo and Harald K{\"o}nig},
+  title        = {{BPMN} {Analyzer} 2.0: Instantaneous, Comprehensible, and Fixable Control Flow Analysis for Realistic {BPMN} Models},
+  booktitle    = {International Conference on Business Process Management (BPM)},
+  year         = {2024}
+}
+
+@article{bprove,
+  author       = {Flavio Corradini and Fabrizio Fornari and Andrea Polini and Barbara Re and Francesco Tiezzi and Andrea Vandin},
+  title        = {A formal approach for the analysis of {BPMN} collaboration models},
+  journal      = {Journal of Systems and Software},
+  volume       = {180},
+  pages        = {111007},
+  year         = {2021},
+  publisher    = {Elsevier}
+}
+
+@misc{awsValidateDefinition,
+  author       = {{Amazon Web Services}},
+  title        = {{ValidateStateMachineDefinition} --- {AWS} {Step Functions} {API} Reference},
+  year         = {2024},
+  howpublished = {\url{https://docs.aws.amazon.com/step-functions/latest/apireference/API_ValidateStateMachineDefinition.html}}
 }
 
 @article{kulkarni2025characterizing,
@@ -121,7 +217,6 @@
   title   = {Characterizing {FaaS} Workflows on Public Clouds: The Good, the Bad and the Ugly},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2509.23013}
 }
 
 @article{li2025jointlambda,
@@ -129,7 +224,6 @@
   title   = {{Joint$\lambda$}: Orchestrating Serverless Workflows on Jointcloud {FaaS} Systems},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2505.21899}
 }
 
 % =====================================================================
@@ -140,8 +234,7 @@
   author    = {Zhang, Haoran and Cardoza, Adney and Chen, Peter Baile and Angel, Sebastian and Liu, Vincent},
   title     = {Fault-tolerant and Transactional Stateful Serverless Workflows},
   booktitle = {USENIX Symp. on Operating Systems Design and Implementation (OSDI)},
-  year      = {2020},
-  note      = {arXiv:2010.06706}
+  year      = {2020}
 }
 
 @article{zhang2025causalmesh,
@@ -149,7 +242,16 @@
   title   = {{CausalMesh}: A Formally Verified Causally Consistent Distributed Cache with Support for Client Migration},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2508.15647}
+}
+
+@article{jangda2019serverless,
+  author  = {Jangda, Abhinav and Pinckney, Donald and Brun, Yuriy and Guha, Arjun},
+  title   = {Formal Foundations of Serverless Computing},
+  journal = {Proc. ACM Program. Lang.},
+  volume  = {3},
+  number  = {OOPSLA},
+  pages   = {1--26},
+  year    = {2019},
 }
 
 @article{cauli2022iac,
@@ -157,7 +259,28 @@
   title   = {Actions over Core-closed Knowledge Bases},
   journal = {arXiv preprint},
   year    = {2022},
-  note    = {arXiv:2202.12592}
+}
+
+@inproceedings{backes2018zelkova,
+  author    = {Backes, John and Bolignano, Pauline and Cook, Byron and Dodge, Catherine and
+               Gacek, Andrew and Luckow, Kasper and Rungta, Neha and Tkachuk, Oksana and
+               Varming, Carsten},
+  title     = {Semantic-Based Automated Reasoning for {AWS} Access Policies Using {SMT}},
+  booktitle = {Formal Methods in Computer-Aided Design (FMCAD)},
+  pages     = {1--9},
+  year      = {2018}
+}
+
+@article{livshits2015soundiness,
+  author    = {Livshits, Benjamin and Sridharan, Manu and Smaragdakis, Yannis and
+               Lhot{\'a}k, Ond{\v{r}}ej and Amaral, J. Nelson and Chang, Bor-Yuh Evan and
+               Guyer, Samuel Z. and Khedker, Uday P. and M{\o}ller, Anders and Vardoulakis, Dimitrios},
+  title     = {In Defense of Soundiness: A Manifesto},
+  journal   = {Communications of the ACM},
+  volume    = {58},
+  number    = {2},
+  pages     = {44--46},
+  year      = {2015},
 }
 
 % =====================================================================
@@ -172,7 +295,6 @@
   number  = {1},
   pages   = {157--171},
   year    = {1986},
-  doi     = {10.1109/TSE.1986.6312929}
 }
 
 @inproceedings{fahndrich2004typestates,
@@ -181,7 +303,6 @@
   booktitle = {European Conf. on Object-Oriented Programming (ECOOP)},
   pages     = {465--490},
   year      = {2004},
-  doi       = {10.1007/978-3-540-24851-4_21}
 }
 
 @inproceedings{campos2011channels,
@@ -189,7 +310,6 @@
   title     = {Channels as Objects in Concurrent Object-Oriented Programming},
   booktitle = {Workshop on Programming Language Approaches to Concurrency and Communication-cEntric Software (PLACES)},
   year      = {2011},
-  doi       = {10.4204/EPTCS.69.2}
 }
 
 @article{crafa2016actors,
@@ -197,7 +317,6 @@
   title   = {On the Chemistry of Typestate-Oriented Actors},
   journal = {arXiv preprint},
   year    = {2016},
-  note    = {arXiv:1607.02927}
 }
 
 @inproceedings{gerbo2019typestate,
@@ -205,7 +324,6 @@
   title     = {Concurrent Typestate-Oriented Programming in {Java}},
   booktitle = {Workshop on Programming Language Approaches to Concurrency and Communication-cEntric Software (PLACES)},
   year      = {2019},
-  doi       = {10.4204/EPTCS.291.3}
 }
 
 @inproceedings{honda1993dyadic,
@@ -214,7 +332,6 @@
   booktitle = {Int. Conf. on Concurrency Theory (CONCUR)},
   pages     = {509--523},
   year      = {1993},
-  doi       = {10.1007/3-540-57208-2_35}
 }
 
 @inproceedings{honda2008multiparty,
@@ -223,7 +340,6 @@
   booktitle = {ACM SIGPLAN-SIGACT Symp. on Principles of Programming Languages (POPL)},
   pages     = {273--284},
   year      = {2008},
-  doi       = {10.1145/1328438.1328472}
 }
 
 @article{denielou2012pmpst,
@@ -231,7 +347,6 @@
   title   = {Parameterised Multiparty Session Types},
   journal = {Logical Methods in Computer Science},
   year    = {2012},
-  note    = {arXiv:1208.6483}
 }
 
 @article{udomsrirungruang2025mpst,
@@ -241,7 +356,6 @@
   volume  = {9},
   number  = {POPL},
   year    = {2025},
-  doi     = {10.1145/3704872}
 }
 
 @inproceedings{casetta2026mpst,
@@ -251,7 +365,6 @@
   volume    = {444},
   pages     = {68--78},
   year      = {2026},
-  doi       = {10.4204/EPTCS.444.7}
 }
 
 @article{carbone2018choreographies,
@@ -259,7 +372,6 @@
   title   = {Multiparty Classical Choreographies},
   journal = {arXiv preprint},
   year    = {2018},
-  note    = {arXiv:1808.05088}
 }
 
 % =====================================================================
@@ -272,7 +384,6 @@
   booktitle = {ACM SIGMOD Int. Conf. on Management of Data},
   pages     = {249--259},
   year      = {1987},
-  doi       = {10.1145/38713.38742}
 }
 
 @article{colombo2014compensation,
@@ -280,7 +391,6 @@
   title   = {Comprehensive Monitor-Oriented Compensation Programming},
   journal = {arXiv preprint},
   year    = {2014},
-  note    = {arXiv:1404.0849}
 }
 
 @article{hellerstein2019calm,
@@ -288,7 +398,6 @@
   title   = {Keeping {CALM}: When Distributed Consistency is Easy},
   journal = {arXiv preprint},
   year    = {2019},
-  note    = {arXiv:1901.01930}
 }
 
 @article{chang2025sagallm,
@@ -296,7 +405,6 @@
   title   = {{SagaLLM}: Context Management, Validation, and Transaction Guarantees for Multi-Agent {LLM} Planning},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2503.11951}
 }
 
 @article{mohammad2025resilient,
@@ -304,7 +412,6 @@
   title   = {Resilient Microservices: A Systematic Review of Recovery Patterns, Strategies, and Evaluation Frameworks},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2512.16959}
 }
 
 % =====================================================================
@@ -320,7 +427,6 @@
   number  = {1},
   pages   = {21--66},
   year    = {1998},
-  doi     = {10.1142/S0218126698000043}
 }
 
 @inproceedings{blondin2022soundness,
@@ -329,7 +435,6 @@
   booktitle = {Int. Conf. on Computer Aided Verification (CAV)},
   pages     = {435--458},
   year      = {2022},
-  doi       = {10.1007/978-3-031-13188-2_23}
 }
 
 @inproceedings{bianculli2007bpel,
@@ -338,7 +443,6 @@
   booktitle = {IEEE Int. Conf. on Service-Oriented Computing and Applications (SOCA)},
   pages     = {13--20},
   year      = {2007},
-  doi       = {10.1109/SOCA.2007.5}
 }
 
 @article{bartoletti2012lending,
@@ -346,7 +450,6 @@
   title   = {Lending Petri Nets and Contracts},
   journal = {arXiv preprint},
   year    = {2012},
-  note    = {arXiv:1211.3624}
 }
 
 % =====================================================================
@@ -360,7 +463,6 @@
   volume  = {4},
   number  = {3},
   year    = {2020},
-  doi     = {10.22152/programming-journal.org/2020/4/10}
 }
 
 @inproceedings{lehva2019cdc,
@@ -369,7 +471,6 @@
   booktitle = {Int. Conf. on Product-Focused Software Process Improvement (PROFES)},
   pages     = {497--512},
   year      = {2019},
-  doi       = {10.1007/978-3-030-35333-9_35}
 }
 
 @inproceedings{ayas2022cdc,
@@ -378,7 +479,6 @@
   booktitle = {Euromicro Conf. on Software Engineering and Advanced Applications (SEAA)},
   pages     = {92--99},
   year      = {2022},
-  doi       = {10.1109/SEAA56994.2022.00022}
 }
 
 @inproceedings{wu2022eventdriven,
@@ -387,7 +487,6 @@
   booktitle = {Asia-Pacific Software Engineering Conf. (APSEC)},
   pages     = {467--471},
   year      = {2022},
-  doi       = {10.1109/APSEC57359.2022.00064}
 }
 
 @article{fu2024schema,
@@ -395,7 +494,6 @@
   title   = {Compound Schema Registry},
   journal = {arXiv preprint},
   year    = {2024},
-  note    = {arXiv:2406.11227}
 }
 
 % =====================================================================
@@ -407,7 +505,6 @@
   title   = {{SafeRESTScript}: Statically Checking {REST} {API} Consumers},
   journal = {arXiv preprint},
   year    = {2020},
-  note    = {arXiv:2007.08048}
 }
 
 @article{sarkar2024hastee,
@@ -415,7 +512,6 @@
   title   = {{HasTEE+}: Confidential Cloud Computing and Analytics with {Haskell}},
   journal = {arXiv preprint},
   year    = {2024},
-  note    = {arXiv:2401.08901}
 }
 
 @article{khan2025iac,
@@ -423,7 +519,6 @@
   title   = {Multi-Agent Code-Orchestrated Generation for Reliable Infrastructure-as-Code},
   journal = {arXiv preprint},
   year    = {2025},
-  note    = {arXiv:2510.03902}
 }
 
 @inproceedings{cousot1977,
@@ -465,7 +560,6 @@
   number  = {4},
   pages   = {374--391},
   year    = {2006},
-  doi     = {10.1287/isre.1060.0105}
 }
 
 @inproceedings{trcka2009antipatterns,
@@ -476,7 +570,6 @@
   volume    = {5565},
   pages     = {425--439},
   year      = {2009},
-  doi       = {10.1007/978-3-642-02144-2_34}
 }
 
 @inproceedings{ding2023flux,
@@ -492,7 +585,6 @@
   booktitle = {ACM SIGPLAN Conf. on Programming Language Design and Implementation (PLDI)},
   pages     = {477--490},
   year      = {2016},
-  doi       = {10.1145/2908080.2908115}
 }
 
 @INPROCEEDINGS{moser2009bpel,
@@ -504,8 +596,7 @@
   number={},
   pages={98-105},
   keywords={Data analysis;Web services;Application software;Aggregates;Controllability;Data mining;Protocols;Formal verification;Testing;Debugging},
-  doi={10.1109/SCC.2007.22}}
-
+}
 
 @article{vonstackelberg2014bpmn,
   author  = {von Stackelberg, Silvia and Putze, Susanne and M{\"u}lle, Jutta and B{\"o}hm, Klemens},
@@ -513,6 +604,59 @@
   journal = {Open Journal of Information Systems (OJIS)},
   volume  = {1},
   number  = {2},
-  year    = {2014},
-  note    = {bibliographic details to be re-verified before camera-ready}
+  year    = {2014}
+}
+
+% =====================================================================
+% Theme J --- Serverless challenges & industrial formal methods
+%             (added 2026-07-01 for the ICSOC related-work revision).
+%             jonas2019berkeley (arXiv:1902.03383), hellerstein2019serverless
+%             (arXiv:1812.03651), baldini2017serverless (arXiv:1706.03178):
+%             VERIFIED via arXiv get_abstract 2026-07-01.
+%             kallas2023microservices (POPL'23, doi 10.1145/3571206) and
+%             newcombe2015awsformal (CACM'15, doi 10.1145/2699417, dblp
+%             NewcombeRZMBD15): VERIFIED via ACM DL / dblp 2026-07-01.
+% =====================================================================
+
+@incollection{baldini2017serverless,
+  author    = {Baldini, Ioana and Castro, Paul and Chang, Kerry and Cheng, Perry and Fink, Stephen and Ishakian, Vatche and Mitchell, Nick and Muthusamy, Vinod and Rabbah, Rodric and Slominski, Aleksander and Suter, Philippe},
+  title     = {Serverless Computing: Current Trends and Open Problems},
+  booktitle = {Research Advances in Cloud Computing},
+  pages     = {1--20},
+  publisher = {Springer},
+  year      = {2017},
+}
+
+@inproceedings{hellerstein2019serverless,
+  author    = {Hellerstein, Joseph M. and Faleiro, Jose M. and Gonzalez, Joseph E. and Schleier-Smith, Johann and Sreekanti, Vikram and Tumanov, Alexey and Wu, Chenggang},
+  title     = {Serverless Computing: One Step Forward, Two Steps Back},
+  booktitle = {Conference on Innovative Data Systems Research (CIDR)},
+  year      = {2019},
+}
+
+@article{jonas2019berkeley,
+  author  = {Jonas, Eric and Schleier-Smith, Johann and Sreekanti, Vikram and Tsai, Chia-Che and Khandelwal, Anurag and Pu, Qifan and Shankar, Vaishaal and Carreira, Joao and Krauth, Karl and Yadwadkar, Neeraja and Gonzalez, Joseph E. and Popa, Raluca Ada and Stoica, Ion and Patterson, David A.},
+  title   = {Cloud Programming Simplified: A {B}erkeley View on Serverless Computing},
+  journal = {arXiv preprint},
+  year    = {2019},
+}
+
+@article{kallas2023microservices,
+  author  = {Kallas, Konstantinos and Zhang, Haoran and Alur, Rajeev and Angel, Sebastian and Liu, Vincent},
+  title   = {Executing Microservice Applications on Serverless, Correctly},
+  journal = {Proc. ACM Program. Lang.},
+  volume  = {7},
+  number  = {POPL},
+  pages   = {367--395},
+  year    = {2023},
+}
+
+@article{newcombe2015awsformal,
+  author  = {Newcombe, Chris and Rath, Tim and Zhang, Fan and Munteanu, Bogdan and Brooker, Marc and Deardeuff, Michael},
+  title   = {How {A}mazon Web Services Uses Formal Methods},
+  journal = {Communications of the ACM},
+  volume  = {58},
+  number  = {4},
+  pages   = {66--73},
+  year    = {2015},
 }

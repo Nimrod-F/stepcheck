@@ -1,0 +1,55 @@
+{
+  "Comment": "A Coffee Order Example",
+  "StartAt": "OrderCoffee",
+  "States": {
+    "OrderCoffee": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-central-1:185268270045:function:order-coffee-fct-dev-hello",
+      "Next": "WaitAndPay"
+    },
+    "WaitAndPay": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "PayCoffee",
+          "States": {
+            "PayCoffee": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:eu-central-1:185268270045:function:pay-coffee-fct-dev-hello",
+              "End": true,
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "NoMoneyError"
+                  ],
+                  "Next": "NoCoffee"
+                }
+              ]
+            },
+            "NoCoffee": {
+              "Type": "Fail",
+              "Error": "NoCoffeeInjection",
+              "Cause": "Did not receive any coffee :-("
+            }
+          }
+        },
+        {
+          "StartAt": "WaitForCoffee",
+          "States": {
+            "WaitForCoffee": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "TakeCoffee"
+    },
+    "TakeCoffee": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-central-1:185268270045:function:take-coffee-fct-dev-hello",
+      "End": true
+    }
+  }
+}

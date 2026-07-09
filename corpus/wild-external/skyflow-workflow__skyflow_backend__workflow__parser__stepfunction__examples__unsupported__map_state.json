@@ -1,0 +1,40 @@
+{
+  "Comment": "test map",
+  "Type": "statemachine",
+  "Version": "1.0",
+  "Default": {},
+  "StartAt": "M1",
+  "States": {
+    "M1": {
+      "Type": "Map",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.shipped",
+      "MaxConcurrency": 2,
+      "ItemProcessor": {
+        "StartAt": "MS1",
+        "States": {
+          "MS1": {
+            "Type": "Pass",
+            "Result": {
+              "prod.$": "$.prod"
+            },
+            "ResultPath": "$.Result",
+            "OutputPath": "$",
+            "Next": "MS2"
+          },
+          "MS2": {
+            "Type": "Pass",
+            "Result": {
+              "quantity.$": "$.quantity"
+            },
+            "ResultPath": "$.Result.quantity",
+            "OutputPath": "$.Result",
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.detail.shipped",
+      "End": true
+    }
+  }
+}

@@ -1,13 +1,14 @@
 {
   "files": 193,
-  "flagged_files": 95,
+  "flagged_files": 99,
   "total_errors": 1,
-  "total_warnings": 195,
+  "total_warnings": 223,
   "code_totals": {
     "SC0007": 9,
     "SC0010": 1,
     "SC3001": 36,
     "SC4001": 117,
+    "SC4010": 28,
     "SC6001": 33
   },
   "per_file": [
@@ -31,11 +32,19 @@
     {
       "file": "sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 4,
       "codes": {
-        "SC4001": 3
+        "SC4001": 3,
+        "SC4010": 1
       },
       "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Create New Organizational Unit",
+          "message": "persistent task 'Create New Organizational Unit' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -76,10 +85,11 @@
     {
       "file": "sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
       "errors": 0,
-      "warnings": 2,
+      "warnings": 3,
       "codes": {
         "SC3001": 1,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -95,16 +105,24 @@
           "state": "Get Current Lock Item",
           "message": "persistent task 'Get Current Lock Item' (lock) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Clean Up Lock",
+          "message": "persistent task 'Clean Up Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 6,
       "codes": {
         "SC3001": 2,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 3
       },
       "diagnostics": [
         {
@@ -122,21 +140,43 @@
           "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
         },
         {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Acquire Lock",
+          "message": "persistent task 'Acquire Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Initialize Lock Item",
+          "message": "persistent task 'Initialize Lock Item' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "Get Lock[Branch0]/Get Current Lock Record",
           "message": "persistent task 'Get Current Lock Record' (lock) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Release Lock",
+          "message": "persistent task 'Release Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__statemachine.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 6,
       "codes": {
         "SC3001": 2,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 3
       },
       "diagnostics": [
         {
@@ -154,20 +194,42 @@
           "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
         },
         {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Acquire Lock",
+          "message": "persistent task 'Acquire Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Initialize Lock Item",
+          "message": "persistent task 'Initialize Lock Item' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "Get Lock[Branch0]/Get Current Lock Record",
           "message": "persistent task 'Get Current Lock Record' (lock) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Release Lock",
+          "message": "persistent task 'Release Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__test-run-semaphore.asl.json",
       "errors": 0,
-      "warnings": 1,
+      "warnings": 2,
       "codes": {
-        "SC3001": 1
+        "SC3001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -176,6 +238,13 @@
           "state": "StartInParallel[Map]/RunChildStateMachine",
           "message": "non-idempotent task 'RunChildStateMachine' is retried on States.ALL and may duplicate its effect (startexecution)",
           "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "StartInParallel[Map]/RunChildStateMachine",
+          "message": "persistent task 'RunChildStateMachine' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
@@ -1050,9 +1119,10 @@
     {
       "file": "sfn-collection__idempotent-workflow-sam__statemachine__statemachine.asl.json",
       "errors": 0,
-      "warnings": 1,
+      "warnings": 2,
       "codes": {
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -1061,15 +1131,23 @@
           "state": "Create idempotency settings (key and ttl)",
           "message": "persistent task 'Create idempotency settings (key and ttl)' (create) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Create and lock idempotency record",
+          "message": "persistent task 'Create and lock idempotency record' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-collection__idempotent-workflow__statemachine__statemachine.asl.json",
       "errors": 0,
-      "warnings": 1,
+      "warnings": 2,
       "codes": {
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -1078,6 +1156,13 @@
           "state": "Create idempotency settings (key and ttl)",
           "message": "persistent task 'Create idempotency settings (key and ttl)' (create) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Create and lock idempotency record",
+          "message": "persistent task 'Create and lock idempotency record' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
@@ -1326,9 +1411,19 @@
     {
       "file": "sfn-collection__parallel-agent-early-stopping__statemachine__main.asl.json",
       "errors": 0,
-      "warnings": 0,
-      "codes": {},
-      "diagnostics": []
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Launch Workers",
+          "message": "persistent task 'Launch Workers' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
     },
     {
       "file": "sfn-collection__parallel-agent-early-stopping__statemachine__worker.asl.json",
@@ -1678,12 +1773,20 @@
     {
       "file": "sfn-collection__selective-checkpointing-cdk__typescript__statemachine__statemachineParent.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 4,
       "codes": {
         "SC4001": 1,
+        "SC4010": 1,
         "SC6001": 2
       },
       "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Process Payment",
+          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -1717,12 +1820,20 @@
     {
       "file": "sfn-collection__selective-checkpointing__statemachine__statemachineParent.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 4,
       "codes": {
         "SC4001": 1,
+        "SC4010": 1,
         "SC6001": 2
       },
       "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Process Payment",
+          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -1770,11 +1881,19 @@
     {
       "file": "sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json",
       "errors": 0,
-      "warnings": 1,
+      "warnings": 2,
       "codes": {
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "CreateStackSet",
+          "message": "persistent task 'CreateStackSet' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -1854,9 +1973,26 @@
     {
       "file": "sfn-collection__sfn-rds-to-aurora-migrate-postgres-cdk__statemachine__statemachine.asl.json",
       "errors": 0,
-      "warnings": 0,
-      "codes": {},
-      "diagnostics": []
+      "warnings": 2,
+      "codes": {
+        "SC4010": 2
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Create Final Snapshot",
+          "message": "persistent task 'Create Final Snapshot' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Create Aurora Instance",
+          "message": "persistent task 'Create Aurora Instance' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
     },
     {
       "file": "sfn-collection__sfn-rekognition-video-catalog-workflow__statemachine__statemachine.asl.json",
@@ -1921,9 +2057,19 @@
     {
       "file": "sfn-collection__sfn-sns-task-timer__statemachine__TaskTimer.asl.json",
       "errors": 0,
-      "warnings": 0,
-      "codes": {},
-      "diagnostics": []
+      "warnings": 1,
+      "codes": {
+        "SC4010": 1
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "InvokeTimeboundedChildTasks",
+          "message": "persistent task 'InvokeTimeboundedChildTasks' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
     },
     {
       "file": "sfn-collection__sfn-sns-task-timer__statemachine__TimeBoundedTasks.asl.json",
@@ -2049,9 +2195,26 @@
     {
       "file": "sfn-collection__step-functions-load-testing__statemachine__load-orchestrator-statemachine.asl.json",
       "errors": 0,
-      "warnings": 0,
-      "codes": {},
-      "diagnostics": []
+      "warnings": 2,
+      "codes": {
+        "SC4010": 2
+      },
+      "diagnostics": [
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "RunRampupLoad",
+          "message": "persistent task 'RunRampupLoad' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "HoldLoad",
+          "message": "persistent task 'HoldLoad' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        }
+      ]
     },
     {
       "file": "sfn-collection__stepfunction-progress-tracking__statemachine__statemachine.asl.json",
@@ -2584,10 +2747,11 @@
     {
       "file": "sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
       "errors": 0,
-      "warnings": 2,
+      "warnings": 3,
       "codes": {
         "SC3001": 1,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -2603,16 +2767,24 @@
           "state": "Get Current Lock Item",
           "message": "persistent task 'Get Current Lock Item' (lock) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Clean Up Lock",
+          "message": "persistent task 'Clean Up Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__dynamodb-semaphore.asl.json",
       "errors": 0,
-      "warnings": 3,
+      "warnings": 6,
       "codes": {
         "SC3001": 2,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 3
       },
       "diagnostics": [
         {
@@ -2630,20 +2802,42 @@
           "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
         },
         {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Acquire Lock",
+          "message": "persistent task 'Acquire Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Get Lock[Branch0]/Initialize Lock Item",
+          "message": "persistent task 'Initialize Lock Item' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "Get Lock[Branch0]/Get Current Lock Record",
           "message": "persistent task 'Get Current Lock Record' (lock) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Release Lock",
+          "message": "persistent task 'Release Lock' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
     {
       "file": "sfn-examples__sam__app-control-concurrency-with-dynamodb__statemachines__test-run-semaphore.asl.json",
       "errors": 0,
-      "warnings": 1,
+      "warnings": 2,
       "codes": {
-        "SC3001": 1
+        "SC3001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -2652,6 +2846,13 @@
           "state": "StartInParallel[Map]/RunChildStateMachine",
           "message": "non-idempotent task 'RunChildStateMachine' is retried on States.ALL and may duplicate its effect (startexecution)",
           "note": "idempotency inferred from naming; restrict Retry to transient errors, make the task idempotent, or annotate it idempotent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "StartInParallel[Map]/RunChildStateMachine",
+          "message": "persistent task 'RunChildStateMachine' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },
@@ -2665,10 +2866,11 @@
     {
       "file": "sfn-examples__sam__app-decompose-for-parallelism__statemachine__distributor.asl.json",
       "errors": 0,
-      "warnings": 7,
+      "warnings": 8,
       "codes": {
         "SC3001": 4,
-        "SC4001": 3
+        "SC4001": 3,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -2714,6 +2916,13 @@
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
         },
         {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "RunTests[Map]/RunTestStateMachine",
+          "message": "persistent task 'RunTestStateMachine' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "RunTests[Map]/RecordResults",
@@ -2725,10 +2934,11 @@
     {
       "file": "sfn-examples__sam__app-decompose-for-parallelism__statemachine__main.asl.json",
       "errors": 0,
-      "warnings": 5,
+      "warnings": 6,
       "codes": {
         "SC3001": 3,
-        "SC4001": 2
+        "SC4001": 2,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -2758,6 +2968,13 @@
           "state": "RecordTestRunStart",
           "message": "persistent task 'RecordTestRunStart' (putitem) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "RunTests[Map]/RunDistributorStateMachine",
+          "message": "persistent task 'RunDistributorStateMachine' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         },
         {
           "code": "SC4001",
@@ -2827,10 +3044,11 @@
     {
       "file": "sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json",
       "errors": 0,
-      "warnings": 2,
+      "warnings": 3,
       "codes": {
         "SC3001": 1,
-        "SC4001": 1
+        "SC4001": 1,
+        "SC4010": 1
       },
       "diagnostics": [
         {
@@ -2846,6 +3064,13 @@
           "state": "Reserve Products[Map]/Reserve Product",
           "message": "persistent task 'Reserve Product' (reserve) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Initate Packaging and Shipping",
+          "message": "persistent task 'Initate Packaging and Shipping' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
         }
       ]
     },

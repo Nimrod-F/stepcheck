@@ -72,6 +72,8 @@ impl Builder {
                 error_equals: vec!["States.ALL".into()],
                 next: c.into(),
                 result_path: ResultPath::Path("$.error".into()),
+                assign: None,
+                extra: serde_json::Map::new(),
             });
         }
         self.wf.states.insert(name.to_string(), st);
@@ -131,7 +133,19 @@ pub fn order_example(bad: bool) -> (Workflow, Sidecar) {
         ("ChargeCard", "ShipOrder", "OrderCompleted")
     };
 
-    Builder::new("order-processing", "CreateOrder")
+    // Reverse-order compensation chain (a correct Saga): the compensator of the
+    // last committed step runs first and hands off to the previous step's
+    // compensator, so a failure at any step unwinds *all* prior effects. The chain
+    // follows the actual forward order, so both the valid and reordered variants
+    // are Saga-complete (SC4011) — only the reordering's typestate/contract faults
+    // remain. `comps` lists the compensators in forward-task order.
+    let comps: [&str; 4] = if bad {
+        ["CancelOrder", "ReleaseInventory", "CancelShipment", "RefundPayment"]
+    } else {
+        ["CancelOrder", "ReleaseInventory", "RefundPayment", "CancelShipment"]
+    };
+
+    let b = Builder::new("order-processing", "CreateOrder")
         .schema("CustomerRequest", &["customerId", "items"])
         .schema("OrderCreated", &["orderId", "amount", "items"])
         .schema("OrderReserved", &["orderId", "amount", "reservationId"])
@@ -145,16 +159,21 @@ pub fn order_example(bad: bool) -> (Workflow, Sidecar) {
         .task("CreateOrder", "CustomerRequest", "OrderCreated", false, true, Some("CancelOrder"), Some("ReserveInventory"), Some("CancelOrder"))
         .task("ReserveInventory", "OrderCreated", "OrderReserved", false, true, Some("ReleaseInventory"), Some(after_reserve), Some("ReleaseInventory"))
         .task("ChargeCard", "OrderReserved", "OrderPaid", false, true, Some("RefundPayment"), Some(after_charge), Some("RefundPayment"))
-        .task("ShipOrder", "OrderPaid", "OrderShipped", false, true, Some("CancelShipment"), Some(after_ship), Some("CancelShipment"))
-        // compensators
-        .compensator("CancelOrder", "OrderFailed")
-        .compensator("ReleaseInventory", "OrderFailed")
-        .compensator("RefundPayment", "OrderFailed")
-        .compensator("CancelShipment", "OrderFailed")
-        // terminals
-        .succeed("OrderCompleted")
-        .fail("OrderFailed")
-        .build()
+        .task("ShipOrder", "OrderPaid", "OrderShipped", false, true, Some("CancelShipment"), Some(after_ship), Some("CancelShipment"));
+    // compensators wired as a reverse-order chain ending at the Fail terminal
+    let b = chain_compensators(b, &comps, "OrderFailed");
+    b.succeed("OrderCompleted").fail("OrderFailed").build()
+}
+
+/// Wire a list of compensators (given in forward-task order) into a reverse-order
+/// compensation chain: the last one runs first and each hands off to the previous
+/// step's compensator, with the earliest compensator ending at `fail`.
+fn chain_compensators(mut b: Builder, comps: &[&str], fail: &str) -> Builder {
+    for i in 0..comps.len() {
+        let next = if i == 0 { fail } else { comps[i - 1] };
+        b = b.compensator(comps[i], next);
+    }
+    b
 }
 
 /// A second, unrelated workflow authored entirely in the DSL: a travel-booking
@@ -171,7 +190,14 @@ pub fn travel_example(bad: bool) -> (Workflow, Sidecar) {
         ("ReserveHotel", "ChargeTraveler", "TravelDone")
     };
 
-    Builder::new("travel-booking", "ReserveFlight")
+    // reverse-order compensation chain in forward-task order (see order_example)
+    let comps: [&str; 3] = if bad {
+        ["CancelFlight", "RefundTraveler", "CancelHotel"]
+    } else {
+        ["CancelFlight", "CancelHotel", "RefundTraveler"]
+    };
+
+    let b = Builder::new("travel-booking", "ReserveFlight")
         .schema("TravelRequest", &["customerId", "dates"])
         .schema("FlightReserved", &["bookingId", "flightId"])
         .schema("HotelReserved", &["bookingId", "flightId", "hotelId"])
@@ -182,13 +208,7 @@ pub fn travel_example(bad: bool) -> (Workflow, Sidecar) {
         // forward tasks
         .task("ReserveFlight", "TravelRequest", "FlightReserved", false, true, Some("CancelFlight"), Some(after_flight), Some("CancelFlight"))
         .task("ReserveHotel", "FlightReserved", "HotelReserved", false, true, Some("CancelHotel"), Some(after_hotel), Some("CancelHotel"))
-        .task("ChargeTraveler", "HotelReserved", "TravelPaid", false, true, Some("RefundTraveler"), Some(after_charge), Some("RefundTraveler"))
-        // compensators
-        .compensator("CancelFlight", "TravelFailed")
-        .compensator("CancelHotel", "TravelFailed")
-        .compensator("RefundTraveler", "TravelFailed")
-        // terminals
-        .succeed("TravelDone")
-        .fail("TravelFailed")
-        .build()
+        .task("ChargeTraveler", "HotelReserved", "TravelPaid", false, true, Some("RefundTraveler"), Some(after_charge), Some("RefundTraveler"));
+    let b = chain_compensators(b, &comps, "TravelFailed");
+    b.succeed("TravelDone").fail("TravelFailed").build()
 }

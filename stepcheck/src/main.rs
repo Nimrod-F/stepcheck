@@ -4,6 +4,7 @@
 
 mod annot;
 mod asl;
+mod cfn;
 mod cncf;
 mod concrete;
 mod diag;
@@ -19,6 +20,7 @@ use clap::{Parser, Subcommand};
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use walkdir::WalkDir;
 
 #[derive(Parser)]
@@ -30,7 +32,6 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Verify a single workflow file.
     Check {
         path: PathBuf,
         /// Sidecar annotation file (TOML).
@@ -45,6 +46,9 @@ enum Cmd {
         /// Treat warnings as errors for the exit code.
         #[arg(long)]
         deny_warnings: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Print the annotations inferred for a workflow.
     Infer {
@@ -59,6 +63,9 @@ enum Cmd {
         annot: Option<PathBuf>,
         #[arg(long)]
         infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Print corpus statistics over a directory of ASL files.
     Stats {
@@ -78,18 +85,39 @@ enum Cmd {
         /// run the data-flow (SC1101) mutation class.
         #[arg(long)]
         strict_input: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
-    /// Cross-check the data-flow `SC1101` findings against an independent per-path
-    /// execution oracle (witnesses the soundness theorem at corpus scale). Injects a
-    /// data-flow miss per workflow (typed tier) so the check fires, then confirms each
-    /// finding's field is absent on every reaching path; any `Present` is a soundness
-    /// counterexample.
+    /// Cross-check the data-flow `SC1101` findings against an independent
+    /// bounded-path execution oracle (witnesses the soundness theorem at corpus
+    /// scale, including bounded loop unrolling). Injects a data-flow miss per
+    /// workflow (typed tier) so the check fires, then confirms each finding's
+    /// field is absent on every explored reaching path; any `Present` is a
+    /// soundness counterexample.
     Oracle {
         dir: PathBuf,
         #[arg(long)]
         annot: Option<PathBuf>,
         #[arg(long)]
         infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
+    },
+    /// Certify the data-flow `SC1101` findings by finite fixpoint obligations.
+    /// Like `oracle`, this injects one typed-tier missing-field mutant per
+    /// workflow so the check fires, but it discharges loops by checking the
+    /// widened invariant as a post-fixpoint instead of bounded unrolling.
+    DataflowCert {
+        dir: PathBuf,
+        #[arg(long)]
+        annot: Option<PathBuf>,
+        #[arg(long)]
+        infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
     },
     /// Real-bug benchmark: replay StepCheck on (pre-fix, post-fix) workflow pairs.
     /// Place pairs as `<id>-pre.json` / `<id>-post.json` in DIR (mine these from
@@ -111,6 +139,26 @@ enum Cmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Measure how close the data-flow fixpoint stays to its finite-height round
+    /// bound `|states|*(|keys|+2)+2` across one or more corpora (evidence for the
+    /// termination argument). Each workflow is analyzed in both the native
+    /// (Top-seeded) and typed (closed-record-seeded) tiers; the report gives
+    /// per-corpus and combined round/bound utilisation and the non-converged count.
+    FixpointStats {
+        /// One or more directories of workflow files, e.g. `corpus/asl corpus/cncf`.
+        #[arg(required = true)]
+        dirs: Vec<PathBuf>,
+    },
+    /// Measure how many of a corpus's JSONPath field-reads fall inside the modeled
+    /// dotted fragment (`$`, `$.a`, `$.a.b`) vs. the conservative fallbacks
+    /// (bracket/wildcard/filter/function paths, the `$$` context object, and
+    /// `States.*` intrinsics). Quantifies how much real ASL the precise data-flow
+    /// analysis resolves exactly, and how much it soundly treats as `Maybe`.
+    PathCoverage {
+        /// One or more directories of workflow files, e.g. `corpus/asl corpus/cncf`.
+        #[arg(required = true)]
+        dirs: Vec<PathBuf>,
+    },
     /// Emit the built-in typed-DSL example workflow to ASL JSON.
     Demo {
         /// Which example: `order` (valid) or `order-bad` (reordered).
@@ -120,24 +168,45 @@ enum Cmd {
         #[arg(long)]
         sidecar: bool,
     },
+    /// Round-trip a workflow through the ASL emitter *unchanged*. Used as the
+    /// control in the multi-validator baseline: a `mutate` defect is injected on
+    /// top of this same emitted form, so comparing a validator's verdict on the
+    /// emitted control vs. the emitted mutant isolates exactly the injected fault
+    /// (free of any emitter-lossiness confound).
+    Emit {
+        path: PathBuf,
+        /// Write the emitted ASL here (default: stdout).
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
 }
 
 fn main() {
     let cli = Cli::parse();
     let code = match cli.cmd {
-        Cmd::Check { path, annot, infer, json, deny_warnings } => {
-            cmd_check(&path, annot.as_deref(), infer, json, deny_warnings)
+        Cmd::Check { path, annot, infer, json, deny_warnings, result_shapes } => {
+            cmd_check(&path, annot.as_deref(), infer, json, deny_warnings, result_shapes)
         }
         Cmd::Infer { path, json } => cmd_infer(&path, json),
-        Cmd::Scan { dir, annot, infer } => cmd_scan(&dir, annot.as_deref(), infer),
-        Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
-        Cmd::Eval { dir, annot, infer, strict_input } => {
-            cmd_eval(&dir, annot.as_deref(), infer, strict_input)
+        Cmd::Scan { dir, annot, infer, result_shapes } => {
+            cmd_scan(&dir, annot.as_deref(), infer, result_shapes)
         }
-        Cmd::Oracle { dir, annot, infer } => cmd_oracle(&dir, annot.as_deref(), infer),
+        Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
+        Cmd::Eval { dir, annot, infer, strict_input, result_shapes } => {
+            cmd_eval(&dir, annot.as_deref(), infer, strict_input, result_shapes)
+        }
+        Cmd::Oracle { dir, annot, infer, result_shapes } => {
+            cmd_oracle(&dir, annot.as_deref(), infer, result_shapes)
+        }
+        Cmd::DataflowCert { dir, annot, infer, result_shapes } => {
+            cmd_dataflow_cert(&dir, annot.as_deref(), infer, result_shapes)
+        }
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
+        Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
+        Cmd::PathCoverage { dirs } => cmd_path_coverage(&dirs),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
+        Cmd::Emit { path, out } => cmd_emit(&path, out.as_deref()),
     };
     match code {
         Ok(c) => std::process::exit(c),
@@ -156,32 +225,89 @@ fn is_workflow_file(p: &Path) -> bool {
     )
 }
 
-/// Load a workflow, choosing the frontend by file extension: `.yaml`/`.yml` use
-/// the CNCF Serverless Workflow frontend, everything else uses the ASL frontend.
-fn load(path: &Path) -> Result<ir::Workflow> {
+/// Load every workflow in a file. A CloudFormation / SAM template or a CDK synth
+/// output template yields one workflow per `AWS::StepFunctions::StateMachine`
+/// (keyed by logical id); a bare `.asl.json` or a CNCF Serverless Workflow yields
+/// one. Frontend selection is content-first (CloudFormation is detected by its
+/// `AWS::StepFunctions::StateMachine` resource) then by extension.
+fn load_all(path: &Path) -> Result<Vec<(String, ir::Workflow)>> {
     let src = std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("workflow");
-    match path.extension().and_then(|e| e.to_str()) {
-        Some("yaml") | Some("yml") => cncf::parse_str(&src, name),
-        _ => asl::parse_str(&src, name),
+    if cfn::looks_like_template(&src) {
+        return cfn::extract(&src, name, path.parent());
+    }
+    let wf = match path.extension().and_then(|e| e.to_str()) {
+        Some("yaml") | Some("yml") => cncf::parse_str(&src, name)?,
+        _ => asl::parse_str(&src, name)?,
+    };
+    Ok(vec![(name.to_string(), wf)])
+}
+
+fn attach_linked_children_to_loaded(machines: &mut [(String, ir::Workflow)]) {
+    if machines.len() <= 1 {
+        return;
+    }
+    let registry: BTreeMap<String, ir::Workflow> = machines
+        .iter()
+        .flat_map(|(label, wf)| {
+            [
+                (label.clone(), wf.clone()),
+                (
+                    format!("arn:aws:states:us-east-1:000000000000:stateMachine:{label}"),
+                    wf.clone(),
+                ),
+                (format!("${{{label}}}"), wf.clone()),
+                (format!("${{{label}.Arn}}"), wf.clone()),
+            ]
+        })
+        .collect();
+    let registry = Rc::new(registry);
+    for (_, wf) in machines.iter_mut() {
+        attach_registry_recursive(wf, registry.clone());
     }
 }
 
-fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<ir::Workflow> {
+fn attach_registry_recursive(wf: &mut ir::Workflow, registry: Rc<BTreeMap<String, ir::Workflow>>) {
+    wf.linked_children = registry.clone();
+    for st in wf.states.values_mut() {
+        if let Some(it) = st.iterator.as_mut() {
+            attach_registry_recursive(it, registry.clone());
+        }
+        for br in st.branches.iter_mut() {
+            attach_registry_recursive(br, registry.clone());
+        }
+    }
+}
+
+/// Load a single workflow (the first state machine for a multi-machine template).
+fn load(path: &Path) -> Result<ir::Workflow> {
+    let mut machines = load_all(path)?;
+    attach_linked_children_to_loaded(&mut machines);
+    machines
+        .into_iter()
+        .next()
+        .map(|(_, wf)| wf)
+        .ok_or_else(|| anyhow::anyhow!("no workflow found in {}", path.display()))
+}
+
+fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<(ir::Workflow, diag::DiagnosticSink)> {
     let mut wf = load(path)?;
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
     };
-    annot::resolve(&mut wf, sc.as_ref(), infer);
-    Ok(wf)
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
+    Ok((wf, sink))
 }
 
-fn run_pipeline(wf: &ir::Workflow) -> diag::DiagnosticSink {
-    let pipeline = passes::default_pipeline();
-    let mut sink = diag::DiagnosticSink::new();
-    passes::run_pipeline(&pipeline, wf, &mut sink);
-    sink
+fn run_pipeline_into(wf: &ir::Workflow, sink: &mut diag::DiagnosticSink, result_shapes: bool) {
+    let pipeline = if result_shapes {
+        passes::pipeline_with_result_shapes()
+    } else {
+        passes::default_pipeline()
+    };
+    passes::run_pipeline(&pipeline, wf, sink);
 }
 
 fn cmd_check(
@@ -190,20 +316,45 @@ fn cmd_check(
     infer: bool,
     json: bool,
     deny_warnings: bool,
+    result_shapes: bool,
 ) -> Result<i32> {
-    let wf = load_resolved(path, annot, infer)?;
-    let sink = run_pipeline(&wf);
-    if json {
-        println!("{}", serde_json::to_string_pretty(&sink)?);
-    } else {
-        print!("{}", sink.render_human(&wf.name));
+    let mut machines = load_all(path)?;
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    attach_linked_children_to_loaded(&mut machines);
+    let multi = machines.len() > 1;
+    let mut worst = 0;
+    let mut json_out = Vec::new();
+    for (label, mut wf) in machines {
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&wf, &mut sink, result_shapes);
+        if json {
+            json_out.push(json!({ "machine": label, "result": sink }));
+        } else {
+            if multi {
+                println!("# state machine: {label}");
+            }
+            print!("{}", sink.render_human(&wf.name));
+        }
+        if sink.errors() > 0 || (deny_warnings && sink.warnings() > 0) {
+            worst = 1;
+        }
     }
-    let bad = sink.errors() > 0 || (deny_warnings && sink.warnings() > 0);
-    Ok(if bad { 1 } else { 0 })
+    if json {
+        if multi {
+            println!("{}", serde_json::to_string_pretty(&json_out)?);
+        } else if let Some(one) = json_out.into_iter().next() {
+            println!("{}", serde_json::to_string_pretty(&one["result"])?);
+        }
+    }
+    Ok(worst)
 }
 
 fn cmd_infer(path: &Path, json: bool) -> Result<i32> {
-    let wf = load_resolved(path, None, true)?;
+    let (wf, _) = load_resolved(path, None, true)?;
     let mut rows = Vec::new();
     wf.walk_machines(&mut |m| {
         for (name, st) in &m.states {
@@ -227,7 +378,7 @@ fn cmd_infer(path: &Path, json: bool) -> Result<i32> {
     Ok(0)
 }
 
-fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
@@ -243,12 +394,15 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let mut wf = match load(p) {
-            Ok(w) => w,
+        let mut machines = match load_all(p) {
+            Ok(m) => m,
             Err(_) => continue,
         };
-        annot::resolve(&mut wf, sc.as_ref(), infer);
-        let sink = run_pipeline(&wf);
+        attach_linked_children_to_loaded(&mut machines);
+        let Some((_, mut wf)) = machines.into_iter().next() else { continue };
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&wf, &mut sink, result_shapes);
         let mut codes: BTreeMap<String, usize> = BTreeMap::new();
         for d in &sink.diagnostics {
             *codes.entry(d.code.clone()).or_default() += 1;
@@ -342,7 +496,13 @@ fn mine_top_level_fields(wf: &ir::Workflow) -> Vec<String> {
 }
 
 /// The mutation study (E3) + in-the-wild baseline (E2) + timing (E5), in-process.
-fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -> Result<i32> {
+fn cmd_eval(
+    dir: &Path,
+    annot: Option<&Path>,
+    infer: bool,
+    strict_input: bool,
+    result_shapes: bool,
+) -> Result<i32> {
     use std::time::Instant;
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
@@ -393,9 +553,10 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
         if let Some(f) = &strict_fields {
             b.input_fields = Some(f.clone());
         }
-        annot::resolve(&mut b, sc.as_ref(), infer);
+        let mut bsink = diag::DiagnosticSink::new();
+        annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
         let t = Instant::now();
-        let bsink = run_pipeline(&b);
+        run_pipeline_into(&b, &mut bsink, result_shapes);
         times_ns.push(t.elapsed().as_nanos());
 
         let bcounts = code_counts(&bsink);
@@ -415,8 +576,9 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
                 if let Some(f) = &strict_fields {
                     mw.input_fields = Some(f.clone());
                 }
-                annot::resolve(&mut mw, sc.as_ref(), infer);
-                let msink = run_pipeline(&mw);
+                let mut msink = diag::DiagnosticSink::new();
+                annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
+                run_pipeline_into(&mw, &mut msink, result_shapes);
                 let mcounts = code_counts(&msink);
                 let before = bcounts.get(ec).copied().unwrap_or(0);
                 let after = mcounts.get(ec).copied().unwrap_or(0);
@@ -460,6 +622,7 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
 
     let report = json!({
         "corpus": { "files": files, "total_states": total_states },
+        "ablation": { "result_shapes": result_shapes },
         "baseline": {
             "flagged_files": flagged,
             "errors": baseline_errors,
@@ -479,8 +642,10 @@ fn cmd_eval(dir: &Path, annot: Option<&Path>, infer: bool, strict_input: bool) -
 fn codes_for(p: &Path, infer: bool) -> BTreeMap<String, usize> {
     match load(p) {
         Ok(mut w) => {
-            annot::resolve(&mut w, None, infer);
-            code_counts(&run_pipeline(&w))
+            let mut sink = diag::DiagnosticSink::new();
+            annot::resolve(&mut w, None, infer, &mut sink);
+            run_pipeline_into(&w, &mut sink, false);
+            code_counts(&sink)
         }
         Err(_) => BTreeMap::new(),
     }
@@ -537,9 +702,10 @@ fn extract_read_path(msg: &str) -> Option<String> {
 
 /// Execution-oracle cross-check: witness Theorem 1 at corpus scale. For each
 /// workflow we seed the typed tier and inject a data-flow miss so `SC1101` fires,
-/// then confirm with an independent per-path interpreter that every flagged field
-/// is absent on all reaching paths. A `Present` verdict would be a counterexample.
-fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
+/// then confirm with an independent bounded-path interpreter that every flagged
+/// field is absent on the explored reaching paths. A `Present` verdict would be
+/// a counterexample.
+fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
@@ -563,8 +729,9 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
         if !fields.is_empty() {
             mw.input_fields = Some(fields);
         }
-        annot::resolve(&mut mw, sc.as_ref(), infer);
-        let sink = run_pipeline(&mw);
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&mw, &mut sink, result_shapes);
         for d in sink.diagnostics.iter().filter(|d| d.code == "SC1101") {
             findings += 1;
             if d.state.contains('/') {
@@ -573,7 +740,12 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
                 continue;
             }
             let Some(pref) = extract_read_path(&d.message) else { unver += 1; continue };
-            match concrete::check_ref(&mw, &d.state, &pref) {
+            let verdict = if result_shapes {
+                concrete::check_ref_with_result_shapes(&mw, &d.state, &pref)
+            } else {
+                concrete::check_ref(&mw, &d.state, &pref)
+            };
+            match verdict {
                 concrete::Verdict::ConfirmedAbsent => confirmed += 1,
                 concrete::Verdict::Present => present += 1,
                 concrete::Verdict::Unverifiable => unver += 1,
@@ -583,6 +755,7 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
 
     let report = json!({
         "files": files,
+        "ablation": { "result_shapes": result_shapes },
         "sc1101_findings": findings,
         "oracle": {
             "confirmed_absent": confirmed,
@@ -594,6 +767,226 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool) -> Result<i32> {
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(if present == 0 { 0 } else { 1 })
+}
+
+/// Certificate check for Theorem 1 at corpus scale. This uses the same typed
+/// mutation population as `oracle`, but proves each emitted `SC1101` report from
+/// a finite widened-fixpoint invariant: all normal/catch transfer obligations
+/// must be post-fixed, and the reported read must be definitely absent in the
+/// certified invariant.
+fn cmd_dataflow_cert(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    let (mut files, mut findings, mut mismatches) = (0usize, 0usize, 0usize);
+    let mut total = passes::dataflow::CertificateStats::default();
+
+    for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() || !is_workflow_file(p) {
+            continue;
+        }
+        let base = match load(p) {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
+        files += 1;
+        let fields = mine_top_level_fields(&base);
+        let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
+        if !fields.is_empty() {
+            mw.input_fields = Some(fields);
+        }
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&mw, &mut sink, result_shapes);
+        let sc1101 = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
+        findings += sc1101;
+        let cert = passes::dataflow::certify_sc1101(&mw, result_shapes);
+        if cert.sc1101_reports != sc1101 {
+            mismatches += 1;
+        }
+        total.machines += cert.machines;
+        total.postconditions += cert.postconditions;
+        total.failed_postconditions += cert.failed_postconditions;
+        total.sc1101_reports += cert.sc1101_reports;
+        total.certified_reports += cert.certified_reports;
+    }
+
+    let ok = total.ok() && mismatches == 0;
+    let report = json!({
+        "files": files,
+        "ablation": { "result_shapes": result_shapes },
+        "sc1101_findings": findings,
+        "certificate": {
+            "machines": total.machines,
+            "postcondition_obligations": total.postconditions,
+            "failed_postcondition_obligations": total.failed_postconditions,
+            "sc1101_reports_in_certificate": total.sc1101_reports,
+            "certified_sc1101_reports": total.certified_reports,
+            "diagnostic_count_mismatches": mismatches,
+            "ok": ok,
+        },
+        "loop_argument": "finite widened-fixpoint postcondition check; no bounded unrolling",
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(if ok { 0 } else { 1 })
+}
+
+/// Round-trip a workflow through the ASL emitter unchanged (the control form for
+/// the multi-validator baseline). Loads via the extension-chosen frontend and
+/// re-emits ASL JSON.
+fn cmd_emit(path: &Path, out: Option<&Path>) -> Result<i32> {
+    let wf = load(path)?;
+    let text = serde_json::to_string_pretty(&asl::emit(&wf))?;
+    match out {
+        Some(o) => std::fs::write(o, text)?,
+        None => println!("{text}"),
+    }
+    Ok(0)
+}
+
+/// Summarise per-machine fixpoint telemetry into a JSON object: machine count,
+/// how many failed to converge within the bound, the deepest iteration observed,
+/// and the worst-case round/bound utilisation.
+fn fixpoint_summary(
+    dir: Option<String>,
+    files: usize,
+    rec: &[passes::dataflow::FixpointRound],
+) -> serde_json::Value {
+    let machines = rec.len();
+    let non_converged = rec.iter().filter(|r| !r.converged).count();
+    let max_rounds = rec.iter().map(|r| r.rounds).max().unwrap_or(0);
+    let max_bound = rec.iter().map(|r| r.bound).max().unwrap_or(0);
+    // worst-case round/bound utilisation (how close any machine came to the cap)
+    let mut worst = (0f64, 0usize, 0usize, 0usize);
+    for r in rec {
+        let ratio = r.rounds as f64 / r.bound.max(1) as f64;
+        if ratio > worst.0 {
+            worst = (ratio, r.rounds, r.bound, r.states);
+        }
+    }
+    let mut obj = serde_json::Map::new();
+    if let Some(d) = dir {
+        obj.insert("dir".into(), json!(d));
+    }
+    obj.insert("files".into(), json!(files));
+    obj.insert("machines".into(), json!(machines));
+    obj.insert("non_converged".into(), json!(non_converged));
+    obj.insert("max_rounds".into(), json!(max_rounds));
+    obj.insert("max_bound".into(), json!(max_bound));
+    obj.insert(
+        "worst_ratio".into(),
+        json!({ "ratio": worst.0, "rounds": worst.1, "bound": worst.2, "states_in_machine": worst.3 }),
+    );
+    serde_json::Value::Object(obj)
+}
+
+/// Fixpoint-utilisation study: run the data-flow fixpoint over each corpus in
+/// both tiers and report how far it stays below its termination bound.
+fn cmd_fixpoint_stats(dirs: &[PathBuf]) -> Result<i32> {
+    let mut per_corpus = Vec::new();
+    let mut all: Vec<passes::dataflow::FixpointRound> = Vec::new();
+    let mut all_files = 0usize;
+    for dir in dirs {
+        passes::dataflow::fixpoint_record_start();
+        let mut files = 0usize;
+        for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if !p.is_file() || !is_workflow_file(p) {
+                continue;
+            }
+            let base = match load(p) {
+                Ok(w) => w,
+                Err(_) => continue,
+            };
+            files += 1;
+            // native tier: Top-seeded start document
+            let mut n = base.clone();
+            let mut nsink = diag::DiagnosticSink::new();
+            annot::resolve(&mut n, None, false, &mut nsink);
+            run_pipeline_into(&n, &mut nsink, false);
+            // typed tier: closed record of the top-level fields the workflow reads
+            let mut t = base.clone();
+            let f = mine_top_level_fields(&base);
+            if !f.is_empty() {
+                t.input_fields = Some(f);
+            }
+            let mut tsink = diag::DiagnosticSink::new();
+            annot::resolve(&mut t, None, false, &mut tsink);
+            run_pipeline_into(&t, &mut tsink, false);
+        }
+        let rec = passes::dataflow::fixpoint_record_take();
+        per_corpus.push(fixpoint_summary(Some(dir.display().to_string()), files, &rec));
+        all_files += files;
+        all.extend(rec);
+    }
+    let report = json!({
+        "corpora": per_corpus,
+        "combined": fixpoint_summary(None, all_files, &all),
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
+}
+
+fn cmd_path_coverage(dirs: &[PathBuf]) -> Result<i32> {
+    use passes::dataflow::{path_coverage, PathCoverage};
+    let mut per_corpus = Vec::new();
+    let mut combined = PathCoverage::default();
+    let mut all_files = 0usize;
+    for dir in dirs {
+        let mut cov = PathCoverage::default();
+        let mut files = 0usize;
+        for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if !p.is_file() || !is_workflow_file(p) {
+                continue;
+            }
+            let wf = match load(p) {
+                Ok(w) => w,
+                Err(_) => continue,
+            };
+            files += 1;
+            path_coverage(&wf, &mut cov);
+        }
+        per_corpus.push(path_coverage_summary(Some(dir.display().to_string()), files, &cov));
+        all_files += files;
+        combined.total += cov.total;
+        combined.dotted += cov.dotted;
+        combined.whole_doc += cov.whole_doc;
+        combined.complex += cov.complex;
+        combined.context += cov.context;
+        combined.variable += cov.variable;
+        combined.intrinsic += cov.intrinsic;
+    }
+    let report = json!({
+        "corpora": per_corpus,
+        "combined": path_coverage_summary(None, all_files, &combined),
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
+}
+
+fn path_coverage_summary(
+    dir: Option<String>,
+    files: usize,
+    cov: &passes::dataflow::PathCoverage,
+) -> serde_json::Value {
+    let pct = |n: usize| if cov.total == 0 { 0.0 } else { (n as f64) * 100.0 / (cov.total as f64) };
+    json!({
+        "dir": dir,
+        "files": files,
+        "reads_total": cov.total,
+        "dotted": cov.dotted,
+        "whole_doc": cov.whole_doc,
+        "complex": cov.complex,
+        "context": cov.context,
+        "variable": cov.variable,
+        "intrinsic": cov.intrinsic,
+        "precise": cov.precise(),
+        "precise_pct": (pct(cov.precise()) * 10.0).round() / 10.0,
+        "conservative_pct": (pct(cov.complex + cov.context + cov.variable + cov.intrinsic) * 10.0).round() / 10.0,
+    })
 }
 
 fn cmd_demo(which: &str, sidecar: bool) -> Result<i32> {
@@ -619,9 +1012,59 @@ struct Stats {
     total_states: usize,
     type_counts: BTreeMap<String, usize>,
     feature_files: BTreeMap<String, usize>,
+    service_task_counts: BTreeMap<String, usize>,
+    service_file_counts: BTreeMap<String, usize>,
     with_retry: usize,
     with_catch: usize,
+    jsonata_states: usize,
+    jsonata_files: usize,
+    callback_tasks: usize,
+    callback_files: usize,
+    unbounded_callback_tasks: usize,
+    unbounded_callback_files: usize,
+    distributed_map_states: usize,
+    distributed_map_files: usize,
     sizes: Vec<usize>,
+}
+
+fn is_callback_or_activity(st: &ir::State) -> bool {
+    if !st.is_task() {
+        return false;
+    }
+    st.resource
+        .as_deref()
+        .map(|r| {
+            let r = r.to_lowercase();
+            r.contains(".waitfortasktoken") || r.contains(":activity:")
+        })
+        .unwrap_or(false)
+}
+
+fn is_unbounded_callback_or_activity(st: &ir::State) -> bool {
+    is_callback_or_activity(st) && st.heartbeat_seconds.is_none() && st.timeout_seconds.is_none()
+}
+
+fn service_target(st: &ir::State) -> Option<&'static str> {
+    if !st.is_task() {
+        return None;
+    }
+    let r = st.resource.as_deref()?.to_lowercase();
+    for (needle, service) in [
+        (":states:startexecution", "sfn:startExecution"),
+        ("events:putevents", "events:putEvents"),
+        ("ecs:runtask", "ecs:runTask"),
+        ("bedrock:invokemodel", "bedrock:invokeModel"),
+        ("dynamodb:", "dynamodb"),
+        ("s3:", "s3"),
+        ("sqs:", "sqs"),
+        ("sns:", "sns"),
+        ("lambda:", "lambda"),
+    ] {
+        if r.contains(needle) {
+            return Some(service);
+        }
+    }
+    None
 }
 
 fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
@@ -643,12 +1086,37 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
         st.sizes.push(wf.total_states());
 
         let mut local_types: BTreeMap<String, usize> = BTreeMap::new();
+        let mut local_services: BTreeMap<String, usize> = BTreeMap::new();
         let mut has_retry = false;
         let mut has_catch = false;
+        let mut has_jsonata = false;
+        let mut has_callback = false;
+        let mut has_unbounded_callback = false;
+        let mut has_distributed_map = false;
         wf.walk_machines(&mut |m| {
             for s in m.states.values() {
                 *st.type_counts.entry(s.kind.as_str().to_string()).or_default() += 1;
                 *local_types.entry(s.kind.as_str().to_string()).or_default() += 1;
+                if matches!(s.query_language, ir::QueryLang::JsonAta) {
+                    st.jsonata_states += 1;
+                    has_jsonata = true;
+                }
+                if s.distributed_map {
+                    st.distributed_map_states += 1;
+                    has_distributed_map = true;
+                }
+                if is_callback_or_activity(s) {
+                    st.callback_tasks += 1;
+                    has_callback = true;
+                }
+                if is_unbounded_callback_or_activity(s) {
+                    st.unbounded_callback_tasks += 1;
+                    has_unbounded_callback = true;
+                }
+                if let Some(service) = service_target(s) {
+                    *st.service_task_counts.entry(service.to_string()).or_default() += 1;
+                    *local_services.entry(service.to_string()).or_default() += 1;
+                }
                 if s.has_retry() {
                     has_retry = true;
                 }
@@ -660,11 +1128,26 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
         for k in local_types.keys() {
             *st.feature_files.entry(k.clone()).or_default() += 1;
         }
+        for k in local_services.keys() {
+            *st.service_file_counts.entry(k.clone()).or_default() += 1;
+        }
         if has_retry {
             st.with_retry += 1;
         }
         if has_catch {
             st.with_catch += 1;
+        }
+        if has_jsonata {
+            st.jsonata_files += 1;
+        }
+        if has_callback {
+            st.callback_files += 1;
+        }
+        if has_unbounded_callback {
+            st.unbounded_callback_files += 1;
+        }
+        if has_distributed_map {
+            st.distributed_map_files += 1;
         }
     }
 
@@ -691,6 +1174,15 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
         }
         println!("with >=1 Retry   : {}", st.with_retry);
         println!("with >=1 Catch   : {}", st.with_catch);
+        println!("JSONata workflows: {} ({} states)", st.jsonata_files, st.jsonata_states);
+        println!("callback tasks   : {} tasks in {} workflows", st.callback_tasks, st.callback_files);
+        println!("unbounded callback: {} tasks in {} workflows", st.unbounded_callback_tasks, st.unbounded_callback_files);
+        println!("Distributed Map  : {} workflows ({} states)", st.distributed_map_files, st.distributed_map_states);
+        println!("service targets:");
+        for (k, v) in &st.service_task_counts {
+            let files = st.service_file_counts.get(k).copied().unwrap_or(0);
+            println!("    {k:<20} {v} tasks in {files} workflows");
+        }
     }
     Ok(0)
 }
@@ -710,6 +1202,10 @@ fn print_stats_tex(st: &Stats, ok: usize, mean: f64, median: usize, min: usize, 
     }
     println!("Workflows with retry policies & {} \\\\", st.with_retry);
     println!("Workflows with catch handlers & {} \\\\", st.with_catch);
+    println!(r#"JSONata workflows / states & {} / {} \\"#, st.jsonata_files, st.jsonata_states);
+    println!(r#"Callback or Activity tasks & {} \\"#, st.callback_tasks);
+    println!(r#"Unbounded callback or Activity tasks & {} \\"#, st.unbounded_callback_tasks);
+    println!(r#"Distributed Map workflows / states & {} / {} \\"#, st.distributed_map_files, st.distributed_map_states);
     println!("\\bottomrule");
     println!("\\end{{tabular}}");
 }

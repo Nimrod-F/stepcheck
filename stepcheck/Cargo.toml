@@ -1,9 +1,13 @@
 [package]
 name = "stepcheck"
-version = "0.1.0"
+version = "0.1.3"
 edition = "2021"
-description = "A static verifier for serverless workflows (Amazon States Language): contract, typestate, retry-safety and compensation checking."
+description = "A static verifier for serverless workflows (Amazon States Language): sound data-flow (field-provenance) analysis plus contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checking."
 license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/Nimrod-F/stepcheck"
+keywords = ["aws", "step-functions", "verification", "static-analysis", "workflow"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
 name = "stepcheck"
@@ -11,7 +15,8 @@ path = "src/main.rs"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["preserve_order"] }
+serde_json = { version = "1", features = ["preserve_order", "unbounded_depth"] }
+serde_stacker = "0.1"
 serde_yaml = "0.9"
 indexmap = "2"
 clap = { version = "4", features = ["derive"] }

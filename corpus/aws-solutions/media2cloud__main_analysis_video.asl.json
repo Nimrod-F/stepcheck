@@ -1,0 +1,331 @@
+{
+    "Comment": "video analysis state machine. Fan out to numbers of child state machines to handle frame based, custom model, and video based analysis",
+    "StartAt": "Start video analysis",
+    "States": {
+        "Start video analysis": {
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt": "Video based detection iterators",
+                    "States": {
+                        "Video based detection iterators": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "OutputPath": "$.Payload",
+                            "Parameters": {
+                                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                                "Payload": {
+                                    "operation": "prepare-video-detection-iterators",
+                                    "uuid.$": "$.uuid",
+                                    "input.$": "$.input",
+                                    "data.$": "$.data",
+                                    "status": "NOT_STARTED",
+                                    "progress": 0
+                                }
+                            },
+                            "Retry": [
+                                {
+                                    "ErrorEquals": [
+                                        "Lambda.ServiceException",
+                                        "Lambda.AWSLambdaException",
+                                        "Lambda.SdkClientException",
+                                        "Lambda.TooManyRequestsException"
+                                    ],
+                                    "IntervalSeconds": 1,
+                                    "MaxAttempts": 2,
+                                    "BackoffRate": 1.2
+                                }
+                            ],
+                            "Next": "Video based analysis"
+                        },
+                        "Video based analysis": {
+                            "Type": "Map",
+                            "MaxConcurrency": 10,
+                            "ItemsPath": "$.data.iterators",
+                            "ItemProcessor": {
+                                "ProcessorConfig": {
+                                    "Mode": "INLINE"
+                                },
+                                "StartAt": "Run video based detection",
+                                "States": {
+                                    "Run video based detection": {
+                                        "Type": "Task",
+                                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                                        "Parameters": {
+                                            "StateMachineArn": "${VideoBasedDetectionStateMachine.Arn}",
+                                            "Input": {
+                                                "operation": "start-detection-iterator",
+                                                "uuid.$": "$.uuid",
+                                                "status": "NOT_STARTED",
+                                                "progress": 0,
+                                                "data.$": "$.data"
+                                            }
+                                        },
+                                        "OutputPath": "$.Output",
+                                        "End": true
+                                    }
+                                }
+                            },
+                            "ResultPath": "$.data.iterators",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "Configure pre-analysis iterators",
+                    "States": {
+                        "Configure pre-analysis iterators": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "OutputPath": "$.Payload",
+                            "Parameters": {
+                                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                                "Payload": {
+                                    "operation": "StateConfigurePreAnalysisIterators",
+                                    "uuid.$": "$.uuid",
+                                    "input.$": "$.input",
+                                    "data.$": "$.data",
+                                    "status": "NOT_STARTED",
+                                    "progress": 0
+                                }
+                            },
+                            "Retry": [
+                                {
+                                    "ErrorEquals": [
+                                        "Lambda.ServiceException",
+                                        "Lambda.AWSLambdaException",
+                                        "Lambda.SdkClientException",
+                                        "Lambda.TooManyRequestsException"
+                                    ],
+                                    "IntervalSeconds": 1,
+                                    "MaxAttempts": 2,
+                                    "BackoffRate": 1.2
+                                }
+                            ],
+                            "Next": "Map pre-analysis iterators"
+                        },
+                        "Map pre-analysis iterators": {
+                            "Type": "Map",
+                            "MaxConcurrency": 10,
+                            "ItemsPath": "$.data.iterators",
+                            "ItemProcessor": {
+                                "ProcessorConfig": {
+                                    "Mode": "INLINE"
+                                },
+                                "StartAt": "Run preprocess state machine",
+                                "States": {
+                                    "Run preprocess state machine": {
+                                        "Type": "Task",
+                                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                                        "Parameters": {
+                                            "StateMachineArn.$": "$.preAnalysisStateMachineArn",
+                                            "Input.$": "$"
+                                        },
+                                        "OutputPath": "$.Output",
+                                        "End": true
+                                    }
+                                }
+                            },
+                            "ResultPath": "$.data.iterators",
+                            "Next": "Pre-analysis iterators completed"
+                        },
+                        "Pre-analysis iterators completed": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "OutputPath": "$.Payload",
+                            "Parameters": {
+                                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                                "Payload": {
+                                    "operation": "StatePreAnalysisIteratorsCompleted",
+                                    "uuid.$": "$.uuid",
+                                    "input.$": "$.input",
+                                    "data.$": "$.data",
+                                    "status": "NOT_STARTED",
+                                    "progress": 0
+                                }
+                            },
+                            "Retry": [
+                                {
+                                    "ErrorEquals": [
+                                        "Lambda.ServiceException",
+                                        "Lambda.AWSLambdaException",
+                                        "Lambda.SdkClientException",
+                                        "Lambda.TooManyRequestsException"
+                                    ],
+                                    "IntervalSeconds": 1,
+                                    "MaxAttempts": 2,
+                                    "BackoffRate": 1.2
+                                }
+                            ],
+                            "Next": "Start frame-based analysis"
+                        },
+                        "Start frame-based analysis": {
+                            "Type": "Parallel",
+                            "Branches": [
+                                {
+                                    "StartAt": "Frame based detection iterators",
+                                    "States": {
+                                        "Frame based detection iterators": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "OutputPath": "$.Payload",
+                                            "Parameters": {
+                                                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                                                "Payload": {
+                                                    "operation": "prepare-frame-detection-iterators",
+                                                    "uuid.$": "$.uuid",
+                                                    "input.$": "$.input",
+                                                    "data.$": "$.data",
+                                                    "status": "NOT_STARTED",
+                                                    "progress": 0
+                                                }
+                                            },
+                                            "Next": "Frame based analysis",
+                                            "Retry": [
+                                                {
+                                                    "ErrorEquals": [
+                                                        "States.ALL"
+                                                    ],
+                                                    "IntervalSeconds": 1,
+                                                    "MaxAttempts": 2,
+                                                    "BackoffRate": 1.1
+                                                }
+                                            ]
+                                        },
+                                        "Frame based analysis": {
+                                            "Type": "Map",
+                                            "MaxConcurrency": 10,
+                                            "ItemsPath": "$.data.iterators",
+                                            "ItemProcessor": {
+                                                "ProcessorConfig": {
+                                                    "Mode": "INLINE"
+                                                },
+                                                "StartAt": "Run frame based detection",
+                                                "States": {
+                                                    "Run frame based detection": {
+                                                        "Type": "Task",
+                                                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                                                        "Parameters": {
+                                                            "StateMachineArn": "${FrameBasedDetectionStateMachine.Arn}",
+                                                            "Input": {
+                                                                "operation": "detect-frame-iterator",
+                                                                "uuid.$": "$.uuid",
+                                                                "status": "NOT_STARTED",
+                                                                "progress": 0,
+                                                                "data.$": "$.data"
+                                                            }
+                                                        },
+                                                        "OutputPath": "$.Output",
+                                                        "End": true
+                                                    }
+                                                }
+                                            },
+                                            "ResultPath": "$.data.iterators",
+                                            "End": true
+                                        }
+                                    }
+                                },
+                                {
+                                    "StartAt": "Custom model detection iterators",
+                                    "States": {
+                                        "Custom model detection iterators": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "OutputPath": "$.Payload",
+                                            "Parameters": {
+                                                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                                                "Payload": {
+                                                    "operation": "prepare-custom-detection-iterators",
+                                                    "uuid.$": "$.uuid",
+                                                    "input.$": "$.input",
+                                                    "data.$": "$.data",
+                                                    "status": "NOT_STARTED",
+                                                    "progress": 0
+                                                }
+                                            },
+                                            "Retry": [
+                                                {
+                                                    "ErrorEquals": [
+                                                        "Lambda.ServiceException",
+                                                        "Lambda.AWSLambdaException",
+                                                        "Lambda.SdkClientException",
+                                                        "Lambda.TooManyRequestsException"
+                                                    ],
+                                                    "IntervalSeconds": 1,
+                                                    "MaxAttempts": 2,
+                                                    "BackoffRate": 1.2
+                                                }
+                                            ],
+                                            "Next": "Custom model analysis"
+                                        },
+                                        "Custom model analysis": {
+                                            "Type": "Map",
+                                            "MaxConcurrency": 10,
+                                            "ItemsPath": "$.data.iterators",
+                                            "ItemProcessor": {
+                                                "ProcessorConfig": {
+                                                    "Mode": "INLINE"
+                                                },
+                                                "StartAt": "Run custom model detection",
+                                                "States": {
+                                                    "Run custom model detection": {
+                                                        "Type": "Task",
+                                                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                                                        "Parameters": {
+                                                            "StateMachineArn": "${CustomModelDetectionStateMachine.Arn}",
+                                                            "Input": {
+                                                                "operation": "start-detection-iterator",
+                                                                "uuid.$": "$.uuid",
+                                                                "status": "NOT_STARTED",
+                                                                "progress": 0,
+                                                                "input.$": "$.input",
+                                                                "data.$": "$.data"
+                                                            }
+                                                        },
+                                                        "OutputPath": "$.Output",
+                                                        "End": true
+                                                    }
+                                                }
+                                            },
+                                            "ResultPath": "$.data.iterators",
+                                            "End": true
+                                        }
+                                    }
+                                }
+                            ],
+                            "End": true
+                        }
+                    }
+                }
+            ],
+            "Next": "Video analysis completed"
+        },
+        "Video analysis completed": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+                "FunctionName": "${AnalysisVideoLambda.Arn}",
+                "Payload": {
+                    "operation": "job-completed",
+                    "stateExecution.$": "$$.Execution",
+                    "parallelStateOutputs.$": "$"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException",
+                        "Lambda.TooManyRequestsException"
+                    ],
+                    "IntervalSeconds": 1,
+                    "MaxAttempts": 2,
+                    "BackoffRate": 1.2
+                }
+            ],
+            "End": true
+        }
+    }
+}

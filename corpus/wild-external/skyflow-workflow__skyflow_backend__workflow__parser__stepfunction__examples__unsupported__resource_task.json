@@ -1,0 +1,23 @@
+{
+  "Comment": "testactivity ",
+  "Type": "statemachine",
+  "Version": "1.0",
+  "StartAt": "S1",
+  "States": {
+    "S1": {
+      "Type": "Task",
+      "Resource": "nest:testrepo/add",
+      "ResultPath": "$.z",
+      "Next": "S2"
+    },
+    "S2": {
+      "Type": "Task",
+      "Parameters": {
+        "x.$": "$.x",
+        "y.$": "$.z"
+      },
+      "Resource": "nest:testrepo/add",
+      "End": true
+    }
+  }
+}

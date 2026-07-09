@@ -29,9 +29,22 @@ pub trait Pass {
 
 /// The default verification pipeline, in execution order.
 pub fn default_pipeline() -> Vec<Box<dyn Pass>> {
+    pipeline(false)
+}
+
+/// Verification pipeline with the optional result-shape ablation enabled.
+pub fn pipeline_with_result_shapes() -> Vec<Box<dyn Pass>> {
+    pipeline(true)
+}
+
+fn pipeline(result_shapes: bool) -> Vec<Box<dyn Pass>> {
     vec![
         Box::new(structural::StructuralPass),
-        Box::new(dataflow::DataFlowPass),
+        if result_shapes {
+            Box::new(dataflow::DataFlowPass::with_result_shapes())
+        } else {
+            Box::new(dataflow::DataFlowPass::new())
+        },
         Box::new(contract::ContractPass),
         Box::new(typestate::TypestatePass),
         Box::new(retry::RetrySafetyPass),

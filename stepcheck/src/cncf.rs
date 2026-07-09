@@ -33,6 +33,149 @@ fn s<'a>(v: &'a Value, k: &str) -> Option<&'a str> {
     v.get(k).and_then(|x| x.as_str())
 }
 
+/// Translate a CNCF **jq** runtime expression into the JSONPath the shared
+/// data-flow (`SC1101`) and contract (`SC1003`) checks read, but *only* for a
+/// pure field reference: `.a.b`, `${ .a.b }`, `${.a.b}`. Everything else --- the
+/// whole-document `.`, runtime context (`$workflow`/`$context`/`$task`), and any
+/// composite expression (comparison, pipe, arithmetic, function call, object
+/// construction) --- returns `None` and therefore projects to `Top`, so the
+/// analysis stays silent on it (soundness: it never manufactures a definite
+/// absence from an expression it does not model). This is the jq analogue of the
+/// ASL `parse_path`, so adding it makes `SC1101` fire on CNCF at the *same*
+/// extension point rather than being a cosmetic cross-format claim.
+fn jq_ref_to_jsonpath(raw: &str) -> Option<String> {
+    let mut e = raw.trim();
+    if let Some(inner) = e.strip_prefix("${") {
+        e = inner.strip_suffix('}')?.trim();
+    }
+    let body = e.strip_prefix('.')?;
+    if body.is_empty() {
+        return None; // the whole document `.`
+    }
+    // pure dotted path of identifiers: reject spaces, operators, pipes, brackets,
+    // `$` context refs, quotes, function calls --- anything non-`[A-Za-z0-9_.]`.
+    if !body.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'.') {
+        return None;
+    }
+    for seg in body.split('.') {
+        let mut cs = seg.bytes();
+        match cs.next() {
+            Some(c) if c.is_ascii_alphabetic() || c == b'_' => {}
+            _ => return None, // empty segment or leading digit
+        }
+    }
+    Some(format!("$.{body}"))
+}
+
+/// Rewrite a CNCF `with:` object so pure jq field references become ASL
+/// payload-template entries (`"k.$": "$.a.b"`), which the shared checks read
+/// natively; non-reference values and nested structure are preserved.
+fn cncf_with_to_params(v: &Value) -> Value {
+    match v {
+        Value::Object(m) => {
+            let mut out = serde_json::Map::new();
+            for (k, val) in m {
+                if let Value::String(sv) = val {
+                    if let Some(jp) = jq_ref_to_jsonpath(sv) {
+                        out.insert(format!("{k}.$"), Value::String(jp));
+                        continue;
+                    }
+                }
+                out.insert(k.clone(), cncf_with_to_params(val));
+            }
+            Value::Object(out)
+        }
+        Value::Array(a) => Value::Array(a.iter().map(cncf_with_to_params).collect()),
+        _ => v.clone(),
+    }
+}
+
+/// Translate a simple CNCF `when:` guard into an ASL `Choice` condition so the
+/// dead-guard / definite-absence judgment (`SC1110`, and `SC1101` on the read)
+/// applies. Handles a bare presence guard (`.a.b`, `${ .a.b }`) and a leading
+/// comparison of a document field against a literal: `==` and `!=` against a
+/// string/number, and `<`/`>`/`<=`/`>=` against a number. A boolean combination
+/// (`A and B`, `A or B`) short-circuits, so only the *leading* operand's field is
+/// guaranteed to be evaluated; we model just that one read (a sound
+/// under-approximation of the guard's read set). Any operand whose left side is
+/// not a pure document field returns `None`, keeping the whole guard opaque
+/// (`CncfWhen`), which the JSONPath checks ignore.
+fn jq_when_to_condition(raw: &str) -> Option<Value> {
+    let mut e = raw.trim();
+    if let Some(inner) = e.strip_prefix("${") {
+        e = inner.strip_suffix('}')?.trim();
+    }
+    // Cut at the first top-level boolean connective: only the leading operand's
+    // field is guaranteed to be read under jq's short-circuiting `and`/`or`.
+    let mut cut = e.len();
+    for pat in [" and ", " or "] {
+        if let Some(i) = e.find(pat) {
+            if i < cut {
+                cut = i;
+            }
+        }
+    }
+    let lead = e[..cut].trim();
+
+    // A comparison `<field> <op> <rhs>`; multi-char operators are tried before
+    // their single-char prefixes so `<=`/`>=` are not misread as `<`/`>`.
+    for op in ["==", "!=", "<=", ">=", "<", ">"] {
+        if let Some((lhs, rhs)) = lead.split_once(op) {
+            let var = jq_ref_to_jsonpath(lhs.trim())?;
+            return Some(comparison_condition(var, op, rhs.trim()));
+        }
+    }
+    // bare field reference: a presence guard
+    let var = jq_ref_to_jsonpath(lead)?;
+    Some(presence_read(var))
+}
+
+/// Build the `Choice` condition for a comparison whose left side is the document
+/// field `var` (a JSONPath). We emit a precise value comparator when the right
+/// side is a literal we model; otherwise (`!=`, a runtime-context reference, or an
+/// unmodeled right side) we fall back to a plain presence read of `var`, which is
+/// always sound because the field is definitely read to evaluate the guard.
+fn comparison_condition(var: String, op: &str, rhs: &str) -> Value {
+    let mut c = serde_json::Map::new();
+    c.insert("Variable".into(), Value::String(var));
+    let strlit = rhs.strip_prefix('"').and_then(|x| x.strip_suffix('"'));
+    let num = rhs.parse::<f64>().ok();
+    match (op, strlit, num) {
+        ("==", Some(s), _) => {
+            c.insert("StringEquals".into(), Value::String(s.to_string()));
+        }
+        ("==", None, Some(n)) => {
+            c.insert("NumericEquals".into(), serde_json::json!(n));
+        }
+        ("<", _, Some(n)) => {
+            c.insert("NumericLessThan".into(), serde_json::json!(n));
+        }
+        (">", _, Some(n)) => {
+            c.insert("NumericGreaterThan".into(), serde_json::json!(n));
+        }
+        ("<=", _, Some(n)) => {
+            c.insert("NumericLessThanEquals".into(), serde_json::json!(n));
+        }
+        (">=", _, Some(n)) => {
+            c.insert("NumericGreaterThanEquals".into(), serde_json::json!(n));
+        }
+        // `!=`, a non-literal / context right side, or a type we do not model:
+        // keep only the (sound) fact that the left field is read.
+        _ => {
+            c.insert("IsPresent".into(), Value::Bool(true));
+        }
+    }
+    Value::Object(c)
+}
+
+/// A bare presence read `{Variable, IsPresent: true}` on a document field.
+fn presence_read(var: String) -> Value {
+    let mut c = serde_json::Map::new();
+    c.insert("Variable".into(), Value::String(var));
+    c.insert("IsPresent".into(), Value::Bool(true));
+    Value::Object(c)
+}
+
 /// The single `{name: definition}` entry of a `do`-list element.
 fn one_entry(v: &Value) -> Option<(String, &Value)> {
     let obj = v.as_object()?;
@@ -124,7 +267,7 @@ fn lower_task(
     if let Some(call) = def.get("call") {
         let mut st = State::new(name, StateKind::Task);
         st.resource = Some(format!("cncf:call:{}", call.as_str().unwrap_or("custom")));
-        st.parameters = def.get("with").cloned();
+        st.parameters = def.get("with").map(cncf_with_to_params);
         st.anno.input_fields = schema_fields(def, "input");
         st.anno.output_fields = schema_fields(def, "output");
         apply_exit(&mut st, &exit);
@@ -166,11 +309,19 @@ fn lower_task(
             if body.get("when").is_none() {
                 st.default = Some(target.to_string());
             } else {
-                // Store the CNCF runtime expression under a key the ASL-specific
-                // JSONPath checks ignore (it is jq, not JSONPath).
-                let mut cond = serde_json::Map::new();
-                cond.insert("CncfWhen".into(), body.get("when").cloned().unwrap_or(Value::Null));
-                st.choices.push(ChoiceRule { next: target.to_string(), condition: Value::Object(cond) });
+                let when = body.get("when").cloned().unwrap_or(Value::Null);
+                // A simple `.field == lit` / presence guard lowers to a native
+                // Choice condition (so SC1110/SC1101 apply); a composite guard is
+                // kept opaque under `CncfWhen`, which the JSONPath checks ignore.
+                let condition = when
+                    .as_str()
+                    .and_then(jq_when_to_condition)
+                    .unwrap_or_else(|| {
+                        let mut cond = serde_json::Map::new();
+                        cond.insert("CncfWhen".into(), when);
+                        Value::Object(cond)
+                    });
+                st.choices.push(ChoiceRule { next: target.to_string(), condition });
             }
         }
         states.insert(name.to_string(), st);
@@ -226,12 +377,13 @@ fn lower_task(
                 max_attempts: max,
                 interval_seconds: interval,
                 backoff_rate: backoff,
+                extra: serde_json::Map::new(),
             });
         }
         // a catch handler (`catch.do`) becomes reachable via a Catch transition
         if let Some(handler) = catch.and_then(|c| c.get("do")).and_then(|x| x.as_array()) {
             let hentry = lower_do(handler, states, &exit)?;
-            st.catch.push(CatchRule { error_equals: vec![err_type], next: hentry, result_path: ResultPath::Default });
+            st.catch.push(CatchRule { error_equals: vec![err_type], next: hentry, result_path: ResultPath::Default, assign: None, extra: serde_json::Map::new() });
         }
         apply_exit(&mut st, &exit);
         states.insert(name.to_string(), st);

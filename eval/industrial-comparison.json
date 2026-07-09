@@ -1,0 +1,324 @@
+{
+  "generated_by": "eval/asl2bpmn/compare.py",
+  "verifier": "Woflan (van der Aalst & Verbeek) via pm4py 2.7.23.1",
+  "corpus": "corpus/industrial",
+  "workflows": 6,
+  "methodology": "confound-free: control=`stepcheck emit`, mutant=`stepcheck mutate --kind k`; woflan_detected = fresh soundness violation on mutant vs control encoding.",
+  "clean_baseline": {
+    "workflows": 6,
+    "woflan_unsound": 0,
+    "woflan_overreport_rate": 0.0,
+    "note": "Woflan flags a valid AWS serverless workflow unsound when its parallel-branch termination is not well-handled in the WF-net sense (multi-terminal / independent branches) -- a semantic mismatch, not a StepCheck finding."
+  },
+  "note_data_flow": "SC1101 (data-flow / field provenance) has no BPMN control-flow expression; it is StepCheck-unique by construction and is evaluated on the typed corpus (eval/results-dataflow.json), not here.",
+  "classes": {
+    "structural": {
+      "label": "Dangling transition (SC0002)",
+      "expected_code": "SC0002",
+      "control_flow_expressible": true,
+      "applicable": 6,
+      "stepcheck_detected": 6,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 6,
+      "woflan_recall": 1.0,
+      "woflan_ci95": [
+        1.0,
+        1.0
+      ]
+    },
+    "contract": {
+      "label": "Broken data binding (SC1003)",
+      "expected_code": "SC1003",
+      "control_flow_expressible": false,
+      "applicable": 5,
+      "stepcheck_detected": 5,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "retry": {
+      "label": "Unsafe retry (SC3001)",
+      "expected_code": "SC3001",
+      "control_flow_expressible": false,
+      "applicable": 5,
+      "stepcheck_detected": 5,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "compensation": {
+      "label": "Missing compensation (SC4001)",
+      "expected_code": "SC4001",
+      "control_flow_expressible": false,
+      "applicable": 3,
+      "stepcheck_detected": 3,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "concurrency": {
+      "label": "Concurrency interference (SC5001)",
+      "expected_code": "SC5001",
+      "control_flow_expressible": false,
+      "applicable": 1,
+      "stepcheck_detected": 1,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ]
+    },
+    "temporal": {
+      "label": "Heartbeat/timeout (SC6003)",
+      "expected_code": "SC6003",
+      "control_flow_expressible": false,
+      "applicable": 6,
+      "stepcheck_detected": 6,
+      "stepcheck_recall": 1.0,
+      "stepcheck_ci95": [
+        1.0,
+        1.0
+      ],
+      "woflan_detected": 0,
+      "woflan_recall": 0.0,
+      "woflan_ci95": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "control_verdicts": [
+    {
+      "file": "corpus/industrial/aws-checkout-processing.asl.json",
+      "sound": true,
+      "neg": []
+    },
+    {
+      "file": "corpus/industrial/aws-etl-stream-aggregator.asl.json",
+      "sound": true,
+      "neg": []
+    },
+    {
+      "file": "corpus/industrial/aws-inventory-reserve-stock.asl.json",
+      "sound": true,
+      "neg": []
+    },
+    {
+      "file": "corpus/industrial/aws-saga-cdk.asl.json",
+      "sound": true,
+      "neg": []
+    },
+    {
+      "file": "corpus/industrial/aws-saga-travel-reservation.asl.json",
+      "sound": true,
+      "neg": []
+    },
+    {
+      "file": "corpus/industrial/sab-booking-processbooking.asl.json",
+      "sound": true,
+      "neg": []
+    }
+  ],
+  "rows": [
+    {
+      "file": "corpus/industrial/aws-checkout-processing.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-etl-stream-aggregator.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-inventory-reserve-stock.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "concurrency": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-saga-cdk.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "compensation": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/aws-saga-travel-reservation.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "compensation": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    },
+    {
+      "file": "corpus/industrial/sab-booking-processbooking.asl.json",
+      "control_sound": true,
+      "classes": {
+        "structural": {
+          "native": true,
+          "woflan": true,
+          "mut_sound": false
+        },
+        "contract": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "retry": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "compensation": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        },
+        "temporal": {
+          "native": true,
+          "woflan": false,
+          "mut_sound": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+[workflow]
+input_schema = "OrderInput"
+[schemas.OrderInput]
+fields = ["orderNumber"]

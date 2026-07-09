@@ -1,0 +1,59 @@
+{
+  "corpora": [
+    {
+      "dir": "corpus/asl",
+      "files": 193,
+      "machines": 646,
+      "non_converged": 0,
+      "max_rounds": 7,
+      "max_bound": 12859,
+      "worst_ratio": {
+        "ratio": 0.037037037037037035,
+        "rounds": 2,
+        "bound": 54,
+        "states_in_machine": 2
+      }
+    },
+    {
+      "dir": "corpus/cncf",
+      "files": 66,
+      "machines": 140,
+      "non_converged": 0,
+      "max_rounds": 3,
+      "max_bound": 262,
+      "worst_ratio": {
+        "ratio": 0.037037037037037035,
+        "rounds": 2,
+        "bound": 54,
+        "states_in_machine": 2
+      }
+    },
+    {
+      "dir": "corpus/dsl",
+      "files": 2,
+      "machines": 4,
+      "non_converged": 0,
+      "max_rounds": 3,
+      "max_bound": 652,
+      "worst_ratio": {
+        "ratio": 0.004601226993865031,
+        "rounds": 3,
+        "bound": 652,
+        "states_in_machine": 10
+      }
+    }
+  ],
+  "combined": {
+    "files": 261,
+    "machines": 790,
+    "non_converged": 0,
+    "max_rounds": 7,
+    "max_bound": 12859,
+    "worst_ratio": {
+      "ratio": 0.037037037037037035,
+      "rounds": 2,
+      "bound": 54,
+      "states_in_machine": 2
+    }
+  }
+}

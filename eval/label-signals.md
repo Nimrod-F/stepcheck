@@ -1,31 +1,135 @@
-# Label signals for the 13 expansion workflows
+# Label signals for the 23 gold workflows
 
 Fill `idempotent` and `persistent` (`true` / `false` / `null`) for each task in
 `gold-labels-human-A.json` and `gold-labels-human-B.json`, using these signals and
 the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 
 
+## sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Get Customer Status | Task | invoke | FunctionName=${LambdaGetCustomerStatus} |  |  |
+| Notify New Order | Task | publish | TopicArn=${SnsNewOrderTopic} |  |  |
+| Notify Products Reserved | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Initate Packaging and Shipping | Task | waitfortasktoken | QueueUrl=${PackageAndShipQueue} |  |  |
+| Notify Successful Shipping | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Notify Packaging and Shipping Failed | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Notify Fraudulent Customer | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Notify Invalid Input | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Reserve Product | Task | invoke | FunctionName=${LambdaReserveProduct} |  |  |
+| Notify Delayed | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+
+## sfn-collection__saga-pattern-sam__statemachine__statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| ReserveFlight | Task | invoke | FunctionName=${reserveFlightFunction} |  |  |
+| ReserveCarRental | Task | invoke | FunctionName=${reserveCarRentalFunction} |  |  |
+| ProcessPayment | Task | invoke | FunctionName=${processPaymentFunction} |  |  |
+| ConfirmFlight | Task | invoke | FunctionName=${confirmFlightFunction} |  |  |
+| ConfirmCarRental | Task | invoke | FunctionName=${confirmCarRentalFunction} |  |  |
+| SendingSMSSuccess | Task | publish | TopicArn=${snsTopicArn} |  |  |
+| RefundPayment | Task | invoke | FunctionName=${refundPaymentFunction} |  |  |
+| CancelRentalReservation | Task | invoke | FunctionName=${cancelCarRentalFunction} |  |  |
+| CancelFlightReservation | Task | invoke | FunctionName=${cancelFlightFunction} |  |  |
+| SendingSMSFailure | Task | publish | TopicArn=${snsTopicArn} |  |  |
+
+## sfn-collection__inventory-management-sam__statemachine__reserve-stock-statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| DynamoDB GetItem | Task | getitem | TableName=${InventoryTableName} |  |  |
+| Update stock | Task | updateitem | TableName=${InventoryTableName} |  |  |
+| Send stock reserved event | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Write Item to InventoryReservationTable | Task | putitem | TableName=${InventoryReservationTableName} |  |  |
+| Send create-purchase-order event | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Send stock unavailable event | Task | putevents | arn:aws:states:::events:putEvents |  |  |
+| Send stock unavailable notification | Task | publish | TopicArn=${InventoryManagementTopicArn} |  |  |
+
+## sfn-collection__inventory-management-sam__statemachine__create-purchase-order-statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Send Purchase Order Email | Task | waitfortasktoken | FunctionName=${SendPurchaseOrderEmailLambdaArn} |  |  |
+| Update Inventory | Task | updateitem | TableName=${InventoryTableName} |  |  |
+
+## sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Initial Scan | Task | scan | TableName=${SourceTableName} |  |  |
+| Get the next set of records | Task | scan | TableName=${SourceTableName} |  |  |
+| Update record | Task | invoke | FunctionName=${TransferFunctionArn} |  |  |
+| Add record to target DDB table | Task | putitem | TableName=${TargetTableName} |  |  |
+
+## sfn-collection__account-vending-machine__statemachine__statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Get Organization Root | Task | listroots | arn:aws:states:::aws-sdk:organizations:listRoots |  |  |
+| Create New Organizational Unit | Task | createorganizationalunit | arn:aws:states:::aws-sdk:organizations:createOrganizationalU |  |  |
+| Create New Account | Task | createaccount | arn:aws:states:::aws-sdk:organizations:createAccount |  |  |
+| New Account Status | Task | describecreateaccountstatus | arn:aws:states:::aws-sdk:organizations:describeCreateAccount |  |  |
+| Move Account To OU | Task | moveaccount | arn:aws:states:::aws-sdk:organizations:moveAccount |  |  |
+| Create Stack | Task | createstack | arn:aws:states:::aws-sdk:cloudformation:createStack |  |  |
+| List Organizational Units | Task | listorganizationalunitsforparent | arn:aws:states:::aws-sdk:organizations:listOrganizationalUni |  |  |
+
+## sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Bedrock InvokeModel | Task | invokemodel | arn:aws:states:::bedrock:invokeModel |  |  |
+
+## sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Copy input file | Task | invoke | FunctionName=${CopyInputFileFunctionArn} |  |  |
+| Data quality using Lambda | Task | invoke | FunctionName=${DeequOnLambdaFunctionArn} |  |  |
+| List Data Quality Results | Task | listobjectsv2 | Bucket=${MyScriptBucketName} |  |  |
+| Send Failure Message | Task | publish | TopicArn=${DataQualityUsingLambdaTopicArn} |  |  |
+| Aggregate Data | Task | invoke | FunctionName=${AggregateFunctionArn} |  |  |
+| Send Success Message | Task | publish | TopicArn=${DataQualityUsingLambdaTopicArn} |  |  |
+
+## sfn-examples__sam__app-business-rules-orchestration__statemachine__businessrules_orchestration.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Audit Request | Task | invoke | FunctionName=${AuditLambaPath} |  |  |
+| Execute Ruleset | Task | invoke | FunctionName=${ExecuteRulesetLambdaPath} |  |  |
+| Audit Response | Task | invoke | FunctionName=${AuditLambaPath} |  |  |
+
+## sfn-collection__text-processing-sqs-express__statemachine__statemachine.asl.json
+
+| task | type | action | target | idempotent? | persistent? |
+|------|------|--------|--------|-------------|-------------|
+| Decode base64 string | Task | invoke | FunctionName=${Base64DecodeLambda} |  |  |
+| Generate statistics | Task | invoke | FunctionName=${GenerateStatsLambda} |  |  |
+| Remove special characters | Task | invoke | FunctionName=${StringCleanerLambda} |  |  |
+| Tokenize and count | Task | invoke | FunctionName=${TokenizerCounterLambda} |  |  |
+
 ## sfn-collection__sfn-rekognition-video-catalog-workflow__statemachine__statemachine.asl.json
 
 | task | type | action | target | idempotent? | persistent? |
 |------|------|--------|--------|-------------|-------------|
 | Create/Update VideoContentCatalog | Task | startcrawler | arn:aws:states:::aws-sdk:glue:startCrawler |  |  |
-| StartContentModeration | Task | startcontentmoderation | arn:aws:states:::aws-sdk:rekognition:startContentModeration |  |  |
-| Wait for ContentModeration Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
 | GetContentModeration | Task | getcontentmoderation | arn:aws:states:::aws-sdk:rekognition:getContentModeration |  |  |
+| StartContentModeration | Task | startcontentmoderation | arn:aws:states:::aws-sdk:rekognition:startContentModeration |  |  |
 | Update ContentModeration Job status | Task | updateitem | TableName=rekognition-job-tracker |  |  |
+| Wait for ContentModeration Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
 | Write Rekognition Content Moderation Results to file | Task | invoke | FunctionName=arn:aws:lambda:{REGION}:{ACCOUNT-NUMBER}:functi |  |  |
-| StartLabelDetection | Task | startlabeldetection | arn:aws:states:::aws-sdk:rekognition:startLabelDetection |  |  |
-| Wait for LabelDetection Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
 | GetLabelDetection | Task | getlabeldetection | arn:aws:states:::aws-sdk:rekognition:getLabelDetection |  |  |
+| StartLabelDetection | Task | startlabeldetection | arn:aws:states:::aws-sdk:rekognition:startLabelDetection |  |  |
 | Update Label Detection Status | Task | updateitem | TableName=rekognition-job-tracker |  |  |
+| Wait for LabelDetection Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
 | Write Rekognition Label Detection Results to File | Task | invoke | FunctionName=arn:aws:lambda:{REGION}:{ACCOUNT-NUMBER}:functi |  |  |
-| StartSegmentDetection | Task | startsegmentdetection | arn:aws:states:::aws-sdk:rekognition:startSegmentDetection |  |  |
-| Wait for SegmentDetection Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
-| GetSegmentDetection | Task | getsegmentdetection | arn:aws:states:::aws-sdk:rekognition:getSegmentDetection |  |  |
-| Update Segment Detection Status | Task | updateitem | TableName=rekognition-job-tracker |  |  |
-| Write Rekognition Segmet Results to File | Task | invoke | FunctionName=arn:aws:lambda:{REGION}:{ACCOUNT-NUMBER}:functi |  |  |
 | MoveProcessedFiles | Task | invoke | FunctionName=arn:aws:lambda:{REGION}:{ACCOUNT-NUMBER}:functi |  |  |
+| GetSegmentDetection | Task | getsegmentdetection | arn:aws:states:::aws-sdk:rekognition:getSegmentDetection |  |  |
+| StartSegmentDetection | Task | startsegmentdetection | arn:aws:states:::aws-sdk:rekognition:startSegmentDetection |  |  |
+| Update Segment Detection Status | Task | updateitem | TableName=rekognition-job-tracker |  |  |
+| Wait for SegmentDetection Callback | Task | waitfortasktoken | TableName=rekognition-job-tracker |  |  |
+| Write Rekognition Segmet Results to File | Task | invoke | FunctionName=arn:aws:lambda:{REGION}:{ACCOUNT-NUMBER}:functi |  |  |
 
 ## sfn-collection__ec2-instance-isolation-sam__statemachine__statemachine.asl.json
 
@@ -35,14 +139,14 @@ the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 | Disable Instance Termination | Task | modifyinstanceattribute | arn:aws:states:::aws-sdk:ec2:modifyInstanceAttribute |  |  |
 | Get AutoScalingGroup Info | Task | describeautoscalinginstances | arn:aws:states:::aws-sdk:autoscaling:describeAutoScalingInst |  |  |
 | Detach Instance from ASG | Task | detachinstances | arn:aws:states:::aws-sdk:autoscaling:detachInstances |  |  |
+| Attach Volume | Task | attachvolume | arn:aws:states:::aws-sdk:ec2:attachVolume |  |  |
+| Allow Forensic Instance Ingress | Task | authorizesecuritygroupingress | arn:aws:states:::aws-sdk:ec2:authorizeSecurityGroupIngress |  |  |
+| Tag Instance as Quarantine | Task | createtags | arn:aws:states:::aws-sdk:ec2:createTags |  |  |
 | Create Forensic Instance | Task | runinstances | arn:aws:states:::aws-sdk:ec2:runInstances |  |  |
 | Create Snapshot from Isolated Instance | Task | createsnapshot | arn:aws:states:::aws-sdk:ec2:createSnapshot |  |  |
 | Get Snapshot Status | Task | describesnapshots | arn:aws:states:::aws-sdk:ec2:describeSnapshots |  |  |
 | Create EBS Volume from Snapshot | Task | createvolume | arn:aws:states:::aws-sdk:ec2:createVolume |  |  |
 | Get EBS Volume Status | Task | describevolumes | arn:aws:states:::aws-sdk:ec2:describeVolumes |  |  |
-| Attach Volume | Task | attachvolume | arn:aws:states:::aws-sdk:ec2:attachVolume |  |  |
-| Allow Forensic Instance Ingress | Task | authorizesecuritygroupingress | arn:aws:states:::aws-sdk:ec2:authorizeSecurityGroupIngress |  |  |
-| Tag Instance as Quarantine | Task | createtags | arn:aws:states:::aws-sdk:ec2:createTags |  |  |
 
 ## sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json
 
@@ -108,11 +212,11 @@ the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 | StartTranscriptionJob | Task | starttranscriptionjob | arn:aws:states:::aws-sdk:transcribe:startTranscriptionJob |  |  |
 | GetTranscriptionJob | Task | gettranscriptionjob | arn:aws:states:::aws-sdk:transcribe:getTranscriptionJob |  |  |
 | Read Transcript | Task | getobject | Bucket=${bucket} |  |  |
-| Bedrock InvokeModel | Task | invokemodel | arn:aws:states:::bedrock:invokeModel |  |  |
-| Call third-party API | Task | invoke | ApiEndpoint=${public_inference_endpoint} |  |  |
 | Wait for user feedback | Task | waitfortasktoken | FunctionName=${send_response_lambda} |  |  |
 | Generate Avatar | Task | invokemodel | arn:aws:states:::bedrock:invokeModel |  |  |
 | send custom avatar to user | Task | invoke | FunctionName=${send_response_lambda} |  |  |
+| Bedrock InvokeModel | Task | invokemodel | arn:aws:states:::bedrock:invokeModel |  |  |
+| Call third-party API | Task | invoke | ApiEndpoint=${public_inference_endpoint} |  |  |
 
 ## sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json
 
@@ -122,8 +226,8 @@ the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 | CreateStackSet | Task | createstackset | arn:aws:states:::aws-sdk:cloudformation:createStackSet |  |  |
 | CreateStackInstances | Task | createstackinstances | arn:aws:states:::aws-sdk:cloudformation:createStackInstances |  |  |
 | CheckCreatingStackSetStatus | Task | describestacksetoperation | arn:aws:states:::aws-sdk:cloudformation:describeStackSetOper |  |  |
-| CheckDeletingStackSetStatus | Task | describestacksetoperation | arn:aws:states:::aws-sdk:cloudformation:describeStackSetOper |  |  |
 | DeleteStackInstances | Task | deletestackinstances | arn:aws:states:::aws-sdk:cloudformation:deleteStackInstances |  |  |
+| CheckDeletingStackSetStatus | Task | describestacksetoperation | arn:aws:states:::aws-sdk:cloudformation:describeStackSetOper |  |  |
 | DeleteStackSet | Task | deletestackset | arn:aws:states:::aws-sdk:cloudformation:deleteStackSet |  |  |
 
 ## sfn-collection__uml-statemachine__statemachine__BlogBuySellSM.asl.json
@@ -154,10 +258,11 @@ the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 | task | type | action | target | idempotent? | persistent? |
 |------|------|--------|--------|-------------|-------------|
 | Get Third-party locations | Task | query | TableName=locations |  |  |
-| Iterate Containers[Map]/Get location Summary | ? |  |  |  |  |
 | Combine Part Files | Task | startjobrun | arn:aws:states:::glue:startJobRun |  |  |
 | Has Job Finish | Task | getjobrun | arn:aws:states:::aws-sdk:glue:getJobRun |  |  |
 | Update DynamoDb | Task | updateitem | TableName={% 'task_table' %} |  |  |
+| Get location Summary | Task | invoke | ApiEndpoint={% 'api_endpoint'& $states.input.Items.location_ |  |  |
+| Extract Data | Task | 2 | StateMachineArn={% 'child1' %} |  |  |
 
 ## sfn-collection__idempotent-workflow-sam__statemachine__statemachine.asl.json
 
@@ -168,22 +273,23 @@ the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
 | Get idempotency record from DynamoDB | Task | ${ddbgetitem} | TableName=${DDBTable} |  |  |
 | Save execution results | Task | ${ddbupdateitem} | TableName=${DDBTable} |  |  |
 | Save failure | Task | ${ddbupdateitem} | TableName=${DDBTable} |  |  |
+| (which can fail occasionally) | Task | ${failureinjectfunctionarn} | ${FailureInjectFunctionArn} |  |  |
 
 ## sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json
 
 | task | type | action | target | idempotent? | persistent? |
 |------|------|--------|--------|-------------|-------------|
-| Create Evaluation Pipelines[Branch0]/CreateKnowledgeBase | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch0]/Create Data Source | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch0]/Start Ingestion Job | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch0]/Get Ingestion Job | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch0]/Create Evaluation Job | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch0]/Get Evaluation Job Status | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Create Knowledge Base 2 | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Create Data Source 2 | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Start Ingestion Job 2 | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Get Ingestion Job 2 | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Create Evaluation Job 2 | ? |  |  |  |  |
-| Create Evaluation Pipelines[Branch1]/Get Evaluation Job Status 2 | ? |  |  |  |  |
+| Create Data Source | Task | createdatasource | arn:aws:states:::aws-sdk:bedrockagent:createDataSource |  |  |
+| Create Evaluation Job | Task | createevaluationjob | arn:aws:states:::aws-sdk:bedrock:createEvaluationJob |  |  |
+| CreateKnowledgeBase | Task | createknowledgebase | arn:aws:states:::aws-sdk:bedrockagent:createKnowledgeBase |  |  |
+| Get Evaluation Job Status | Task | getevaluationjob | arn:aws:states:::aws-sdk:bedrock:getEvaluationJob |  |  |
+| Get Ingestion Job | Task | getingestionjob | arn:aws:states:::aws-sdk:bedrockagent:getIngestionJob |  |  |
+| Start Ingestion Job | Task | startingestionjob | arn:aws:states:::aws-sdk:bedrockagent:startIngestionJob |  |  |
+| Create Data Source 2 | Task | createdatasource | arn:aws:states:::aws-sdk:bedrockagent:createDataSource |  |  |
+| Create Evaluation Job 2 | Task | createevaluationjob | arn:aws:states:::aws-sdk:bedrock:createEvaluationJob |  |  |
+| Create Knowledge Base 2 | Task | createknowledgebase | arn:aws:states:::aws-sdk:bedrockagent:createKnowledgeBase |  |  |
+| Get Evaluation Job Status 2 | Task | getevaluationjob | arn:aws:states:::aws-sdk:bedrock:getEvaluationJob |  |  |
+| Get Ingestion Job 2 | Task | getingestionjob | arn:aws:states:::aws-sdk:bedrockagent:getIngestionJob |  |  |
+| Start Ingestion Job 2 | Task | startingestionjob | arn:aws:states:::aws-sdk:bedrockagent:startIngestionJob |  |  |
 
-_Total: 13 files, 116 tasks._
+_Total: 23 files, 172 tasks._

@@ -1,0 +1,49 @@
+# Example CI/CD build-time gate for serverless workflows (WS-E §6.2).
+#
+# Drop this into .github/workflows/ (GitHub Actions) or translate the single
+# `stepcheck check` invocation into a CodeBuild/CodePipeline buildspec step. The
+# gate runs at build time, before deploy: a workflow that carries a data-flow /
+# atomicity / concurrency / temporal defect fails the build instead of deploying
+# silently (the AWS ValidateStateMachineDefinition API accepts all of them).
+#
+# Measured on the industrial set (eval/industrial-case.json): the gate adds a
+# p99 of ~12 ms per workflow and fails the build on 100% (6/6) of workflows once
+# a single semantic defect is injected.
+
+name: stepcheck-gate
+on: [push, pull_request]
+
+jobs:
+  workflow-correctness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install StepCheck
+        run: |
+          # from the published binary / npm package
+          npm install -g @nimrod-f/stepcheck || cargo install stepcheck
+
+      # Option 1: gate the deployment artifact directly -- StepCheck reads the
+      # CloudFormation/SAM template (DefinitionString + !Sub/!GetAtt intrinsics)
+      # and picks out every AWS::StepFunctions::StateMachine, no extraction needed.
+      - name: Gate CloudFormation / SAM templates
+        run: |
+          fail=0
+          for t in $(git ls-files '**/template.yaml' '**/template.yml' 'infra/**/*.asl.json'); do
+            echo "::group::stepcheck $t"
+            stepcheck check --infer --deny-warnings "$t" || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      # Option 2 (CDK): synth first, then gate the synthesized templates.
+      - name: Gate CDK synth output
+        if: hashFiles('cdk.json') != ''
+        run: |
+          npx cdk synth >/dev/null
+          fail=0
+          for t in cdk.out/*.template.json; do
+            stepcheck check --infer --deny-warnings "$t" || fail=1
+          done
+          exit $fail

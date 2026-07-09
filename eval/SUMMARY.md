@@ -5,8 +5,13 @@ All numbers produced by the committed tool over the committed corpus. Reproduce:
 `node eval/inference_accuracy.js`.
 
 ## E1 — Corpus characterization
-- **193** real workflows mined from 2 AWS repos
-  (`aws-samples/aws-stepfunctions-examples`, `aws-samples/step-functions-workflows-collection`).
+- Foreground deployment-shaped evidence: **6** industrial-topology `aws-samples` workflows
+  (including AWS Serverless Airline Booking `ProcessBooking`), **55** `serverless-patterns`
+  workflows read from SAM/CloudFormation definitions, and **24** AWS Solutions artifacts /
+  **26** machines, including CDK-synthesized enterprise orchestrators.
+- Breadth/generalization corpora: **193** workflows mined exhaustively from 2 AWS sample repos
+  (`aws-samples/aws-stepfunctions-examples`, `aws-samples/step-functions-workflows-collection`),
+  **66** CNCF examples, and **95** independent external ASL definitions.
 - **1355** states total; per workflow min 1 / median 6 / mean 7.0 / max 33.
 - State types: Task 747, Choice 166, Pass 159, Wait 71, Fail 65, Map 64, Succeed 49, Parallel 33.
 - 84 workflows use retry policies; 51 use catch handlers.
@@ -57,12 +62,14 @@ compensators (idempotent in effect) as non-idempotent. Persistence (which drives
 compensation check) holds up at 86%. High annotator agreement + low heuristic accuracy =
 the truth is clear but names don't carry it → findings are warnings.
 
-## E4b — In-the-wild warning precision (vs gold)
-Of the 39 SC3001/SC4001 warnings landing on a gold-labelled task, **28/39 (72%)** are
-true positives — **26/32 (81%)** for SC4001 (compensation), **2/7** for SC3001 (retry).
-Every false positive is a compensator (RefundPayment/Cancel*) or an idempotent
-keyed/metadata write. (A broader judge+adversarial-verify triage of all 153 findings is
-in `eval/triage-verdicts.json`.)
+## E4b — In-the-wild warning precision (vs human gold)
+`node eval/score-human-gold.js --reconciled` (human gold = reconciled `gold-labels-human-{A,B}.json`
++ the 10-workflow hand-labelled core). Of the SC3001/SC4001 warnings landing on a gold-labelled
+task, **40/44 (91%)** are true positives — **33/37 (89%)** for SC4001 (compensation), **7/7 (100%)**
+for SC3001 (retry), and **6/6 (100%)** for SC4010; all three inferred codes together are
+**46/50 (92%)**. The residual SC4001 false positives are compensators (RefundPayment/Cancel*) or
+idempotent keyed/metadata writes. (Human inter-annotator Cohen's kappa **0.89** idempotent /
+**0.99** persistent.)
 
 ## E9 — Baseline: statelint (AWS Labs reference linter, v0.8.0)
 `node eval/statelint_baseline.js` → `eval/baseline-statelint.json`. On the 616 mutants:
@@ -93,10 +100,46 @@ flags 113/193 files with 499 problems, **410** of them schema-shape nits, none s
   detected **84 / 126 (67%)**; the undetected third sit downstream of opaque task results
   (shape soundly = ⊤) — a measure of ASL's intrinsic opacity, not a reliability gap. The
   closed-world baseline produces **0** spurious SC1101.
+- **Result-shape ablation:** the implementation now resolves quoted-bracket member paths;
+  `--result-shapes` additionally adds closed declared task-output schemas and known AWS
+  service-result envelopes. SC1101 recall improves from **84 / 126** to **88 / 126 (70%)**;
+  `stepcheck dataflow-cert corpus/asl --infer --result-shapes` certifies **88 / 88** emitted
+  SC1101 reports by checking **1,146** finite widened-fixpoint postcondition obligations across
+  **207** machines, with **0** failed obligations and **0** diagnostic mismatches. The bounded
+  concrete oracle remains a separate empirical check and finds **0** present-field counterexamples.
+
+## WS-D setup — ASL to BPMN baseline encoder
+`node eval/asl2bpmn/encode.js corpus/asl --limit 30 --out eval/asl2bpmn/out --summary eval/asl2bpmn-summary.json`
+creates the BPMN input layer for Woflan/BPMN Analyzer/BProVe comparison. The 30-workflow feasibility
+slice encodes **30 / 30** workflows with **0** validation failures; the generated BPMN XML files
+parse successfully and cover **184** ASL states, **239** sequence flows, **21** Choice gateways,
+**6** Parallel split/join regions, and **6** Map placeholders. The summary explicitly counts
+lossy features: Choice guards are labels rather than executable data predicates, Retry policies
+and service semantics are not encoded, and Map item data flow stays out of scope. This is the
+fair-class control-flow baseline substrate; SC1101 JSON-document provenance remains StepCheck-only.
+`python eval/asl2bpmn/compare.py --limit 193 --out eval/asl2bpmn-comparison-full.json` now records
+the scored formal-baseline comparison. With all three academic baselines configured, clean
+over-report is Woflan **16 / 193 (8.3%)**, BPMN Analyzer **16 / 193 (8.3%)**, and BProVe
+**56 / 193 (29%)**. On the control-flow class SC0002, recall is StepCheck **166 / 166**, Woflan
+**158 / 166**, BPMN Analyzer **144 / 166**, and BProVe **114 / 166**; the non-control-flow ASL
+classes remain StepCheck-only except for structural side effects.
+`eval/mutation-stats.json` consolidates the additional AP/F1 aggregates on the **full 193-workflow**
+corpus, so there is no parallel 30-workflow metric table beyond feasibility. Over all seven SC
+classes, StepCheck macro operating-point AP/F1 is **1.00 / 0.975** (bootstrap F1 CI
+**[0.966, 0.982]**); Woflan is **0.286 / 0.216**, BPMN Analyzer **0.286 / 0.210**, and BProVe
+**0.429 / 0.156**. On the strict BPMN soundness subset (`SC0002`), AP is **1.00** for all four tools
+and F1 is StepCheck **1.00**, Woflan **0.975**, BPMN Analyzer **0.929**, BProVe **0.814**. BProVe has
+no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe failure.
 
 ## E5 — Verification cost
 - Mean **38.9 µs**/workflow (eight passes incl. the data-flow fixpoint), median 23.7 µs,
   max 1.16 ms; **7.5 ms** to verify the entire 193-workflow corpus.
+- Real industrial set (`corpus/industrial`): mean **91.1 µs**/workflow, median **99.9 µs**,
+  max **0.17 ms**, total **0.55 ms** across 6 workflows / 65 recursive states.
+- AWS Solutions corpus (`corpus/aws-solutions`): mean **0.28 ms**/workflow, median **0.12 ms**,
+  max **1.58 ms**, total **6.70 ms** across 24 workflows/artifacts / 385 recursive states.
+- End-to-end CI gate latency, process start included: industrial p50/p95 **9.4/11.3 ms**;
+  AWS Solutions CDK templates p50/p95 **15.7/20.9 ms**.
 - Runtime overhead on AWS: **0** (verification is entirely ahead-of-deployment).
 
 ## E6 — DSL conciseness
@@ -106,11 +149,19 @@ flags 113/193 files with 499 problems, **410** of them schema-shape nits, none s
   semantics ASL cannot express.
 
 ## E7 — AWS round-trip (infra/)
-- The DSL-verified `order.asl.json` was deployed **unmodified** (only `FunctionName`
-  bound to a Lambda ARN) to real AWS Step Functions (`eu-central-1`, EXPRESS).
-- Synchronous execution reached **`SUCCEEDED`**; the input
-  `{customerId, items, orderId, amount}` propagated through all 4 Lambda steps to
-  `OrderCompleted`. Billed **500 ms / 64 MB** (≈ $0, free tier).
+- The DSL-verified workflows were deployed **unmodified** except for binding `FunctionName`
+  to a stand-in Lambda ARN. Evidence summary: `eval/aws-roundtrip-modes.json`.
+- **Express synchronous** (`infra/deploy_run.sh`): `infra/execution-evidence.json`,
+  status **`SUCCEEDED`**, billed **500 ms / 64 MB** (≈ $0, free tier). Express retains no durable
+  `get-execution-history` log.
+- **Standard asynchronous** (`infra/deploy_run_standard.sh`): `infra/execution-evidence-standard.json`
+  + `infra/execution-history-standard.json`, status **`SUCCEEDED`**, **24** durable history events
+  (4 Lambda tasks scheduled/succeeded).
+- **Standard live callback** (`infra/deploy_run_callback.sh`): `infra/execution-evidence-callback.json`
+  + `infra/execution-history-callback.json`, status **`SUCCEEDED`**, **30** durable history events.
+  The workflow pauses at `RequestApproval` (`lambda:invoke.waitForTaskToken`, TimeoutSeconds 3600,
+  HeartbeatSeconds 900), then an external `SendTaskSuccess` resumes it with
+  `{approved:true, approver:"external-reviewer", channel:"out-of-band-callback"}`.
 - Reused two pre-existing IAM roles; both created resources (state machine + Lambda)
   torn down afterwards. Evidence: `infra/execution-evidence.json`.
 - Runtime overhead introduced by StepCheck: **none** (verification is ahead-of-time).
@@ -131,14 +182,50 @@ flags 113/193 files with 499 problems, **410** of them schema-shape nits, none s
   before charge) → **3 SC1010 errors** derived directly from the declared schemas.
 - Verification: mean **3.9 µs**/workflow.
 
-## Implementation size — 3,692 lines of Rust
+## Implementation size — 6,224 physical source lines of Rust (excludes the 783-line test suite)
+Definition: physical source lines counted by `wc -l` over `stepcheck/src/**.rs` excluding `tests.rs`.
+The paper and this file report the same number under the same definition (reconciles the earlier
+3,692 code-only vs 5,045 figures the review flagged).
 | Component | Module(s) | LOC |
 |---|---|---|
-| Workflow IR | ir.rs | 298 |
-| Frontends (ASL parse+emit, typed DSL, CNCF Serverless Workflow) | asl.rs, dsl.rs, cncf.rs | 729 |
-| Annotations + inference | annot.rs | 258 |
-| Analysis passes (8: structural, dataflow, contract, typestate, retry, compensation, concurrency, temporal + manager) | passes/* | 1426 |
-| Diagnostics | diag.rs | 115 |
-| Mutation engine | mutate.rs | 309 |
-| CLI + stats + eval harness | main.rs | 557 |
-| **Total** | | **3692** |
+| Workflow IR | ir.rs | ~300 |
+| Frontends (ASL parse+emit incl. full-fidelity emitter + CNCF jq model, typed DSL) | asl.rs, dsl.rs, cncf.rs | 922 |
+| Annotations + inference | annot.rs | ~380 |
+| Analysis passes (8 + SC5003 composition + manager) | passes/* | 2683 |
+| Concrete-execution oracle (bounded loop unrolling) | concrete.rs | ~430 |
+| Diagnostics | diag.rs | ~120 |
+| Mutation engine | mutate.rs | ~320 |
+| CLI + stats + eval harness | main.rs | ~1050 |
+| **Total (excl. tests.rs)** | | **6224** |
+
+## WS-A..H — acceptance-round evidence (2026-07, reproducible)
+- **Formal competitor (WS-D):** `python eval/asl2bpmn/compare.py --limit 193` → `eval/asl2bpmn-comparison-full.json`.
+  Woflan, BPMN Analyzer 2.0, and BProVe run locally on the ASL→BPMN workflow-net encoding.
+  Per-class recall: StepCheck 100% all classes; formal verifiers overlap on SC0002 but are 0% on
+  data/retry/temporal and mostly 0% on concurrency/compensation. Over-report on valid workflows:
+  Woflan/BPMN Analyzer **16/193 (8.3%)**, BProVe **56/193 (29%)**. Exact CIs in
+  `eval/mutation-stats.json` (`python eval/mutation_stats.py`). SAB-only check:
+  `python eval/asl2bpmn/compare.py --corpus corpus/industrial --include sab-booking-processbooking ...`
+  → `eval/sab-bpmn-comparison.json`; all three baselines accept clean SAB and catch only SC0002,
+  while StepCheck catches SC0002/SC1003/SC3001/SC4001/SC6003 (SC5001 n/a on SAB).
+- **Industrial case (WS-E):** `python eval/industrial/wse.py` → `eval/industrial-case.json`. Six
+  industrial-topology sagas (incl. SAB reconstruction). Build-gate p95 is **16--21 ms** across
+  0/1/5 injected-defect levels; it fails the build on 5/5 one-defect workflows and 3/3 five-defect
+  workflows with applicable sites. CI YAML: `eval/industrial/ci-gate-example.yml`.
+- **AWS Solutions CDK gate:** `python eval/industrial/aws_solutions_cdk_gate.py` →
+  `eval/aws-solutions-cdk-gate.json`. Six CDK synth templates; mutants are embedded back into the
+  template before timing. StepCheck catches 6/6 one-defect and 5/5 five-defect mutants; p95 is
+  18--20 ms. `asl-validator` accepts 2/6 clean CDK definitions and silently passes both one-defect
+  mutants over that accepted-clean denominator.
+- **Leakage-free inference (WS-B):** `node eval/score-holdout.js` → `eval/holdout-inference.json`.
+  Rules frozen; hold-out (13 wf): warning precision SC4001 27/29, SC3001 3/3, SC4010 4/4; per-check
+  κ = 0.97/0.98; advisory reframe.
+- **CNCF jq data-flow (WS-F):** `eval/cncf-jq-coverage.json` — SC1101 fires on jq field reads;
+  12/66 workflows have modelable references.
+- **Concurrency composition (WS-G):** SC5003 (`stepcheck scan corpus/asl` → 2 findings). Same-template
+  child definitions are recursively flattened for SC5001 when referenced by logical id, `Ref`/`GetAtt`,
+  `DefinitionSubstitutions`, or `StateMachineName`-derived ARNs; externally deployed children with no
+  local definition remain an explicit scope boundary.
+- **Emitter fidelity (WS-H):** `node eval/emitter_fidelity.js` → `eval/emitter-fidelity.json` —
+  193 ASL workflows; 100% states, 99.9% transitions, 100% measured JSONPath/JSONata/Map I/O fields,
+  99.5% exact ASL-object equality, idempotent emit on all 193.

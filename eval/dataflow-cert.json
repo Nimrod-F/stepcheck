@@ -1,0 +1,17 @@
+﻿{
+  "files": 193,
+  "ablation": {
+    "result_shapes": true
+  },
+  "sc1101_findings": 88,
+  "certificate": {
+    "machines": 207,
+    "postcondition_obligations": 1146,
+    "failed_postcondition_obligations": 0,
+    "sc1101_reports_in_certificate": 88,
+    "certified_sc1101_reports": 88,
+    "diagnostic_count_mismatches": 0,
+    "ok": true
+  },
+  "loop_argument": "finite widened-fixpoint postcondition check; no bounded unrolling"
+}

@@ -1,14 +1,242 @@
 {
+  "sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json": {
+    "Get Customer Status": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify New Order": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Products Reserved": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Initate Packaging and Shipping": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Successful Shipping": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Packaging and Shipping Failed": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Fraudulent Customer": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Invalid Input": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Reserve Product": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Notify Delayed": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__saga-pattern-sam__statemachine__statemachine.asl.json": {
+    "ReserveFlight": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "ReserveCarRental": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "ProcessPayment": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "ConfirmFlight": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "ConfirmCarRental": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "SendingSMSSuccess": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "RefundPayment": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "CancelRentalReservation": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "CancelFlightReservation": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "SendingSMSFailure": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__inventory-management-sam__statemachine__reserve-stock-statemachine.asl.json": {
+    "DynamoDB GetItem": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Update stock": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send stock reserved event": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Write Item to InventoryReservationTable": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send create-purchase-order event": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send stock unavailable event": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send stock unavailable notification": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__inventory-management-sam__statemachine__create-purchase-order-statemachine.asl.json": {
+    "Send Purchase Order Email": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Update Inventory": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json": {
+    "Initial Scan": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Get the next set of records": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Update record": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Add record to target DDB table": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__account-vending-machine__statemachine__statemachine.asl.json": {
+    "Get Organization Root": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Create New Organizational Unit": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Create New Account": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "New Account Status": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Move Account To OU": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Create Stack": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "List Organizational Units": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json": {
+    "Bedrock InvokeModel": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json": {
+    "Copy input file": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Data quality using Lambda": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "List Data Quality Results": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send Failure Message": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Aggregate Data": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Send Success Message": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-examples__sam__app-business-rules-orchestration__statemachine__businessrules_orchestration.asl.json": {
+    "Audit Request": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Execute Ruleset": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Audit Response": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
+  "sfn-collection__text-processing-sqs-express__statemachine__statemachine.asl.json": {
+    "Decode base64 string": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Generate statistics": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Remove special characters": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Tokenize and count": {
+      "idempotent": null,
+      "persistent": null
+    }
+  },
   "sfn-collection__sfn-rekognition-video-catalog-workflow__statemachine__statemachine.asl.json": {
     "Create/Update VideoContentCatalog": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "StartContentModeration": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Wait for ContentModeration Callback": {
       "idempotent": null,
       "persistent": null
     },
@@ -16,7 +244,15 @@
       "idempotent": null,
       "persistent": null
     },
+    "StartContentModeration": {
+      "idempotent": null,
+      "persistent": null
+    },
     "Update ContentModeration Job status": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Wait for ContentModeration Callback": {
       "idempotent": null,
       "persistent": null
     },
@@ -24,15 +260,11 @@
       "idempotent": null,
       "persistent": null
     },
-    "StartLabelDetection": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Wait for LabelDetection Callback": {
-      "idempotent": null,
-      "persistent": null
-    },
     "GetLabelDetection": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "StartLabelDetection": {
       "idempotent": null,
       "persistent": null
     },
@@ -40,15 +272,15 @@
       "idempotent": null,
       "persistent": null
     },
+    "Wait for LabelDetection Callback": {
+      "idempotent": null,
+      "persistent": null
+    },
     "Write Rekognition Label Detection Results to File": {
       "idempotent": null,
       "persistent": null
     },
-    "StartSegmentDetection": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Wait for SegmentDetection Callback": {
+    "MoveProcessedFiles": {
       "idempotent": null,
       "persistent": null
     },
@@ -56,15 +288,19 @@
       "idempotent": null,
       "persistent": null
     },
+    "StartSegmentDetection": {
+      "idempotent": null,
+      "persistent": null
+    },
     "Update Segment Detection Status": {
       "idempotent": null,
       "persistent": null
     },
-    "Write Rekognition Segmet Results to File": {
+    "Wait for SegmentDetection Callback": {
       "idempotent": null,
       "persistent": null
     },
-    "MoveProcessedFiles": {
+    "Write Rekognition Segmet Results to File": {
       "idempotent": null,
       "persistent": null
     }
@@ -86,6 +322,18 @@
       "idempotent": null,
       "persistent": null
     },
+    "Attach Volume": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Allow Forensic Instance Ingress": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Tag Instance as Quarantine": {
+      "idempotent": null,
+      "persistent": null
+    },
     "Create Forensic Instance": {
       "idempotent": null,
       "persistent": null
@@ -103,18 +351,6 @@
       "persistent": null
     },
     "Get EBS Volume Status": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Attach Volume": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Allow Forensic Instance Ingress": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Tag Instance as Quarantine": {
       "idempotent": null,
       "persistent": null
     }
@@ -288,14 +524,6 @@
       "idempotent": null,
       "persistent": null
     },
-    "Bedrock InvokeModel": {
-      "idempotent": null,
-      "persistent": null
-    },
-    "Call third-party API": {
-      "idempotent": null,
-      "persistent": null
-    },
     "Wait for user feedback": {
       "idempotent": null,
       "persistent": null
@@ -305,6 +533,14 @@
       "persistent": null
     },
     "send custom avatar to user": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Bedrock InvokeModel": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Call third-party API": {
       "idempotent": null,
       "persistent": null
     }
@@ -326,11 +562,11 @@
       "idempotent": null,
       "persistent": null
     },
-    "CheckDeletingStackSetStatus": {
+    "DeleteStackInstances": {
       "idempotent": null,
       "persistent": null
     },
-    "DeleteStackInstances": {
+    "CheckDeletingStackSetStatus": {
       "idempotent": null,
       "persistent": null
     },
@@ -400,10 +636,6 @@
       "idempotent": null,
       "persistent": null
     },
-    "Iterate Containers[Map]/Get location Summary": {
-      "idempotent": null,
-      "persistent": null
-    },
     "Combine Part Files": {
       "idempotent": null,
       "persistent": null
@@ -413,6 +645,14 @@
       "persistent": null
     },
     "Update DynamoDb": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Get location Summary": {
+      "idempotent": null,
+      "persistent": null
+    },
+    "Extract Data": {
       "idempotent": null,
       "persistent": null
     }
@@ -437,54 +677,58 @@
     "Save failure": {
       "idempotent": null,
       "persistent": null
+    },
+    "(which can fail occasionally)": {
+      "idempotent": null,
+      "persistent": null
     }
   },
   "sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json": {
-    "Create Evaluation Pipelines[Branch0]/CreateKnowledgeBase": {
+    "Create Data Source": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch0]/Create Data Source": {
+    "Create Evaluation Job": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch0]/Start Ingestion Job": {
+    "CreateKnowledgeBase": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch0]/Get Ingestion Job": {
+    "Get Evaluation Job Status": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch0]/Create Evaluation Job": {
+    "Get Ingestion Job": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch0]/Get Evaluation Job Status": {
+    "Start Ingestion Job": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Create Knowledge Base 2": {
+    "Create Data Source 2": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Create Data Source 2": {
+    "Create Evaluation Job 2": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Start Ingestion Job 2": {
+    "Create Knowledge Base 2": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Get Ingestion Job 2": {
+    "Get Evaluation Job Status 2": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Create Evaluation Job 2": {
+    "Get Ingestion Job 2": {
       "idempotent": null,
       "persistent": null
     },
-    "Create Evaluation Pipelines[Branch1]/Get Evaluation Job Status 2": {
+    "Start Ingestion Job 2": {
       "idempotent": null,
       "persistent": null
     }

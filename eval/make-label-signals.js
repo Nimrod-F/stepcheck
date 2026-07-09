@@ -39,7 +39,7 @@ function signal(st) {
   return { type: st.Type || '?', resource: res, action, target };
 }
 
-let out = `# Label signals for the 13 expansion workflows\n\n`;
+let out = `# Label signals for the ${Object.keys(template).length} gold workflows\n\n`;
 out += `Fill \`idempotent\` and \`persistent\` (\`true\` / \`false\` / \`null\`) for each task in\n`;
 out += `\`gold-labels-human-A.json\` and \`gold-labels-human-B.json\`, using these signals and\n`;
 out += `the rubric in HUMAN-GOLD-LABELLING.md. \`null\` = abstain (cannot decide).\n\n`;

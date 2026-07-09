@@ -3,7 +3,7 @@
 Paper: *Safe Serverless Workflow Orchestration through Typestate Verification,
 Retry Safety, and Compensation Checking* (ICSOC 2026, Springer LNCS).
 
-Verification date: **2026-06-18**.
+Verification date: **2026-06-18**; addenda below record later citation additions.
 Tools used: arXiv `get_abstract`/`search_papers`, Crossref REST API (DOI
 resolution), Semantic Scholar `get_paper`/`search_papers`.
 Validation: `references.bib` compiles cleanly under `splncs04.bst`
@@ -142,6 +142,18 @@ None. Every candidate either (a) verified to a correct identifier, (b) had its
 wrong identifier corrected to a verified one, or (c) was deliberately dropped for
 relevance/quality/redundancy (with the underlying paper's real status noted
 above). No citation in the final `references.bib` is unverified.
+
+---
+
+## Addendum 2026-07-08 (production Figure 1 revision)
+
+The introductory figure was rewritten around AWS Serverless Airline Booking. Two references were
+added and BibTeX still exits cleanly:
+
+| Cite-key | Identifier | Note |
+|---|---|---|
+| awsServerlessAirline | https://github.com/aws-samples/aws-serverless-airline-booking | VERIFIED -- public AWS `aws-samples` repository; the `ProcessBooking` ASL is in `src/backend/booking/template.yaml` on the `master` branch. |
+| eismann2022stability | doi:10.1016/j.jss.2022.111294 | VERIFIED via Crossref -- Eismann et al., "A Case Study on the Stability of Performance Tests for Serverless Applications", Journal of Systems and Software 189:111294, 2022. |
 
 ---
 

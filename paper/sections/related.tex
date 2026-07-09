@@ -1,95 +1,33 @@
 \section{Related Work}
 \label{sec:related}
 
-\paragraph{Serverless orchestration, durable execution, and transactions.}
-The commercial orchestrators and their trade-offs have been analysed
-extensively~\cite{wen2021empirical,kulkarni2025characterizing}, and many programming
-models make orchestration more expressive or
-data-aware~\cite{burckhardt2021durable}.
-Durable-execution engines (Temporal, Cadence~\cite{temporal,cadence}) and systems like
-Beldi~\cite{zhang2020beldi} provide exactly-once execution and transactional/Saga
-semantics \emph{at run time}, via logs and recovery protocols. All target
-execution---performance, scalability, convenience, fault tolerance. \tool{} is
-complementary: it targets \emph{correctness}, statically, on the most widely deployed
-platform, adding no runtime machinery; a verified workflow can still run on a durable
-backend.
+\textbf{Runtime orchestration and durable execution.} Triggerflow rethinks how serverless
+workflows run~\cite{arjona2021triggerflow}, while durable-execution runtimes---Azure Durable
+Functions~\cite{burckhardt2021durable}, Temporal~\cite{temporal}, and Beldi's transactional
+guarantees for stateful serverless workflows~\cite{zhang2020beldi}---enforce recovery and
+transactions \emph{during} execution. \tool{} is complementary: it statically checks the deployed
+Step Functions artifact \emph{before} deployment with no new runtime, pursuing the same
+failure-atomicity goal from the opposite end.
 
-\paragraph{Typestate, sessions, and Saga compensation.}
-Typestate originates with Strom and Yemini~\cite{stromYemini1986typestate} and extends
-to objects and API protocols~\cite{fahndrich2004typestates}; session and multiparty
-session types give a rich theory of protocol
-conformance~\cite{honda2008multiparty}. \tool{} adapts the core
-idea---valid-state-only composition---to workflow tasks, trading full generality for a
-decidable, linear-time check inside an industrial toolchain. The Saga
-pattern~\cite{garciaMolina1987sagas} underpins cloud-native
-recovery~\cite{mohammad2025resilient}, but compensation is usually coded and validated
-at run time~\cite{colombo2014compensation}; \tool{} adds a \emph{static}
-completeness check---every persistent operation must have a reachable compensator
-before shipping.
+\textbf{Formal verification at other layers.} AWS uses TLA$^{+}$ to model-check service designs,
+workflow soundness has been studied with Petri nets and service-composition model checking
+\cite{newcombe2015awsformal,vanDerAalst1998petri}, and Zelkova brings SMT reasoning to IAM access
+policies~\cite{backes2018zelkova}. These verify an abstract model, the platform, or a different
+artifact; \tool{} checks the executable \asl{} definition with linear passes suitable for CI.
+Closest to our retry-safety check, Flux verifies idempotence of stateful serverless
+functions~\cite{ding2023flux} and could \emph{supply} the per-task idempotency premises \tool{}'s
+\code{SC3001} consumes.
 
-\paragraph{Data-flow analysis and \asl{} tooling.}
-The validators available for \asl{}---\texttt{statelint}~\cite{awsStatelint},
-\texttt{asl-validator}, and AWS's \texttt{ValidateStateMachineDefinition}---check the
-J2119/\asl{} JSON schema, transition existence, and JSONPath \emph{syntax}; none reasons
-about field provenance. Our data-flow pass casts \asl{}'s I/O-processing pipeline as an
-abstract interpretation~\cite{cousot1977} over a may-present lattice of document shapes,
-yielding a \emph{sound} (no-false-positive) provenance check---to our knowledge the
-first \emph{sound, shape-level} data-flow analysis for a deployed serverless workflow
-language, and the first of any kind for \asl{} beyond JSONPath syntax (it builds on, and
-is distinguished from, the business-process data-flow tradition discussed next). It is
-the workflow-internal analogue of the producer/consumer reasoning that consumer-driven
-contracts and static REST-client checks apply \emph{across}
-services~\cite{seco2020contracts}; we make this analogy precise---the typed tier is a
-sound static consumer-driven-contract check between orchestrated tasks.
+\textbf{Behavioural types and Sagas.} Typestate and session types provide the basis for protocol
+conformance~\cite{stromYemini1986typestate,honda2008multiparty}, and the Saga pattern is the
+standard compensation model~\cite{garciaMolina1987sagas}; \tool{} adapts both to serverless task
+graphs as edge-local declared checks and a declared-model reachability check.
 
-\paragraph{Data-flow verification of workflow languages.}
-Detecting that a task reads data no predecessor produces is a long-studied
-\emph{data-flow anomaly}. Sun et al.~\cite{sun2006dataflow} formulate the data-flow
-perspective for business processes and detect \emph{missing}, redundant, and conflicting
-data, and Trcka et al.~\cite{trcka2009antipatterns} formalize the ``missing data''
-anti-pattern (a datum read but never written) together with its parallel-branch
-read/write variant, discharged by CTL$^*$ model checking over workflow nets with data;
-\textsc{Ws-Bpel} gained SSA/CSSA-based static data-flow analysis of
-uninitialized-variable reads~\cite{moser2009bpel}, and data-flow-error checking has been
-specialized to BPMN~2.0~\cite{vonstackelberg2014bpmn}. \tool{} targets the same
-\emph{class} of defect but differs in technique and reach: prior work abstracts data to
-opaque named elements and checks a hand-built net by model checking (with the attendant
-risk of false positives and state-space explosion), whereas \tool{} tracks concrete
-\emph{nested JSON document shapes} through \asl's exact \texttt{InputPath} $\to$
-\texttt{Parameters} $\to$ \texttt{ResultSelector} $\to$ \texttt{ResultPath} $\to$
-\texttt{OutputPath} pipeline as a soundness-by-construction abstract
-interpretation~\cite{cousot1977}, and it runs on---and recompiles to---the
-\emph{deployed} artifact rather than a model of it. The document-shape lattice is in the
-spirit of shape inference over structured data~\cite{petricek2016types}. On idempotency,
-\textsc{Flux}~\cite{ding2023flux} \emph{verifies} idempotence of serverless function
-\emph{code} by SMT reasoning; \tool{} instead \emph{infers} idempotency at the
-orchestration layer from naming/resource conventions and uses it for retry-safety
-warnings without function-body access---complementary, not competing.
-
-\paragraph{Concurrency and workflow verification.}
-Interference and coordination for concurrent objects and distributed transactions are
-studied for actors and state-machine DSLs---interference-free network objects, and
-path-sensitive atomic commit that reasons about whether two messages'
-effects commute~\cite{soethout2019psac}---but not for serverless-workflow
-\texttt{Parallel}/\texttt{Map} fan-out, which our concurrency pass targets. The closest
-workflow-level precedent is Trcka et al.'s parallel data-flow anti-pattern (a datum
-updated while a concurrent branch may read it)~\cite{trcka2009antipatterns}; our check
-differs in targeting the serverless \emph{resource} model---last-writer-wins
-\texttt{PutItem}/\texttt{PutObject} versus commuting \texttt{UpdateItem} and
-fire-and-forget publishes---natively on raw \asl. Workflow
-soundness is verified with Petri nets~\cite{vanDerAalst1998petri,blondin2022soundness}
-and service compositions with model checking~\cite{bianculli2007bpel}: strong, general
-guarantees that require dedicated formalisms and are rarely wired into everyday cloud
-development. \tool{} deliberately targets a deployed industrial language with
-lightweight, linear checks and direct compilation. Against representative
-approaches---AWS Step Functions~\cite{awsStepFunctions} and
-CNCF~\cite{cncfServerlessWorkflow} (no static semantic checks),
-Temporal/Cadence~\cite{temporal,cadence} and Beldi~\cite{zhang2020beldi} (runtime
-retry/Saga, not static), Petri-net/BPEL
-verification~\cite{blondin2022soundness,bianculli2007bpel} (static but heavyweight,
-non-AWS), and session/typestate
-types~\cite{honda2008multiparty,stromYemini1986typestate} (typestate only)---\tool{} is,
-to our knowledge, the first to combine sound data-flow provenance, typestate conformance,
-retry safety, concurrency-interference and temporal-budget checking, and compensation
-completeness in a single \emph{static} verifier that compiles directly to executable AWS
-Step Functions.
+\textbf{Data-flow and cloud validators.} Existing Step Functions validators check schema, path
+syntax, or execute tests, but not field provenance
+\cite{awsStatelint,aslValidator,awsValidateDefinition,awsStepFunctions}. Data-flow anomalies have
+been studied for BPMN and \textsc{Bpel}~\cite{sun2006dataflow,trcka2009antipatterns}, but there
+data is abstracted to named elements in a hand-built model; \tool{} tracks nested JSON document
+shapes through \asl{}'s I/O pipeline as an abstract interpretation~\cite{cousot1977}. Serverless
+formal foundations motivate the setting but do not provide static workflow
+verification~\cite{jangda2019serverless}.

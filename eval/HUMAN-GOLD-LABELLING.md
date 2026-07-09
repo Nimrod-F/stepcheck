@@ -1,27 +1,20 @@
 # Human gold-labelling protocol (idempotency / persistence)
 
-> **STATUS: COMPLETED (2026-06-21).** Two independent human annotators labelled the
-> 13 expansion workflows; inter-annotator agreement was perfect (Cohen's
-> κ = 1.00 for both idempotency and persistence over 116 tasks). The reconciled
-> labels are in `corpus/gold-labels.json` (and `gold-labels-human.json`); run
-> `node eval/score-human-gold.js --reconciled` to reproduce κ + accuracy. The
-> protocol below is retained for the record.
+> **STATUS: human re-labelling in progress.** All **23** gold workflows are being
+> labelled from scratch by two independent human annotators (A/B). Fill
+> `eval/gold-labels-human-A.json` and `-B.json` from the blank template, then run
+> `node eval/score-human-gold.js --reconciled` for inter-annotator Cohen's κ, RQ2
+> inference accuracy, and in-the-wild warning precision. Latest reconciled run:
+> κ = 0.71 (idempotent) / 0.86 (persistent) over 116 double-labelled tasks.
 
-
-**Why this exists.** The paper's gold set (`corpus/gold-labels.json`, 23 workflows)
-is a **mix**: an original **hand-labelled** core (10 workflows) plus a **13-workflow
-LLM-assisted expansion** (`eval/gold-expansion-labels.json`, produced by two
-independent rubric-guided LLM passes + adjudication; see `eval/wf-eval.js`). The
-paper now discloses this split honestly, and the reported Cohen's κ (1.00 / 0.745)
-is the agreement between the two LLM passes of the **expansion**.
-
-To upgrade the evaluation to a **fully human** gold set for camera-ready, hand-label
-the **13 expanded workflows** below (the template covers exactly those) — ideally two
-people independently, then reconcile — and recompute the numbers. The original 10 are
-already human-labelled, so only the expansion needs redoing.
-
-This restores the strongest framing of RQ2 (real inter-annotator agreement) and
-fully closes the construct-validity gap (review item **C1**).
+**Why this exists.** RQ2 (idempotency/persistence *inference*) and the in-the-wild
+*warning precision* are both measured against a gold standard. A **fully human**,
+**double-labelled** gold makes those numbers credible and lets us report a real
+inter-annotator agreement (rather than agreement between two LLM passes). The
+template `eval/gold-labels-human.template.json` covers **every Task state in all 23
+gold workflows** (172 tasks); both annotators label all of them independently, then
+disagreements are reconciled. This closes the construct-validity gap (review item
+**C1**).
 
 ## What to label
 
@@ -52,21 +45,72 @@ later failure would need to compensate/undo.
 ### Abstain (`null`)
 If the semantics cannot be determined with confidence (a generic `Call HTTP API`,
 `Process`, `Transform`, opaque `Lambda` name), set the field to `null`. Do **not**
-guess — abstention is measured separately and is not penalised as an error.
+guess — abstention is measured separately (as coverage) and is not penalised as an
+error.
+
+## Judge only from these signals
+
+Label each task from its **real-world operational semantics**, read off:
+its **state name**, the **`Resource` ARN**, the **`FunctionName`/Action/target**, and
+the **surrounding control flow**. Do **not** run any inference tool and do **not**
+look at the other annotator's file — that is exactly what the agreement measures.
+
+`eval/label-signals.md` is a generated worksheet listing every task in every gold
+workflow with these signals (task, type, action, target) and blank
+`idempotent?`/`persistent?` columns; read it alongside the source workflows in
+`corpus/asl/`. Regenerate it with `node eval/make-label-signals.js`.
 
 ## Procedure
 
-1. Copy `eval/gold-labels-human.template.json` (pre-filled with every file and
-   task, values `null`) to `eval/gold-labels-human-A.json`. Labeller A fills it in
-   **without** looking at `gold-expansion-labels.json` or the tool's output.
-2. Labeller B independently fills a second copy `eval/gold-labels-human-B.json`.
-3. Reconcile disagreements into `eval/gold-labels-human.json`, recording any
-   genuinely ambiguous cases.
-4. Recompute accuracy / coverage / warning precision and **human** Cohen's κ with
-   the existing helpers (`kappa()`, `prec()` in `eval/wf-eval.js`) fed the human
-   labels; update Table~\ref{tab:infer} and Section~\ref{sec:eval:infer}.
-5. Optionally keep the LLM labels as an auxiliary **"LLM-as-annotator vs human"**
-   agreement table — that turns the disclosure into a methodological contribution.
+1. Copy the blank template to each annotator's file:
+   ```bash
+   cp eval/gold-labels-human.template.json eval/gold-labels-human-A.json
+   cp eval/gold-labels-human.template.json eval/gold-labels-human-B.json
+   ```
+   The template is pre-filled with every file and task at `null`; annotators change
+   `null` -> `true`/`false` only where confident.
+2. Annotator **A** fills `-A.json`, annotator **B** fills `-B.json`, **independently**.
+3. Check inter-annotator agreement first: `node eval/score-human-gold.js` (Cohen's κ
+   for idempotent and persistent). Aim for κ ≥ 0.7 (substantial); if lower, tighten
+   the rubric before trusting the gold.
+4. Reconcile the A ≠ B disagreements into `eval/gold-labels-human.json` (agree a
+   final value by discussion, or set `null` if genuinely ambiguous).
+5. `node eval/score-human-gold.js --reconciled` merges the reconciled labels with the
+   hand-labelled core into `corpus/gold-labels.human.json` and reports RQ2 inference
+   accuracy/coverage and the SC3001/SC4001/SC4010 warning precision — the numbers used
+   in the evaluation section.
 
-The 23 source workflows are under `corpus/asl/` (filenames are the JSON keys in
+## Format
+
+Both `-A.json` and `-B.json` share this shape (exact state names as in the JSON):
+
+```json
+{ "<workflow-file>.asl.json": { "<state name>": { "idempotent": true, "persistent": false }, ... }, ... }
+```
+
+The 23 source workflows are under `corpus/asl/` (their filenames are the JSON keys in
 the template).
+
+## Leakage-free hold-out evaluation (WS-B)
+
+To answer the reviewer's leakage concern (rule author == label author), the
+inference rules are **frozen** and the gold set is split before any number is read
+off:
+
+* **Rule freeze.** The inference ruleset is `stepcheck/src/annot.rs`, pinned by its
+  git blob hash `536271c1…` in `eval/score-holdout.js`. No rule is tuned after this
+  point.
+* **Design vs. hold-out.** The **10** original gold workflows (which informed rule
+  authoring) are the *design* partition; the **13** later-added expansion workflows
+  (`eval/gold-expansion-labels.json`) are the **hold-out** partition — labelled after
+  the freeze and never used to write or tune a rule.
+* **Reported metric.** `node eval/score-holdout.js` reports, **on the hold-out
+  partition**, per-property precision / recall / **false-omission rate** / F1 /
+  accuracy (bootstrap 95% CI) and per-property inter-annotator Cohen's κ (A vs. B),
+  plus per-check warning precision (SC3001/SC4001/SC4010). The design partition is
+  printed alongside only to show the numbers do not over-fit. Output:
+  `eval/holdout-inference.json`.
+* **Reframe.** The inference tier is an **advisory adoption aid**. The paper's
+  verification weight is on the *label-free* sound native tier (SC1101, proven in
+  Theorem 1) and the *declared* tier — neither depends on these labels — so the
+  hold-out inference numbers, whatever they are, are not load-bearing.

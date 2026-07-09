@@ -1,0 +1,42 @@
+{
+  "generated_by": "infra/bench_express_vs_standard.sh",
+  "workflow": "corpus/dsl/order.asl.json (StepCheck-verified, deployed unmodified)",
+  "region": "eu-central-1",
+  "executions_per_mode": 100,
+  "express": {
+    "succeeded": "100/100",
+    "exec_duration_ms": {
+      "n": 100,
+      "mean": 83.8,
+      "min": 54,
+      "p50": 72,
+      "p95": 130,
+      "p99": 165,
+      "max": 368
+    },
+    "billed_duration_ms": {
+      "n": 100,
+      "mean": 123,
+      "min": 100,
+      "p50": 100,
+      "p95": 200,
+      "p99": 200,
+      "max": 400
+    }
+  },
+  "standard": {
+    "succeeded": "100/100",
+    "exec_duration_ms": {
+      "n": 100,
+      "mean": 360.5,
+      "min": 269,
+      "p50": 345,
+      "p95": 456,
+      "p99": 484,
+      "max": 497
+    },
+    "state_transitions_per_execution": 5,
+    "durable_history_events_sample": 24
+  },
+  "note": "Execution-duration distributions over N runs of one verified artifact deployed unmodified in each AWS execution model; reported as evidence of successful, stable completion across modes, not as a cross-mode AWS performance benchmark. Standard retains a durable audited history per execution; Express retains none."
+}
