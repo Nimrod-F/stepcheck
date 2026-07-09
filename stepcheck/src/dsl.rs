@@ -73,6 +73,7 @@ impl Builder {
                 next: c.into(),
                 result_path: ResultPath::Path("$.error".into()),
                 assign: None,
+                extra: serde_json::Map::new(),
             });
         }
         self.wf.states.insert(name.to_string(), st);

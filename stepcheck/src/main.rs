@@ -4,6 +4,7 @@
 
 mod annot;
 mod asl;
+mod cfn;
 mod cncf;
 mod concrete;
 mod diag;
@@ -19,6 +20,7 @@ use clap::{Parser, Subcommand};
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use walkdir::WalkDir;
 
 #[derive(Parser)]
@@ -87,12 +89,27 @@ enum Cmd {
         #[arg(long)]
         result_shapes: bool,
     },
-    /// Cross-check the data-flow `SC1101` findings against an independent per-path
-    /// execution oracle (witnesses the soundness theorem at corpus scale). Injects a
-    /// data-flow miss per workflow (typed tier) so the check fires, then confirms each
-    /// finding's field is absent on every reaching path; any `Present` is a soundness
-    /// counterexample.
+    /// Cross-check the data-flow `SC1101` findings against an independent
+    /// bounded-path execution oracle (witnesses the soundness theorem at corpus
+    /// scale, including bounded loop unrolling). Injects a data-flow miss per
+    /// workflow (typed tier) so the check fires, then confirms each finding's
+    /// field is absent on every explored reaching path; any `Present` is a
+    /// soundness counterexample.
     Oracle {
+        dir: PathBuf,
+        #[arg(long)]
+        annot: Option<PathBuf>,
+        #[arg(long)]
+        infer: bool,
+        /// Ablation: model declared task outputs and known AWS service result envelopes.
+        #[arg(long)]
+        result_shapes: bool,
+    },
+    /// Certify the data-flow `SC1101` findings by finite fixpoint obligations.
+    /// Like `oracle`, this injects one typed-tier missing-field mutant per
+    /// workflow so the check fires, but it discharges loops by checking the
+    /// widened invariant as a post-fixpoint instead of bounded unrolling.
+    DataflowCert {
         dir: PathBuf,
         #[arg(long)]
         annot: Option<PathBuf>,
@@ -181,6 +198,9 @@ fn main() {
         Cmd::Oracle { dir, annot, infer, result_shapes } => {
             cmd_oracle(&dir, annot.as_deref(), infer, result_shapes)
         }
+        Cmd::DataflowCert { dir, annot, infer, result_shapes } => {
+            cmd_dataflow_cert(&dir, annot.as_deref(), infer, result_shapes)
+        }
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
         Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
         Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
@@ -205,15 +225,69 @@ fn is_workflow_file(p: &Path) -> bool {
     )
 }
 
-/// Load a workflow, choosing the frontend by file extension: `.yaml`/`.yml` use
-/// the CNCF Serverless Workflow frontend, everything else uses the ASL frontend.
-fn load(path: &Path) -> Result<ir::Workflow> {
+/// Load every workflow in a file. A CloudFormation / SAM template or a CDK synth
+/// output template yields one workflow per `AWS::StepFunctions::StateMachine`
+/// (keyed by logical id); a bare `.asl.json` or a CNCF Serverless Workflow yields
+/// one. Frontend selection is content-first (CloudFormation is detected by its
+/// `AWS::StepFunctions::StateMachine` resource) then by extension.
+fn load_all(path: &Path) -> Result<Vec<(String, ir::Workflow)>> {
     let src = std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("workflow");
-    match path.extension().and_then(|e| e.to_str()) {
-        Some("yaml") | Some("yml") => cncf::parse_str(&src, name),
-        _ => asl::parse_str(&src, name),
+    if cfn::looks_like_template(&src) {
+        return cfn::extract(&src, name, path.parent());
     }
+    let wf = match path.extension().and_then(|e| e.to_str()) {
+        Some("yaml") | Some("yml") => cncf::parse_str(&src, name)?,
+        _ => asl::parse_str(&src, name)?,
+    };
+    Ok(vec![(name.to_string(), wf)])
+}
+
+fn attach_linked_children_to_loaded(machines: &mut [(String, ir::Workflow)]) {
+    if machines.len() <= 1 {
+        return;
+    }
+    let registry: BTreeMap<String, ir::Workflow> = machines
+        .iter()
+        .flat_map(|(label, wf)| {
+            [
+                (label.clone(), wf.clone()),
+                (
+                    format!("arn:aws:states:us-east-1:000000000000:stateMachine:{label}"),
+                    wf.clone(),
+                ),
+                (format!("${{{label}}}"), wf.clone()),
+                (format!("${{{label}.Arn}}"), wf.clone()),
+            ]
+        })
+        .collect();
+    let registry = Rc::new(registry);
+    for (_, wf) in machines.iter_mut() {
+        attach_registry_recursive(wf, registry.clone());
+    }
+}
+
+fn attach_registry_recursive(wf: &mut ir::Workflow, registry: Rc<BTreeMap<String, ir::Workflow>>) {
+    wf.linked_children = registry.clone();
+    for st in wf.states.values_mut() {
+        if let Some(it) = st.iterator.as_mut() {
+            attach_registry_recursive(it, registry.clone());
+        }
+        for br in st.branches.iter_mut() {
+            attach_registry_recursive(br, registry.clone());
+        }
+    }
+}
+
+/// Load a single workflow (the first state machine for a multi-machine template).
+fn load(path: &Path) -> Result<ir::Workflow> {
+    let mut machines = load_all(path)?;
+    attach_linked_children_to_loaded(&mut machines);
+    machines
+        .into_iter()
+        .next()
+        .map(|(_, wf)| wf)
+        .ok_or_else(|| anyhow::anyhow!("no workflow found in {}", path.display()))
 }
 
 fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<(ir::Workflow, diag::DiagnosticSink)> {
@@ -244,15 +318,39 @@ fn cmd_check(
     deny_warnings: bool,
     result_shapes: bool,
 ) -> Result<i32> {
-    let (wf, mut sink) = load_resolved(path, annot, infer)?;
-    run_pipeline_into(&wf, &mut sink, result_shapes);
-    if json {
-        println!("{}", serde_json::to_string_pretty(&sink)?);
-    } else {
-        print!("{}", sink.render_human(&wf.name));
+    let mut machines = load_all(path)?;
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    attach_linked_children_to_loaded(&mut machines);
+    let multi = machines.len() > 1;
+    let mut worst = 0;
+    let mut json_out = Vec::new();
+    for (label, mut wf) in machines {
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&wf, &mut sink, result_shapes);
+        if json {
+            json_out.push(json!({ "machine": label, "result": sink }));
+        } else {
+            if multi {
+                println!("# state machine: {label}");
+            }
+            print!("{}", sink.render_human(&wf.name));
+        }
+        if sink.errors() > 0 || (deny_warnings && sink.warnings() > 0) {
+            worst = 1;
+        }
     }
-    let bad = sink.errors() > 0 || (deny_warnings && sink.warnings() > 0);
-    Ok(if bad { 1 } else { 0 })
+    if json {
+        if multi {
+            println!("{}", serde_json::to_string_pretty(&json_out)?);
+        } else if let Some(one) = json_out.into_iter().next() {
+            println!("{}", serde_json::to_string_pretty(&one["result"])?);
+        }
+    }
+    Ok(worst)
 }
 
 fn cmd_infer(path: &Path, json: bool) -> Result<i32> {
@@ -296,10 +394,12 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) 
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let mut wf = match load(p) {
-            Ok(w) => w,
+        let mut machines = match load_all(p) {
+            Ok(m) => m,
             Err(_) => continue,
         };
+        attach_linked_children_to_loaded(&mut machines);
+        let Some((_, mut wf)) = machines.into_iter().next() else { continue };
         let mut sink = diag::DiagnosticSink::new();
         annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
         run_pipeline_into(&wf, &mut sink, result_shapes);
@@ -602,8 +702,9 @@ fn extract_read_path(msg: &str) -> Option<String> {
 
 /// Execution-oracle cross-check: witness Theorem 1 at corpus scale. For each
 /// workflow we seed the typed tier and inject a data-flow miss so `SC1101` fires,
-/// then confirm with an independent per-path interpreter that every flagged field
-/// is absent on all reaching paths. A `Present` verdict would be a counterexample.
+/// then confirm with an independent bounded-path interpreter that every flagged
+/// field is absent on the explored reaching paths. A `Present` verdict would be
+/// a counterexample.
 fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
@@ -666,6 +767,70 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(if present == 0 { 0 } else { 1 })
+}
+
+/// Certificate check for Theorem 1 at corpus scale. This uses the same typed
+/// mutation population as `oracle`, but proves each emitted `SC1101` report from
+/// a finite widened-fixpoint invariant: all normal/catch transfer obligations
+/// must be post-fixed, and the reported read must be definitely absent in the
+/// certified invariant.
+fn cmd_dataflow_cert(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    let (mut files, mut findings, mut mismatches) = (0usize, 0usize, 0usize);
+    let mut total = passes::dataflow::CertificateStats::default();
+
+    for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() || !is_workflow_file(p) {
+            continue;
+        }
+        let base = match load(p) {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
+        files += 1;
+        let fields = mine_top_level_fields(&base);
+        let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
+        if !fields.is_empty() {
+            mw.input_fields = Some(fields);
+        }
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
+        run_pipeline_into(&mw, &mut sink, result_shapes);
+        let sc1101 = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
+        findings += sc1101;
+        let cert = passes::dataflow::certify_sc1101(&mw, result_shapes);
+        if cert.sc1101_reports != sc1101 {
+            mismatches += 1;
+        }
+        total.machines += cert.machines;
+        total.postconditions += cert.postconditions;
+        total.failed_postconditions += cert.failed_postconditions;
+        total.sc1101_reports += cert.sc1101_reports;
+        total.certified_reports += cert.certified_reports;
+    }
+
+    let ok = total.ok() && mismatches == 0;
+    let report = json!({
+        "files": files,
+        "ablation": { "result_shapes": result_shapes },
+        "sc1101_findings": findings,
+        "certificate": {
+            "machines": total.machines,
+            "postcondition_obligations": total.postconditions,
+            "failed_postcondition_obligations": total.failed_postconditions,
+            "sc1101_reports_in_certificate": total.sc1101_reports,
+            "certified_sc1101_reports": total.certified_reports,
+            "diagnostic_count_mismatches": mismatches,
+            "ok": ok,
+        },
+        "loop_argument": "finite widened-fixpoint postcondition check; no bounded unrolling",
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(if ok { 0 } else { 1 })
 }
 
 /// Round-trip a workflow through the ASL emitter unchanged (the control form for

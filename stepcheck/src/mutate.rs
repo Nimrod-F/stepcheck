@@ -111,6 +111,7 @@ fn mutate_retry(w: &mut Workflow, seed: u64) -> bool {
         max_attempts: Some(3),
         interval_seconds: Some(1.0),
         backoff_rate: Some(2.0),
+        extra: serde_json::Map::new(),
     });
     true
 }

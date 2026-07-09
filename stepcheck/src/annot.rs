@@ -18,6 +18,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Sidecar {
@@ -95,6 +96,35 @@ pub fn resolve(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool, sink: 
         }
     }
     resolve_machine(wf, sidecar, infer);
+    resolve_linked_children(wf, sidecar, infer);
+}
+
+fn resolve_linked_children(wf: &mut Workflow, sidecar: Option<&Sidecar>, infer: bool) {
+    if wf.linked_children.is_empty() {
+        return;
+    }
+    let resolved = wf
+        .linked_children
+        .iter()
+        .map(|(key, child)| {
+            let mut child = child.clone();
+            resolve_machine(&mut child, sidecar, infer);
+            (key.clone(), child)
+        })
+        .collect();
+    attach_linked_registry_recursive(wf, Rc::new(resolved));
+}
+
+fn attach_linked_registry_recursive(wf: &mut Workflow, registry: Rc<BTreeMap<String, Workflow>>) {
+    wf.linked_children = registry.clone();
+    for st in wf.states.values_mut() {
+        if let Some(it) = st.iterator.as_mut() {
+            attach_linked_registry_recursive(it, registry.clone());
+        }
+        for br in st.branches.iter_mut() {
+            attach_linked_registry_recursive(br, registry.clone());
+        }
+    }
 }
 
 fn validate_sidecar(wf: &Workflow, sc: &Sidecar, sink: &mut DiagnosticSink) {

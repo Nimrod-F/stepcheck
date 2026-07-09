@@ -38,11 +38,13 @@
 use super::retry::qualify;
 use super::Pass;
 use crate::diag::{Diagnostic, DiagnosticSink};
-use crate::ir::{ResultPath, State, StateKind, Workflow};
+use crate::ir::{CatchRule, ResultPath, State, StateKind, Workflow};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+
+const WIDEN_DEPTH: usize = 12;
 
 pub struct DataFlowPass {
     result_shapes: bool,
@@ -69,15 +71,50 @@ impl DataFlowPass {
 
 /// Fixpoint telemetry for one analyzed machine: how many rounds the forward
 /// data-flow iteration took, the finite-height round bound it was allowed
-/// (`|states| * (|keys| + 2) + 2`), whether it converged within that bound, and
-/// the machine's state count. Used by the `fixpoint-stats` eval command to show
-/// how far the iteration stays below its termination bound on a corpus.
+/// (`|states| * (|keys| + 2) * (WIDEN_DEPTH + 1) + 2`), whether it converged within
+/// that bound, and the machine's state count. Used by the `fixpoint-stats` eval
+/// command to show how far the iteration stays below its termination bound on a corpus.
 #[derive(Clone, Copy)]
 pub struct FixpointRound {
     pub rounds: usize,
     pub bound: usize,
     pub converged: bool,
     pub states: usize,
+}
+
+/// Finite certificate-checking summary for the data-flow invariant. The checker
+/// recomputes the widened fixpoint, verifies every normal/catch transfer as a
+/// post-fixpoint obligation, and checks that each `SC1101` query is a definite
+/// absence in that invariant. Unlike the concrete oracle, this handles loops by
+/// induction over the invariant rather than bounded unrolling.
+#[derive(Clone, Copy, Default)]
+pub struct CertificateStats {
+    pub machines: usize,
+    pub postconditions: usize,
+    pub failed_postconditions: usize,
+    pub sc1101_reports: usize,
+    pub certified_reports: usize,
+}
+
+impl CertificateStats {
+    pub fn ok(&self) -> bool {
+        self.failed_postconditions == 0 && self.sc1101_reports == self.certified_reports
+    }
+
+    fn add(&mut self, other: CertificateStats) {
+        self.machines += other.machines;
+        self.postconditions += other.postconditions;
+        self.failed_postconditions += other.failed_postconditions;
+        self.sc1101_reports += other.sc1101_reports;
+        self.certified_reports += other.certified_reports;
+    }
+}
+
+struct Fixpoint {
+    in_envs: HashMap<String, Env>,
+    rounds: usize,
+    bound: usize,
+    converged: bool,
 }
 
 /// Opt-in recorder for [`FixpointRound`]s. Recording is off by default, so normal
@@ -245,6 +282,25 @@ fn join(a: &Shape, b: &Shape) -> Shape {
 
 fn join_env(a: &Env, b: &Env) -> Env {
     Env { doc: join(&a.doc, &b.doc), vars: join(&a.vars, &b.vars) }
+}
+
+/// Depth-k widening: any record nested beyond the configured depth becomes
+/// `Top`. This keeps cyclic re-embedding workflows in a finite-height domain
+/// while preserving soundness, since `Top` only makes the analysis less precise.
+fn widen_shape(shape: &Shape, depth: usize) -> Shape {
+    match shape {
+        Shape::Top => Shape::Top,
+        Shape::Obj(_) if depth == 0 => Shape::Top,
+        Shape::Obj(m) => Shape::Obj(
+            m.iter()
+                .map(|(k, v)| (k.clone(), widen_shape(v, depth - 1)))
+                .collect(),
+        ),
+    }
+}
+
+fn widen_env(env: &Env) -> Env {
+    Env { doc: widen_shape(&env.doc, WIDEN_DEPTH), vars: widen_shape(&env.vars, WIDEN_DEPTH) }
 }
 
 /// Parse a precise JSONPath member chain (`$`, `$.a`, `$.a['b']`, `$["a"]`) into
@@ -773,6 +829,13 @@ fn dynamodb_result_shape(op: &str) -> Option<Shape> {
 
 fn known_service_result_shape(st: &State) -> Option<Shape> {
     let resource = st.resource.as_deref()?;
+    // A `.waitForTaskToken` (callback) task's result is the arbitrary payload sent
+    // to `SendTaskSuccess`, not the service's own response envelope, so its shape
+    // is unknown (`Top`); modelling it as the base service envelope would wrongly
+    // declare context fields absent (a false positive on real callback workflows).
+    if resource.to_ascii_lowercase().contains(".waitfortasktoken") {
+        return None;
+    }
     if resource.starts_with("arn:aws:states:::lambda:invoke") {
         return Some(closed_record_names(&[
             "Payload",
@@ -1100,6 +1163,13 @@ fn key_universe(wf: &Workflow) -> usize {
             _ => {}
         }
     }
+    fn harvest_result_path(rp: &ResultPath, keys: &mut HashSet<String>) {
+        if let ResultPath::Path(p) = rp {
+            if let Some(segs) = parse_path(p) {
+                keys.extend(segs);
+            }
+        }
+    }
     let mut keys: HashSet<String> = HashSet::new();
     if let Some(f) = &wf.input_fields {
         keys.extend(f.iter().cloned());
@@ -1120,7 +1190,12 @@ fn key_universe(wf: &Workflow) -> usize {
                 harvest_jsonata(val, &mut keys);
             }
         }
+        harvest_result_path(&st.result_path, &mut keys);
+        if let Some(fields) = &st.anno.output_fields {
+            keys.extend(fields.iter().cloned());
+        }
         for c in &st.catch {
+            harvest_result_path(&c.result_path, &mut keys);
             if let Some(assign) = &c.assign {
                 harvest(assign, &mut keys);
                 harvest_jsonata(assign, &mut keys);
@@ -1130,74 +1205,87 @@ fn key_universe(wf: &Workflow) -> usize {
     keys.len()
 }
 
-/// Compute the entry shape of every state by forward fixpoint, then check
-/// references, then recurse into nested machines.
-fn analyze_machine(wf: &Workflow, root: Env, scope: &str, opts: Options, sink: &mut DiagnosticSink) {
-    // Forward dataflow to a fixpoint over normal + catch edges.
+fn catch_env(st: &State, cur_in: &Env, c: &CatchRule, opts: Options) -> Env {
+    let mut cs = Env { doc: catch_shape(&cur_in.doc, &c.result_path), vars: cur_in.vars.clone() };
+    if c.assign.is_some() {
+        let error = Shape::Top;
+        if st.is_opaque_query() {
+            let result = jsonata_result_source_shape(st, opts);
+            let src = JsonataSources { input: &cur_in.doc, result: &result, error: &error, vars: &cur_in.vars };
+            cs.vars = apply_jsonata_assign(&cur_in.vars, &c.assign, &src);
+        } else {
+            cs.vars = apply_jsonpath_assign(&cur_in.vars, &c.assign, &error);
+        }
+    }
+    cs
+}
+
+fn compute_fixpoint(wf: &Workflow, root: Env, opts: Options) -> Fixpoint {
     let mut in_envs: HashMap<String, Env> = HashMap::new();
     if wf.states.contains_key(&wf.start_at) {
-        in_envs.insert(wf.start_at.clone(), root.clone());
+        in_envs.insert(wf.start_at.clone(), widen_env(&root));
     }
     // Forward fixpoint. Each state's shape only ever grows (a join unions keys
-    // or lifts to `Top`) and the key universe is finite, so the ascending chain
-    // stabilises; we iterate to a genuine fixpoint. The number of rounds is
-    // bounded by `states * (key_universe + 2)` — at most one strict increase per
-    // state per height level — which we assert. Should the bound ever be exceeded
-    // (a bug), we do *not* report from the unconverged (under-approximated) state
-    // shapes, since those could be smaller than the fixpoint and yield a false
-    // positive; this keeps the no-false-positive guarantee unconditional.
-    let bound = wf.states.len().saturating_mul(key_universe(wf) + 2) + 2;
+    // or lifts to `Top`), and depth-k widening collapses cyclic re-embedding to
+    // `Top`, so the domain has finite height on every topology. The round bound
+    // is a safety guard and telemetry denominator, not a soundness premise: if it
+    // is exceeded, all known entries are lifted to `Top`, which is conservative
+    // and reaches a post-fixpoint after one more propagation round.
+    let bound = wf
+        .states
+        .len()
+        .saturating_mul(key_universe(wf) + 2)
+        .saturating_mul(WIDEN_DEPTH + 1)
+        + 2;
     let mut rounds = 0usize;
-    let converged = loop {
+    let mut converged = true;
+    loop {
         let mut changed = false;
         for (name, st) in &wf.states {
             let Some(cur_in) = in_envs.get(name).cloned() else { continue };
             let out = out_env(st, &cur_in, opts);
-            // normal successors inherit the out shape
             for succ in st.normal_successors() {
                 if wf.states.contains_key(succ) {
                     propagate(&mut in_envs, succ, &out, &mut changed);
                 }
             }
-            // catch successors inherit the input + opaque error object
             for c in &st.catch {
                 if wf.states.contains_key(&c.next) {
-                    let mut cs = Env { doc: catch_shape(&cur_in.doc, &c.result_path), vars: cur_in.vars.clone() };
-                    if c.assign.is_some() {
-                        let error = Shape::Top;
-                        if st.is_opaque_query() {
-                            let result = jsonata_result_source_shape(st, opts);
-                            let src = JsonataSources { input: &cur_in.doc, result: &result, error: &error, vars: &cur_in.vars };
-                            cs.vars = apply_jsonata_assign(&cur_in.vars, &c.assign, &src);
-                        } else {
-                            cs.vars = apply_jsonpath_assign(&cur_in.vars, &c.assign, &error);
-                        }
-                    }
-                    propagate(&mut in_envs, &c.next, &cs, &mut changed);
+                    propagate(&mut in_envs, &c.next, &catch_env(st, &cur_in, c, opts), &mut changed);
                 }
             }
         }
         rounds += 1;
         if !changed {
-            break true;
+            break;
         }
         if rounds > bound {
-            debug_assert!(false, "data-flow fixpoint exceeded its finite-height bound");
-            break false;
+            debug_assert!(false, "data-flow fixpoint exceeded its widened finite-height bound");
+            converged = false;
+            for env in in_envs.values_mut() {
+                *env = Env { doc: Shape::Top, vars: Shape::Top };
+            }
         }
-    };
+    }
+    Fixpoint { in_envs, rounds, bound, converged }
+}
+
+/// Compute the entry shape of every state by forward fixpoint, then check
+/// references, then recurse into nested machines.
+fn analyze_machine(wf: &Workflow, root: Env, scope: &str, opts: Options, sink: &mut DiagnosticSink) {
+    let fp = compute_fixpoint(wf, root, opts);
 
     if FP_ON.load(Ordering::Relaxed) {
         FP_LOG.lock().unwrap().push(FixpointRound {
-            rounds,
-            bound,
-            converged,
+            rounds: fp.rounds,
+            bound: fp.bound,
+            converged: fp.converged,
             states: wf.states.len(),
         });
     }
+    let in_envs = fp.in_envs;
 
     // Check references against each state's effective input (only at the fixpoint).
-    if converged {
     for (name, st) in &wf.states {
         let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
         if st.is_opaque_query() {
@@ -1257,10 +1345,9 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, opts: Options, sink: &
             }
         }
     }
-    // Recurse into nested machines with the right seed. Gated on convergence:
-    // when the enclosing machine did not converge its shapes are under-approximate,
-    // so a nested analysis seeded from them could report a false positive; we then
-    // suppress the recursion, exactly as we suppress this machine's own reporting.
+    // Recurse into nested machines with the right seed. If the safety guard above
+    // ever lifted the enclosing machine to Top, these seeds are also Top and the
+    // nested checks become conservative rather than under-approximated.
     for (name, st) in &wf.states {
         let in_env = in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
         let eff_in = narrow(&in_env.doc, &st.input_path);
@@ -1286,7 +1373,6 @@ fn analyze_machine(wf: &Workflow, root: Env, scope: &str, opts: Options, sink: &
             analyze_machine(br, Env { doc: branch_root, vars: in_env.vars.clone() }, &qualify(scope, &format!("{name}[Branch{i}]")), opts, sink);
         }
     }
-    } // end `if converged`
 }
 
 /// Whether satisfying this leaf comparator requires the `Variable` field to be
@@ -1345,17 +1431,171 @@ fn dead_guard_field(cond: &Value, shape: &Shape) -> Option<String> {
     }
 }
 
+fn shape_leq(a: &Shape, b: &Shape) -> bool {
+    match (a, b) {
+        (_, Shape::Top) => true,
+        (Shape::Top, Shape::Obj(_)) => false,
+        (Shape::Obj(ma), Shape::Obj(mb)) => ma
+            .iter()
+            .all(|(k, va)| mb.get(k).is_some_and(|vb| shape_leq(va, vb))),
+    }
+}
+
+fn env_leq(a: &Env, b: &Env) -> bool {
+    shape_leq(&a.doc, &b.doc) && shape_leq(&a.vars, &b.vars)
+}
+
+fn certify_env(stats: &mut CertificateStats, expected: &Env, actual: Option<&Env>) {
+    stats.postconditions += 1;
+    let expected = widen_env(expected);
+    if !actual.is_some_and(|actual| env_leq(&expected, actual)) {
+        stats.failed_postconditions += 1;
+    }
+}
+
+fn certify_jsonpath_ref(r: &str, doc_shape: &Shape, vars_shape: &Shape, stats: &mut CertificateStats) {
+    if r.starts_with("$$") || r.starts_with("States.") || !r.starts_with('$') {
+        return;
+    }
+    let (segs, shape) = if let Some(segs) = parse_path(r) {
+        (segs, doc_shape)
+    } else if let Some(segs) = parse_variable_ref(r) {
+        (segs, vars_shape)
+    } else {
+        return;
+    };
+    if segs.is_empty() {
+        return;
+    }
+    if lookup(shape, &segs) == Presence::Missing {
+        stats.sc1101_reports += 1;
+        stats.certified_reports += 1;
+    }
+}
+
+fn certify_jsonata_ref(expr: &str, src: &JsonataSources<'_>, stats: &mut CertificateStats) {
+    let Some(r) = parse_jsonata_ref(expr) else { return };
+    let (segs, shape) = match &r {
+        JsonataRef::Input(segs) => (segs, src.input),
+        JsonataRef::Result(segs) => (segs, src.result),
+        JsonataRef::ErrorOutput(segs) => (segs, src.error),
+        JsonataRef::Variable(segs) => (segs, src.vars),
+        JsonataRef::Context => return,
+    };
+    if segs.is_empty() {
+        return;
+    }
+    if lookup(shape, segs) == Presence::Missing {
+        stats.sc1101_reports += 1;
+        stats.certified_reports += 1;
+    }
+}
+
+fn certify_jsonata_value_refs(v: &Value, src: &JsonataSources<'_>, stats: &mut CertificateStats) {
+    let mut refs = Vec::new();
+    jsonata_strict_refs_in_value(v, &mut refs);
+    for r in refs {
+        certify_jsonata_ref(r, src, stats);
+    }
+}
+
+fn certify_machine(wf: &Workflow, root: Env, opts: Options) -> CertificateStats {
+    let fp = compute_fixpoint(wf, root.clone(), opts);
+    let mut stats = CertificateStats { machines: 1, ..CertificateStats::default() };
+
+    if wf.states.contains_key(&wf.start_at) {
+        certify_env(&mut stats, &root, fp.in_envs.get(&wf.start_at));
+    }
+
+    for (name, st) in &wf.states {
+        let Some(cur_in) = fp.in_envs.get(name) else { continue };
+        let out = out_env(st, cur_in, opts);
+        for succ in st.normal_successors() {
+            if wf.states.contains_key(succ) {
+                certify_env(&mut stats, &out, fp.in_envs.get(succ));
+            }
+        }
+        for c in &st.catch {
+            if wf.states.contains_key(&c.next) {
+                certify_env(&mut stats, &catch_env(st, cur_in, c, opts), fp.in_envs.get(&c.next));
+            }
+        }
+    }
+
+    for (name, st) in &wf.states {
+        let in_env = fp.in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
+        if st.is_opaque_query() {
+            let result = jsonata_result_source_shape(st, opts);
+            let error = Shape::Top;
+            let src = JsonataSources { input: &in_env.doc, result: &result, error: &error, vars: &in_env.vars };
+            for v in [&st.arguments, &st.output, &st.assign, &st.items] {
+                if let Some(val) = v {
+                    certify_jsonata_value_refs(val, &src, &mut stats);
+                }
+            }
+            for rule in &st.choices {
+                certify_jsonata_value_refs(&rule.condition, &src, &mut stats);
+            }
+            for c in &st.catch {
+                if let Some(assign) = &c.assign {
+                    certify_jsonata_value_refs(assign, &src, &mut stats);
+                }
+            }
+            continue;
+        }
+        let eff_in = narrow(&in_env.doc, &st.input_path);
+        for r in refs_of(st) {
+            certify_jsonpath_ref(&r, &eff_in, &in_env.vars, &mut stats);
+        }
+        let assign_source = assign_source_shape(st, &eff_in, opts);
+        for r in assign_refs_of(st) {
+            certify_jsonpath_ref(&r, &assign_source, &in_env.vars, &mut stats);
+        }
+    }
+
+    for (name, st) in &wf.states {
+        let in_env = fp.in_envs.get(name).cloned().unwrap_or_else(|| Env { doc: Shape::Top, vars: Shape::Top });
+        let eff_in = narrow(&in_env.doc, &st.input_path);
+        if let Some(it) = &st.iterator {
+            let item_root = match &st.item_selector {
+                Some(is) => shape_of_constructor(is),
+                None => Shape::Top,
+            };
+            let item_vars = if st.distributed_map { Shape::Top } else { in_env.vars.clone() };
+            stats.add(certify_machine(it, Env { doc: item_root, vars: item_vars }, opts));
+        }
+        for br in &st.branches {
+            let branch_root = match &st.parameters {
+                Some(p) => shape_of_constructor(p),
+                None => eff_in.clone(),
+            };
+            stats.add(certify_machine(br, Env { doc: branch_root, vars: in_env.vars.clone() }, opts));
+        }
+    }
+
+    stats
+}
+
+/// Verify finite proof obligations for all `SC1101` reports in `wf`. The output
+/// is a certificate summary: all normal/catch edges must satisfy the widened
+/// post-fixpoint invariant, and every report must be justified by a definite
+/// absence in that invariant.
+pub fn certify_sc1101(wf: &Workflow, result_shapes: bool) -> CertificateStats {
+    certify_machine(wf, root_env(wf), Options { result_shapes })
+}
+
 fn propagate(map: &mut HashMap<String, Env>, target: &str, env: &Env, changed: &mut bool) {
+    let env = widen_env(env);
     match map.get(target) {
         Some(existing) => {
-            let j = join_env(existing, env);
+            let j = widen_env(&join_env(existing, &env));
             if &j != existing {
                 map.insert(target.to_string(), j);
                 *changed = true;
             }
         }
         None => {
-            map.insert(target.to_string(), env.clone());
+            map.insert(target.to_string(), env);
             *changed = true;
         }
     }

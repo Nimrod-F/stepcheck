@@ -2,13 +2,14 @@
 //! theorem (Theorem 1) by a different algorithm than the analysis it checks.
 //!
 //! Where [`crate::passes::dataflow`] computes one entry shape per state by a
-//! join-based forward fixpoint, this module *enumerates concrete acyclic paths*
-//! from the start to a target state and computes the real document along each,
-//! representing an opaque region (a task result, a JSONata output, the execution
-//! input) as [`CShape::Opaque`]. A reference flagged `SC1101` is then cross-checked:
+//! join-based forward fixpoint, this module *enumerates concrete paths* from
+//! the start to a target state, with bounded loop unrolling, and computes the
+//! real document along each, representing an opaque region (a task result, a
+//! JSONata output, the execution input) as [`CShape::Opaque`]. A reference
+//! flagged `SC1101` is then cross-checked over the bounded path set:
 //!
-//!   * `ConfirmedAbsent` — the field is absent on *every* reaching path (the
-//!     theorem holds for this finding);
+//!   * `ConfirmedAbsent` — the field is absent on every bounded, unrolled
+//!     reaching path (a concrete witness for the theorem on the explored paths);
 //!   * `Present` — some path makes the field present: a genuine soundness
 //!     *counterexample* (must never happen for a real `SC1101`);
 //!   * `Unverifiable` — a reaching path leaves the field under `Opaque`, or the
@@ -20,7 +21,7 @@
 
 use crate::ir::{ResultPath, State, StateKind, Workflow};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 
 /// A concrete document along one path. `Opaque` = could hold any field.
 #[derive(Clone, Debug)]
@@ -37,6 +38,7 @@ pub enum Verdict {
 }
 
 const PATH_CAP: usize = 4000;
+const LOOP_UNROLL: usize = 3;
 
 fn leaf() -> CShape {
     CShape::Rec(BTreeMap::new())
@@ -330,41 +332,47 @@ fn root_seed(wf: &Workflow) -> CShape {
     }
 }
 
-/// Enumerate acyclic paths to `target` and collect its entry document on each.
+/// Enumerate paths to `target`, unrolling each loop up to [`LOOP_UNROLL`]
+/// revisits, and collect the target's entry document on each bounded path.
 fn entry_docs(wf: &Workflow, target: &str, result_shapes: bool) -> (Vec<CShape>, bool) {
     let mut entries = Vec::new();
     let mut capped = false;
-    let mut on_path: HashSet<String> = HashSet::new();
+    let mut visits: HashMap<String, usize> = HashMap::new();
     fn go(
         wf: &Workflow, cur: &str, doc: CShape, target: &str, result_shapes: bool,
-        on_path: &mut HashSet<String>, entries: &mut Vec<CShape>, capped: &mut bool,
+        visits: &mut HashMap<String, usize>, entries: &mut Vec<CShape>, capped: &mut bool,
     ) {
         if entries.len() >= PATH_CAP {
             *capped = true;
             return;
         }
-        if cur == target {
-            entries.push(doc);
+        let seen = visits.get(cur).copied().unwrap_or(0);
+        if seen > LOOP_UNROLL {
             return;
         }
-        if !on_path.insert(cur.to_string()) {
-            return; // cycle on this path
+        visits.insert(cur.to_string(), seen + 1);
+        if cur == target {
+            entries.push(doc.clone());
         }
         if let Some(st) = wf.states.get(cur) {
             let out = out_doc(st, &doc, result_shapes);
             for succ in st.normal_successors() {
                 if wf.states.contains_key(succ) {
-                    go(wf, succ, out.clone(), target, result_shapes, on_path, entries, capped);
+                    go(wf, succ, out.clone(), target, result_shapes, visits, entries, capped);
                 }
             }
             for c in &st.catch {
                 if wf.states.contains_key(&c.next) {
                     let cs = place(&doc, &c.result_path, CShape::Opaque);
-                    go(wf, &c.next, cs, target, result_shapes, on_path, entries, capped);
+                    go(wf, &c.next, cs, target, result_shapes, visits, entries, capped);
                 }
             }
         }
-        on_path.remove(cur);
+        if seen == 0 {
+            visits.remove(cur);
+        } else {
+            visits.insert(cur.to_string(), seen);
+        }
     }
     if wf.states.contains_key(&wf.start_at) {
         go(
@@ -373,7 +381,7 @@ fn entry_docs(wf: &Workflow, target: &str, result_shapes: bool) -> (Vec<CShape>,
             root_seed(wf),
             target,
             result_shapes,
-            &mut on_path,
+            &mut visits,
             &mut entries,
             &mut capped,
         );
@@ -381,9 +389,10 @@ fn entry_docs(wf: &Workflow, target: &str, result_shapes: bool) -> (Vec<CShape>,
     (entries, capped)
 }
 
-/// Cross-check a single flagged reference `path` at `state` against concrete
-/// path enumeration. `ConfirmedAbsent` witnesses the theorem; `Present` is a
-/// soundness counterexample; `Unverifiable` abstains.
+/// Cross-check a single flagged reference `path` at `state` against bounded
+/// concrete path enumeration. `ConfirmedAbsent` witnesses the theorem on the
+/// explored unrolled paths; `Present` is a soundness counterexample;
+/// `Unverifiable` abstains.
 pub fn check_ref(wf: &Workflow, state: &str, path: &str) -> Verdict {
     check_ref_inner(wf, state, path, false)
 }

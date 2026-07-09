@@ -7,7 +7,7 @@
 use crate::ir::*;
 use anyhow::{anyhow, Context, Result};
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 pub fn parse_str(src: &str, name: &str) -> Result<Workflow> {
     let mut de = serde_json::Deserializer::from_str(src);
@@ -19,6 +19,14 @@ pub fn parse_str(src: &str, name: &str) -> Result<Workflow> {
 
 fn s(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(|x| x.as_str()).map(|x| x.to_string())
+}
+
+fn extra_fields(v: &Value, known: &[&str]) -> Map<String, Value> {
+    let Some(obj) = v.as_object() else { return Map::new() };
+    obj.iter()
+        .filter(|(k, _)| !known.contains(&k.as_str()))
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
 }
 
 /// Resolve a `QueryLanguage` directive against an inherited default.
@@ -60,6 +68,7 @@ fn lower_machine(v: &Value, name: &str, parent_ql: QueryLang) -> Result<Workflow
     let mut wf = Workflow::new(name, start_at);
     wf.comment = s(v, "Comment");
     wf.timeout_seconds = v.get("TimeoutSeconds").and_then(|x| x.as_f64());
+    wf.extra = extra_fields(v, &["Comment", "StartAt", "States", "TimeoutSeconds"]);
     for (sname, sval) in states_obj {
         // A state entry whose value is not an object is malformed (e.g. a
         // top-level `QueryLanguage` directive mistakenly nested in `States`).
@@ -112,6 +121,12 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     };
 
     let mut st = State::new(name, kind.clone());
+    st.extra = extra_fields(v, &[
+        "Type", "Comment", "Resource", "Next", "End", "InputPath", "OutputPath", "ResultPath",
+        "Parameters", "Arguments", "Assign", "Output", "Items", "ResultSelector", "Result", "Retry",
+        "Catch", "Choices", "Default", "TimeoutSeconds", "HeartbeatSeconds", "MaxConcurrency",
+        "ItemSelector", "Iterator", "ItemProcessor", "ItemsPath", "Branches",
+    ]);
     // Effective query language: explicit directive, else the machine default;
     // a state using JSONata constructs is treated as JSONata regardless, so the
     // data-flow analysis stays sound on it.
@@ -140,6 +155,7 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
     st.heartbeat_seconds = v.get("HeartbeatSeconds").and_then(|x| x.as_f64());
     st.max_concurrency = v.get("MaxConcurrency").and_then(|x| x.as_i64());
     st.distributed_map = matches!(kind, StateKind::Map) && is_distributed_map(v);
+    st.map_uses_item_processor = v.get("ItemProcessor").is_some();
     // `ItemSelector` (distributed Map) / `Parameters` of a Map describe the
     // per-item document handed to each iteration.
     st.item_selector = v.get("ItemSelector").cloned();
@@ -152,6 +168,7 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
                 max_attempts: r.get("MaxAttempts").and_then(|x| x.as_i64()),
                 interval_seconds: r.get("IntervalSeconds").and_then(|x| x.as_f64()),
                 backoff_rate: r.get("BackoffRate").and_then(|x| x.as_f64()),
+                extra: extra_fields(r, &["ErrorEquals", "MaxAttempts", "IntervalSeconds", "BackoffRate"]),
             });
         }
     }
@@ -164,6 +181,7 @@ fn lower_state(name: &str, v: &Value, machine_ql: QueryLang) -> Result<State> {
                     next,
                     result_path: result_path(c),
                     assign: c.get("Assign").cloned(),
+                    extra: extra_fields(c, &["ErrorEquals", "Next", "ResultPath", "Assign"]),
                 });
             }
         }
@@ -222,9 +240,12 @@ pub fn emit(wf: &Workflow) -> Value {
     for (name, st) in &wf.states {
         states.insert(name.clone(), emit_state(st));
     }
-    let mut top = serde_json::Map::new();
+    let mut top = wf.extra.clone();
     if let Some(c) = &wf.comment {
         top.insert("Comment".into(), Value::String(c.clone()));
+    }
+    if let Some(t) = wf.timeout_seconds {
+        top.insert("TimeoutSeconds".into(), num(t));
     }
     top.insert("StartAt".into(), Value::String(wf.start_at.clone()));
     top.insert("States".into(), Value::Object(states));
@@ -232,13 +253,16 @@ pub fn emit(wf: &Workflow) -> Value {
 }
 
 fn emit_state(st: &State) -> Value {
-    let mut o = serde_json::Map::new();
+    let mut o = st.extra.clone();
     o.insert("Type".into(), Value::String(st.kind.as_str().to_string()));
     if let Some(c) = &st.comment {
         o.insert("Comment".into(), Value::String(c.clone()));
     }
     if let Some(r) = &st.resource {
         o.insert("Resource".into(), Value::String(r.clone()));
+    }
+    if let Some(ip) = &st.input_path {
+        o.insert("InputPath".into(), ip.clone());
     }
     if let Some(p) = &st.parameters {
         o.insert("Parameters".into(), p.clone());
@@ -254,6 +278,12 @@ fn emit_state(st: &State) -> Value {
     }
     if let Some(r) = &st.result {
         o.insert("Result".into(), r.clone());
+    }
+    if let Some(rs) = &st.result_selector {
+        o.insert("ResultSelector".into(), rs.clone());
+    }
+    if let Some(op) = &st.output_path {
+        o.insert("OutputPath".into(), op.clone());
     }
     match &st.result_path {
         ResultPath::Default => {}
@@ -300,7 +330,8 @@ fn emit_state(st: &State) -> Value {
         o.insert("ItemSelector".into(), is.clone());
     }
     if let Some(it) = &st.iterator {
-        o.insert("Iterator".into(), emit(it));
+        let key = if st.map_uses_item_processor { "ItemProcessor" } else { "Iterator" };
+        o.insert(key.into(), emit(it));
     }
     if let Some(ip) = &st.items_path {
         o.insert("ItemsPath".into(), Value::String(ip.clone()));
@@ -322,7 +353,7 @@ fn emit_state(st: &State) -> Value {
 }
 
 fn emit_retry(r: &RetryRule) -> Value {
-    let mut o = serde_json::Map::new();
+    let mut o = r.extra.clone();
     o.insert(
         "ErrorEquals".into(),
         Value::Array(r.error_equals.iter().map(|e| Value::String(e.clone())).collect()),
@@ -340,7 +371,7 @@ fn emit_retry(r: &RetryRule) -> Value {
 }
 
 fn emit_catch(c: &CatchRule) -> Value {
-    let mut o = serde_json::Map::new();
+    let mut o = c.extra.clone();
     o.insert(
         "ErrorEquals".into(),
         Value::Array(c.error_equals.iter().map(|e| Value::String(e.clone())).collect()),
@@ -349,6 +380,9 @@ fn emit_catch(c: &CatchRule) -> Value {
         o.insert("ResultPath".into(), Value::String(p.clone()));
     } else if let ResultPath::Discard = &c.result_path {
         o.insert("ResultPath".into(), Value::Null);
+    }
+    if let Some(assign) = &c.assign {
+        o.insert("Assign".into(), assign.clone());
     }
     o.insert("Next".into(), Value::String(c.next.clone()));
     Value::Object(o)
