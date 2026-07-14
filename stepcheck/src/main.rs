@@ -88,6 +88,11 @@ enum Cmd {
         /// Ablation: model declared task outputs and known AWS service result envelopes.
         #[arg(long)]
         result_shapes: bool,
+        /// Run the *hard-mutant* study instead: inject each class's boundary
+        /// variant and credit detection at the analysis-family level, reporting
+        /// per-class recall plus which code (expected or sibling) fired.
+        #[arg(long)]
+        hard: bool,
     },
     /// Cross-check the data-flow `SC1101` findings against an independent
     /// bounded-path execution oracle (witnesses the soundness theorem at corpus
@@ -138,6 +143,10 @@ enum Cmd {
         /// Write the mutated ASL here (default: stdout).
         #[arg(long)]
         out: Option<PathBuf>,
+        /// Inject the *hard* variant of the defect (placed at the analysis's
+        /// ⊤ / coverage boundary) instead of the in-region easy variant.
+        #[arg(long)]
+        hard: bool,
     },
     /// Measure how close the data-flow fixpoint stays to its finite-height round
     /// bound `|states|*(|keys|+2)+2` across one or more corpora (evidence for the
@@ -192,8 +201,12 @@ fn main() {
             cmd_scan(&dir, annot.as_deref(), infer, result_shapes)
         }
         Cmd::Stats { dir, tex } => cmd_stats(&dir, tex),
-        Cmd::Eval { dir, annot, infer, strict_input, result_shapes } => {
-            cmd_eval(&dir, annot.as_deref(), infer, strict_input, result_shapes)
+        Cmd::Eval { dir, annot, infer, strict_input, result_shapes, hard } => {
+            if hard {
+                cmd_eval_hard(&dir, annot.as_deref(), infer, result_shapes)
+            } else {
+                cmd_eval(&dir, annot.as_deref(), infer, strict_input, result_shapes)
+            }
         }
         Cmd::Oracle { dir, annot, infer, result_shapes } => {
             cmd_oracle(&dir, annot.as_deref(), infer, result_shapes)
@@ -202,7 +215,7 @@ fn main() {
             cmd_dataflow_cert(&dir, annot.as_deref(), infer, result_shapes)
         }
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
-        Cmd::Mutate { path, kind, seed, out } => cmd_mutate(&path, kind, seed, out.as_deref()),
+        Cmd::Mutate { path, kind, seed, out, hard } => cmd_mutate(&path, kind, seed, out.as_deref(), hard),
         Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
         Cmd::PathCoverage { dirs } => cmd_path_coverage(&dirs),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
@@ -434,9 +447,10 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) 
     Ok(0)
 }
 
-fn cmd_mutate(path: &Path, kind: mutate::MutationKind, seed: u64, out: Option<&Path>) -> Result<i32> {
+fn cmd_mutate(path: &Path, kind: mutate::MutationKind, seed: u64, out: Option<&Path>, hard: bool) -> Result<i32> {
     let wf = load(path)?;
-    match mutate::mutate(&wf, kind, seed) {
+    let mutated = if hard { mutate::mutate_hard(&wf, kind, seed) } else { mutate::mutate(&wf, kind, seed) };
+    match mutated {
         Some(mw) => {
             let text = serde_json::to_string_pretty(&asl::emit(&mw))?;
             match out {
@@ -633,6 +647,125 @@ fn cmd_eval(
         "confusion_matrix": confusion,
         "timing_us": { "mean": mean_us, "median": median_us, "max": max_us,
                        "total_ms": total_ns as f64 / 1.0e6 },
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
+}
+
+/// The hard-mutant study (W1 / operator-circularity rebuttal). For each class we
+/// inject the *boundary* variant (`mutate_hard`) and re-verify. Detection is
+/// credited two ways: `detected_expected` (the single expected code fired, as in
+/// the easy study) and `detected_family` (any sibling code in the class's
+/// analysis family fired). A hard mutant the tool soundly misses (a ⊤-lift) shows
+/// up as a family miss; one caught only by a sibling shows the check is not tuned
+/// to the operator. The confusion matrix records exactly which code fired.
+///
+/// Runs in the typed tier (each start document seeded as a closed record of the
+/// fields the workflow references) so the data-flow class is measured where it is
+/// meaningful — the same seeding the easy typed-tier study uses.
+fn cmd_eval_hard(
+    dir: &Path,
+    annot: Option<&Path>,
+    infer: bool,
+    result_shapes: bool,
+) -> Result<i32> {
+    let sc = match annot {
+        Some(p) => Some(annot::Sidecar::load(p)?),
+        None => None,
+    };
+    let kinds = mutate::MutationKind::all_hard();
+
+    let mut applicable = BTreeMap::<String, usize>::new();
+    let mut detected_expected = BTreeMap::<String, usize>::new();
+    let mut detected_family = BTreeMap::<String, usize>::new();
+    let mut confusion = BTreeMap::<String, BTreeMap<String, usize>>::new();
+    let mut files = 0usize;
+
+    for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() || !is_workflow_file(p) {
+            continue;
+        }
+        let base = match load(p) {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
+        files += 1;
+
+        // typed-tier seed: a closed input record of the fields the workflow uses
+        let strict_fields = {
+            let f = mine_top_level_fields(&base);
+            if f.is_empty() { None } else { Some(f) }
+        };
+
+        // baseline (unmutated) code counts, so we credit only *fresh* findings
+        let mut b = base.clone();
+        if let Some(f) = &strict_fields {
+            b.input_fields = Some(f.clone());
+        }
+        let mut bsink = diag::DiagnosticSink::new();
+        annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
+        run_pipeline_into(&b, &mut bsink, result_shapes);
+        let bcounts = code_counts(&bsink);
+
+        for &kind in &kinds {
+            let ec = kind.expected_code();
+            let family = kind.expected_family();
+            if let Some(mut mw) = mutate::mutate_hard(&base, kind, 0) {
+                if let Some(f) = &strict_fields {
+                    mw.input_fields = Some(f.clone());
+                }
+                let mut msink = diag::DiagnosticSink::new();
+                annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
+                run_pipeline_into(&mw, &mut msink, result_shapes);
+                let mcounts = code_counts(&msink);
+                let fresh = |c: &str| mcounts.get(c).copied().unwrap_or(0) > bcounts.get(c).copied().unwrap_or(0);
+
+                *applicable.entry(format!("{kind:?}")).or_default() += 1;
+                if fresh(ec) {
+                    *detected_expected.entry(format!("{kind:?}")).or_default() += 1;
+                }
+                if family.iter().any(|c| fresh(c)) {
+                    *detected_family.entry(format!("{kind:?}")).or_default() += 1;
+                }
+                let row = confusion.entry(format!("{kind:?}")).or_default();
+                for (c, n) in &mcounts {
+                    if *n > bcounts.get(c).copied().unwrap_or(0) {
+                        *row.entry(c.clone()).or_default() += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    let mut per_kind = serde_json::Map::new();
+    for &kind in &kinds {
+        let key = format!("{kind:?}");
+        let app = applicable.get(&key).copied().unwrap_or(0);
+        let de = detected_expected.get(&key).copied().unwrap_or(0);
+        let df = detected_family.get(&key).copied().unwrap_or(0);
+        per_kind.insert(
+            key,
+            json!({
+                "expected_code": kind.expected_code(),
+                "expected_family": kind.expected_family(),
+                "applicable": app,
+                "detected_expected_code": de,
+                "detected_family": df,
+                "recall_expected_code": if app > 0 { de as f64 / app as f64 } else { 0.0 },
+                "recall_family": if app > 0 { df as f64 / app as f64 } else { 0.0 },
+            }),
+        );
+    }
+
+    let report = json!({
+        "study": "hard_mutants",
+        "note": "Each class's boundary variant (mutate_hard): a genuine defect placed just past the analysis's ⊤ / coverage boundary. \
+                 recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
+        "corpus": { "files": files },
+        "ablation": { "result_shapes": result_shapes },
+        "mutation_study_hard": per_kind,
+        "hard_confusion_matrix": confusion,
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(0)

@@ -1,6 +1,377 @@
 {
   "generated_by": "eval/mutation_stats.py",
   "method": "Clopper-Pearson exact 95% CI on per-class recall k/n over the full 193-workflow corpus; Fisher exact vs each formal verifier.",
+  "hard_mutants": {
+    "method": "Boundary variant per class (stepcheck mutate --hard). StepCheck recall from the native typed-tier study (count-based fresh, family-credited); formal verifiers from the round-trip comparison; schema validators from the panel. Exact Clopper-Pearson 95% CIs throughout.",
+    "interpretation": "recall < 1 is a measured completeness boundary, not a soundness violation: at \u22a4 the sound analyses decline to report what they cannot prove (no false alarm). The abstraction-gap classes (data-flow, concurrency, temporal) drop to 0 at their boundary; compensation is caught by a sibling code rather than the operator's expected code; structural reachability stays exact; retry degrades gracefully at the inference tier; the contract break escapes the syntactic scan (and is covered by schema validators).",
+    "classes": {
+      "Structural": {
+        "code": "SC0002",
+        "n": 42,
+        "boundary": "exact decision procedure (reachability; recurses into nested scopes)",
+        "stepcheck_expected_code": {
+          "detected": 42,
+          "recall": 1.0,
+          "cp95": [
+            0.916,
+            1.0
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 42,
+          "recall": 1.0,
+          "cp95": [
+            0.916,
+            1.0
+          ]
+        },
+        "codes_fired": {
+          "SC0002": 42,
+          "SC0003": 37,
+          "SC0005": 33
+        },
+        "woflan": {
+          "detected": 13,
+          "recall": 0.31,
+          "cp95": [
+            0.176,
+            0.471
+          ]
+        },
+        "statelint": {
+          "detected": 42,
+          "recall": 1.0,
+          "cp95": [
+            0.916,
+            1.0
+          ]
+        },
+        "asl_validator": {
+          "detected": 35,
+          "recall": 0.833,
+          "cp95": [
+            0.686,
+            0.93
+          ]
+        },
+        "aws": {
+          "detected": 42,
+          "recall": 1.0,
+          "cp95": [
+            0.916,
+            1.0
+          ]
+        }
+      },
+      "Contract": {
+        "code": "SC1003",
+        "n": 166,
+        "boundary": "syntactic-scan coverage boundary (ResultSelector is outside the SC1003 scan)",
+        "stepcheck_expected_code": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "codes_fired": {
+          "SC1101": 20,
+          "SC1110": 11
+        },
+        "woflan": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "statelint": {
+          "detected": 165,
+          "recall": 0.994,
+          "cp95": [
+            0.967,
+            1.0
+          ]
+        },
+        "asl_validator": {
+          "detected": 161,
+          "recall": 0.97,
+          "cp95": [
+            0.931,
+            0.99
+          ]
+        },
+        "aws": {
+          "detected": 166,
+          "recall": 1.0,
+          "cp95": [
+            0.978,
+            1.0
+          ]
+        }
+      },
+      "Retry": {
+        "code": "SC3001",
+        "n": 111,
+        "boundary": "inference-tier boundary (non-idempotence unprovable once name/FunctionName are generic)",
+        "stepcheck_expected_code": {
+          "detected": 76,
+          "recall": 0.685,
+          "cp95": [
+            0.59,
+            0.77
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 76,
+          "recall": 0.685,
+          "cp95": [
+            0.59,
+            0.77
+          ]
+        },
+        "codes_fired": {
+          "SC3001": 76
+        },
+        "woflan": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.033
+          ]
+        },
+        "statelint": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.033
+          ]
+        },
+        "asl_validator": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.033
+          ]
+        },
+        "aws": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.033
+          ]
+        }
+      },
+      "Compensation": {
+        "code": "SC4001",
+        "n": 56,
+        "boundary": "family generalization (caught by the effect-aware sibling SC4010, not the presence-only SC4001)",
+        "stepcheck_expected_code": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.064
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 44,
+          "recall": 0.786,
+          "cp95": [
+            0.656,
+            0.884
+          ]
+        },
+        "codes_fired": {
+          "SC0003": 7,
+          "SC4010": 44
+        },
+        "woflan": {
+          "detected": 7,
+          "recall": 0.125,
+          "cp95": [
+            0.052,
+            0.241
+          ]
+        },
+        "statelint": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.064
+          ]
+        },
+        "asl_validator": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.064
+          ]
+        },
+        "aws": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.064
+          ]
+        }
+      },
+      "Concurrency": {
+        "code": "SC5001",
+        "n": 21,
+        "boundary": "sound \u22a4-lift (dynamically-named shared resource)",
+        "stepcheck_expected_code": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        },
+        "codes_fired": {
+          "SC1101": 16,
+          "SC1110": 1
+        },
+        "woflan": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        },
+        "statelint": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        },
+        "asl_validator": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        },
+        "aws": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.161
+          ]
+        }
+      },
+      "Temporal": {
+        "code": "SC6003",
+        "n": 166,
+        "boundary": "sound \u22a4-lift (heartbeat/timeout supplied via reference paths)",
+        "stepcheck_expected_code": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "codes_fired": {
+          "SC6001": 3
+        },
+        "woflan": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "statelint": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "asl_validator": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        },
+        "aws": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.022
+          ]
+        }
+      },
+      "Dataflow": {
+        "code": "SC1101",
+        "n": 126,
+        "boundary": "sound \u22a4-lift (filter-expression InputPath re-roots the document to \u22a4)",
+        "stepcheck_expected_code": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.029
+          ]
+        },
+        "stepcheck_family": {
+          "detected": 0,
+          "recall": 0.0,
+          "cp95": [
+            0.0,
+            0.029
+          ]
+        },
+        "codes_fired": {
+          "SC1001": 10
+        }
+      }
+    }
+  },
   "verifier_comparison": "Woflan (van der Aalst & Verbeek) via pm4py 2.7.23.1",
   "verifier_comparison2": "BPMN Analyzer 2.0 (Kraeuter 2024) via rust_bpmn_analyzer CLI",
   "verifier_comparison3": "BProVe/BPMNOS (Corradini et al.) via BPMNOS parser + Maude",

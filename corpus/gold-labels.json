@@ -1,5 +1,4 @@
 {
-  "_README": "Hand-labeled gold standard for inference accuracy. idempotent = repeating the operation causes no additional external effect (reads, idempotent writes by stable key, cancels that converge). persistent = acquires/commits a durable external resource a later failure should compensate; compensators (refund/cancel/release) and notifications are NOT persistent. Unlabelable tasks are null (abstain). 23 workflows: the 13 added 2026-06-21 were labelled by TWO INDEPENDENT HUMAN ANNOTATORS under a written rubric (eval/HUMAN-GOLD-LABELLING.md); Cohen kappa = 1.00 (idempotency) and 1.00 (persistence) over 116 doubly-labelled tasks; the original 10 were hand-labelled by an author. Sources: eval/gold-labels-human-A.json / -B.json, scored by eval/score-human-gold.js.",
   "labels": {
     "sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json": {
       "Get Customer Status": {
@@ -15,7 +14,7 @@
         "persistent": false
       },
       "Initate Packaging and Shipping": {
-        "idempotent": false,
+        "idempotent": true,
         "persistent": true
       },
       "Notify Successful Shipping": {
@@ -31,6 +30,14 @@
         "persistent": false
       },
       "Notify Invalid Input": {
+        "idempotent": false,
+        "persistent": false
+      },
+      "Reserve Product": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Notify Delayed": {
         "idempotent": false,
         "persistent": false
       }
@@ -50,11 +57,11 @@
       },
       "ConfirmFlight": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
       },
       "ConfirmCarRental": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
       },
       "SendingSMSSuccess": {
         "idempotent": false,
@@ -62,14 +69,14 @@
       },
       "RefundPayment": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "CancelRentalReservation": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "CancelFlightReservation": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "SendingSMSFailure": {
@@ -81,16 +88,40 @@
       "DynamoDB GetItem": {
         "idempotent": true,
         "persistent": false
+      },
+      "Update stock": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Send stock reserved event": {
+        "idempotent": false,
+        "persistent": false
+      },
+      "Write Item to InventoryReservationTable": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Send create-purchase-order event": {
+        "idempotent": false,
+        "persistent": false
+      },
+      "Send stock unavailable event": {
+        "idempotent": false,
+        "persistent": false
+      },
+      "Send stock unavailable notification": {
+        "idempotent": false,
+        "persistent": false
       }
     },
     "sfn-collection__inventory-management-sam__statemachine__create-purchase-order-statemachine.asl.json": {
       "Send Purchase Order Email": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "Update Inventory": {
         "idempotent": false,
-        "persistent": true
+        "persistent": false
       }
     },
     "sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json": {
@@ -101,6 +132,14 @@
       "Get the next set of records": {
         "idempotent": true,
         "persistent": false
+      },
+      "Update record": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Add record to target DDB table": {
+        "idempotent": true,
+        "persistent": true
       }
     },
     "sfn-collection__account-vending-machine__statemachine__statemachine.asl.json": {
@@ -122,7 +161,7 @@
       },
       "Move Account To OU": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
       },
       "Create Stack": {
         "idempotent": false,
@@ -135,13 +174,13 @@
     },
     "sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json": {
       "Bedrock InvokeModel": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       }
     },
     "sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json": {
       "Copy input file": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "Data quality using Lambda": {
@@ -158,7 +197,7 @@
       },
       "Aggregate Data": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
       },
       "Send Success Message": {
         "idempotent": false,
@@ -167,16 +206,16 @@
     },
     "sfn-examples__sam__app-business-rules-orchestration__statemachine__businessrules_orchestration.asl.json": {
       "Audit Request": {
-        "idempotent": false,
-        "persistent": false
+        "idempotent": true,
+        "persistent": true
       },
       "Execute Ruleset": {
         "idempotent": true,
         "persistent": false
       },
       "Audit Response": {
-        "idempotent": false,
-        "persistent": false
+        "idempotent": true,
+        "persistent": true
       }
     },
     "sfn-collection__text-processing-sqs-express__statemachine__statemachine.asl.json": {
@@ -202,69 +241,69 @@
         "idempotent": true,
         "persistent": true
       },
-      "StartContentModeration": {
-        "idempotent": false,
-        "persistent": false
-      },
-      "Wait for ContentModeration Callback": {
-        "idempotent": true,
-        "persistent": false
-      },
       "GetContentModeration": {
         "idempotent": true,
         "persistent": false
+      },
+      "StartContentModeration": {
+        "idempotent": false,
+        "persistent": true
       },
       "Update ContentModeration Job status": {
         "idempotent": true,
         "persistent": true
       },
-      "Write Rekognition Content Moderation Results to file": {
-        "idempotent": null,
-        "persistent": null
-      },
-      "StartLabelDetection": {
-        "idempotent": false,
-        "persistent": false
-      },
-      "Wait for LabelDetection Callback": {
+      "Wait for ContentModeration Callback": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
+      },
+      "Write Rekognition Content Moderation Results to file": {
+        "idempotent": true,
+        "persistent": true
       },
       "GetLabelDetection": {
         "idempotent": true,
         "persistent": false
       },
+      "StartLabelDetection": {
+        "idempotent": false,
+        "persistent": true
+      },
       "Update Label Detection Status": {
         "idempotent": true,
         "persistent": true
       },
-      "Write Rekognition Label Detection Results to File": {
-        "idempotent": null,
-        "persistent": null
-      },
-      "StartSegmentDetection": {
-        "idempotent": false,
-        "persistent": false
-      },
-      "Wait for SegmentDetection Callback": {
+      "Wait for LabelDetection Callback": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
+      },
+      "Write Rekognition Label Detection Results to File": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "MoveProcessedFiles": {
+        "idempotent": true,
+        "persistent": true
       },
       "GetSegmentDetection": {
         "idempotent": true,
         "persistent": false
       },
+      "StartSegmentDetection": {
+        "idempotent": false,
+        "persistent": true
+      },
       "Update Segment Detection Status": {
         "idempotent": true,
         "persistent": true
       },
-      "Write Rekognition Segmet Results to File": {
-        "idempotent": null,
-        "persistent": null
+      "Wait for SegmentDetection Callback": {
+        "idempotent": true,
+        "persistent": true
       },
-      "MoveProcessedFiles": {
-        "idempotent": null,
-        "persistent": null
+      "Write Rekognition Segmet Results to File": {
+        "idempotent": true,
+        "persistent": true
       }
     },
     "sfn-collection__ec2-instance-isolation-sam__statemachine__statemachine.asl.json": {
@@ -274,13 +313,25 @@
       },
       "Disable Instance Termination": {
         "idempotent": true,
-        "persistent": false
+        "persistent": true
       },
       "Get AutoScalingGroup Info": {
         "idempotent": true,
         "persistent": false
       },
       "Detach Instance from ASG": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Attach Volume": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Allow Forensic Instance Ingress": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Tag Instance as Quarantine": {
         "idempotent": true,
         "persistent": true
       },
@@ -303,31 +354,19 @@
       "Get EBS Volume Status": {
         "idempotent": true,
         "persistent": false
-      },
-      "Attach Volume": {
-        "idempotent": true,
-        "persistent": true
-      },
-      "Allow Forensic Instance Ingress": {
-        "idempotent": true,
-        "persistent": false
-      },
-      "Tag Instance as Quarantine": {
-        "idempotent": true,
-        "persistent": false
       }
     },
     "sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json": {
       "Set Order, Payment and Shipping Status": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": true
       },
       "Third Party Payment Service HTTPS Endpoint": {
-        "idempotent": null,
-        "persistent": null
+        "idempotent": false,
+        "persistent": true
       },
       "Set Payment Status: Unsuccessful": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": true
       },
       "Send PaymentFailed Event to Notification Bus": {
@@ -335,19 +374,19 @@
         "persistent": false
       },
       "Set Payment Status: Successful": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": true
       },
       "Third Party Shipping Service HTTPS Endpoint": {
-        "idempotent": null,
-        "persistent": null
+        "idempotent": false,
+        "persistent": true
       },
       "Set Shipping Status: Successful": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": true
       },
       "Set Shipping Status: Unsuccessful": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": true
       },
       "Send ShippingFailed Event to Notification Bus": {
@@ -373,11 +412,11 @@
         "persistent": true
       },
       "ConfirmFlight": {
-        "idempotent": false,
+        "idempotent": true,
         "persistent": true
       },
       "ConfirmCarRental": {
-        "idempotent": false,
+        "idempotent": true,
         "persistent": true
       },
       "SendingSMSSuccess": {
@@ -385,15 +424,15 @@
         "persistent": false
       },
       "RefundPayment": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "CancelRentalReservation": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "CancelFlightReservation": {
-        "idempotent": true,
+        "idempotent": false,
         "persistent": false
       },
       "SendingSMSFailure": {
@@ -408,7 +447,7 @@
       },
       "CPUStressInstances": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "GetExperiment": {
         "idempotent": true,
@@ -420,7 +459,7 @@
       },
       "StopInstances": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "GetExperiment (1)": {
         "idempotent": true,
@@ -432,7 +471,7 @@
       },
       "TerminateInstances": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "GetExperiment (2)": {
         "idempotent": true,
@@ -476,7 +515,7 @@
     "sfn-examples__usecases__genai-prompt-chaining-hitl__src__workflow.asl.json": {
       "StartTranscriptionJob": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "GetTranscriptionJob": {
         "idempotent": true,
@@ -486,25 +525,25 @@
         "idempotent": true,
         "persistent": false
       },
+      "Wait for user feedback": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "Generate Avatar": {
+        "idempotent": true,
+        "persistent": true
+      },
+      "send custom avatar to user": {
+        "idempotent": false,
+        "persistent": false
+      },
       "Bedrock InvokeModel": {
         "idempotent": true,
         "persistent": false
       },
       "Call third-party API": {
-        "idempotent": null,
-        "persistent": null
-      },
-      "Wait for user feedback": {
-        "idempotent": null,
-        "persistent": null
-      },
-      "Generate Avatar": {
         "idempotent": true,
-        "persistent": false
-      },
-      "send custom avatar to user": {
-        "idempotent": false,
-        "persistent": false
+        "persistent": true
       }
     },
     "sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json": {
@@ -524,11 +563,11 @@
         "idempotent": true,
         "persistent": false
       },
-      "CheckDeletingStackSetStatus": {
+      "DeleteStackInstances": {
         "idempotent": true,
         "persistent": false
       },
-      "DeleteStackInstances": {
+      "CheckDeletingStackSetStatus": {
         "idempotent": true,
         "persistent": false
       },
@@ -547,8 +586,8 @@
         "persistent": false
       },
       "Route For Approval (Callback)": {
-        "idempotent": null,
-        "persistent": null
+        "idempotent": false,
+        "persistent": true
       },
       "Buy Stock": {
         "idempotent": false,
@@ -564,7 +603,7 @@
       },
       "Log Reject": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       }
     },
     "sfn-collection__cqrs__statemachine__statemachine.asl.json": {
@@ -598,13 +637,9 @@
         "idempotent": true,
         "persistent": false
       },
-      "Iterate Containers[Map]/Get location Summary": {
-        "idempotent": null,
-        "persistent": null
-      },
       "Combine Part Files": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
       "Has Job Finish": {
         "idempotent": true,
@@ -613,12 +648,20 @@
       "Update DynamoDb": {
         "idempotent": true,
         "persistent": true
+      },
+      "Get location Summary": {
+        "idempotent": true,
+        "persistent": false
+      },
+      "Extract Data": {
+        "idempotent": true,
+        "persistent": true
       }
     },
     "sfn-collection__idempotent-workflow-sam__statemachine__statemachine.asl.json": {
       "Create idempotency settings (key and ttl)": {
-        "idempotent": null,
-        "persistent": null
+        "idempotent": true,
+        "persistent": false
       },
       "Create and lock idempotency record": {
         "idempotent": true,
@@ -635,56 +678,60 @@
       "Save failure": {
         "idempotent": true,
         "persistent": true
+      },
+      "(which can fail occasionally)": {
+        "idempotent": true,
+        "persistent": false
       }
     },
     "sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json": {
-      "Create Evaluation Pipelines[Branch0]/CreateKnowledgeBase": {
+      "Create Data Source": {
         "idempotent": false,
         "persistent": true
       },
-      "Create Evaluation Pipelines[Branch0]/Create Data Source": {
+      "Create Evaluation Job": {
         "idempotent": false,
         "persistent": true
       },
-      "Create Evaluation Pipelines[Branch0]/Start Ingestion Job": {
+      "CreateKnowledgeBase": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
-      "Create Evaluation Pipelines[Branch0]/Get Ingestion Job": {
+      "Get Evaluation Job Status": {
         "idempotent": true,
         "persistent": false
       },
-      "Create Evaluation Pipelines[Branch0]/Create Evaluation Job": {
-        "idempotent": false,
-        "persistent": true
-      },
-      "Create Evaluation Pipelines[Branch0]/Get Evaluation Job Status": {
+      "Get Ingestion Job": {
         "idempotent": true,
         "persistent": false
       },
-      "Create Evaluation Pipelines[Branch1]/Create Knowledge Base 2": {
+      "Start Ingestion Job": {
         "idempotent": false,
         "persistent": true
       },
-      "Create Evaluation Pipelines[Branch1]/Create Data Source 2": {
+      "Create Data Source 2": {
         "idempotent": false,
         "persistent": true
       },
-      "Create Evaluation Pipelines[Branch1]/Start Ingestion Job 2": {
+      "Create Evaluation Job 2": {
         "idempotent": false,
-        "persistent": false
+        "persistent": true
       },
-      "Create Evaluation Pipelines[Branch1]/Get Ingestion Job 2": {
+      "Create Knowledge Base 2": {
+        "idempotent": false,
+        "persistent": true
+      },
+      "Get Evaluation Job Status 2": {
         "idempotent": true,
         "persistent": false
       },
-      "Create Evaluation Pipelines[Branch1]/Create Evaluation Job 2": {
-        "idempotent": false,
-        "persistent": true
-      },
-      "Create Evaluation Pipelines[Branch1]/Get Evaluation Job Status 2": {
+      "Get Ingestion Job 2": {
         "idempotent": true,
         "persistent": false
+      },
+      "Start Ingestion Job 2": {
+        "idempotent": false,
+        "persistent": true
       }
     }
   }

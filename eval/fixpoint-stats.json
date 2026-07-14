@@ -30,11 +30,11 @@
     },
     {
       "dir": "corpus/dsl",
-      "files": 2,
-      "machines": 4,
+      "files": 3,
+      "machines": 6,
       "non_converged": 0,
       "max_rounds": 3,
-      "max_bound": 652,
+      "max_bound": 1003,
       "worst_ratio": {
         "ratio": 0.004601226993865031,
         "rounds": 3,
@@ -44,8 +44,8 @@
     }
   ],
   "combined": {
-    "files": 261,
-    "machines": 790,
+    "files": 262,
+    "machines": 792,
     "non_converged": 0,
     "max_rounds": 7,
     "max_bound": 12859,

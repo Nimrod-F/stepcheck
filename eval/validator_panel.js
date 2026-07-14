@@ -27,8 +27,14 @@ const os = require('os');
 const { execFileSync, execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const DIR = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'corpus', 'asl');
+const posArg = process.argv.slice(2).find(a => !a.startsWith('--'));
+const DIR = posArg ? path.resolve(posArg) : path.join(ROOT, 'corpus', 'asl');
 const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+// Hard-mutant mode (W1): inject each class's ⊤/coverage-boundary variant with
+// `mutate --hard` and measure whether the schema validators catch it. Skips the
+// in-the-wild pass (A); only the mutation-detection pass (B) is boundary-relevant.
+const HARD = process.env.STEPCHECK_HARD === '1' || process.argv.includes('--hard');
+const OUT_NAME = HARD ? 'validator-panel-hard.json' : 'validator-panel.json';
 
 // --- tool locations (robust on Windows: invoke the real interpreters, not shims) --
 const RUBY = 'C:/Ruby33-x64/bin/ruby.exe';
@@ -148,7 +154,6 @@ files.sort();
 console.error(`corpus: ${files.length} workflows`);
 
 // ============ (A) in the wild ============
-console.error('[A] in-the-wild over raw corpus ...');
 const inWild = {
   statelint: { flagged: 0, problems: 0 },
   'asl-validator': { flagged: 0, problems: 0 },
@@ -157,6 +162,8 @@ const inWild = {
 const byClass = {};                 // StepCheck class -> #workflows
 let scOnly = 0, baseOnly = 0, both = 0, neither = 0;
 let done = 0;
+if (!HARD) {  // the in-the-wild pass is orthogonal to hard-mutant detection
+console.error('[A] in-the-wild over raw corpus ...');
 for (const f of files) {
   const codes = stepcheckCodes(f);
   for (const cl of new Set(codes.map(SC_CLASS))) byClass[cl] = (byClass[cl] || 0) + 1;
@@ -171,6 +178,7 @@ for (const f of files) {
   }
   if (scFlag && baseFlag) both++; else if (scFlag) scOnly++; else if (baseFlag) baseOnly++; else neither++;
   if (++done % 25 === 0) console.error(`  ... ${done}/${files.length}`);
+}
 }
 
 // ============ (B) detection power on injected defects ============
@@ -196,7 +204,9 @@ for (const f of files) {
   };
   for (const k of KINDS) {
     try { fs.existsSync(mut) && fs.unlinkSync(mut); } catch {}
-    const mr = run(BIN, ['mutate', f, '--kind', k, '--out', mut]);
+    const mutArgs = ['mutate', f, '--kind', k, '--out', mut];
+    if (HARD) mutArgs.push('--hard');
+    const mr = run(BIN, mutArgs);
     if (mr.code === 3 || !fs.existsSync(mut)) continue;   // no applicable site
     detect[k].applicable++;
     for (const tool of ['statelint', 'asl-validator', 'aws']) {
@@ -217,6 +227,7 @@ for (const f of files) {
 // ============ report ============
 const report = {
   generated_by: 'eval/validator_panel.js',
+  hard_mutants: HARD,
   corpus_dir: DIR,
   workflows: files.length,
   tools,
@@ -240,6 +251,6 @@ const report = {
   })),
   note: 'detection credited only when a validator emits a NEW problem (vs the emitted control) that NAMES the injected fault; incidental schema nits (e.g. a float IntervalSeconds) are not credited.',
 };
-fs.writeFileSync(path.join(__dirname, 'validator-panel.json'), JSON.stringify(report, null, 2));
-console.error('done -> eval/validator-panel.json');
+fs.writeFileSync(path.join(__dirname, OUT_NAME), JSON.stringify(report, null, 2));
+console.error(`done -> eval/${OUT_NAME}`);
 console.log(JSON.stringify({ in_the_wild: report.in_the_wild, mutation_detection: report.mutation_detection }, null, 2));

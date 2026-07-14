@@ -3,9 +3,9 @@
   "ablation": {
     "result_shapes": true
   },
-  "sc1101_findings": 92,
+  "sc1101_findings": 88,
   "oracle": {
-    "confirmed_absent": 92,
+    "confirmed_absent": 88,
     "counterexamples_present": 0,
     "unverifiable": 0,
     "nested_skipped": 0

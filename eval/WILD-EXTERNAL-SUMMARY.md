@@ -33,12 +33,13 @@ settlement as persistent (they are) promotes the finding to declared tier:
 Field-reads = `.$` operands of Parameters/ItemSelector + Map ItemsPath.
 | corpus | reads | precise (dotted+$) | of DOCUMENT reads | complex | ctx ($$) | intrinsic |
 |--------|------:|-------------------:|------------------:|--------:|---------:|----------:|
-| aws (193) | 1168 | 740 (63.4%) | 740/803 = 92.2% | 63 (7.8%) | 225 | 140 |
-| cncf (66) | 2 | 0 | n/a (runtime expr) | 0 | 0 | 2 |
+| aws (193) | 1168 | 742 (63.5%) | 742/803 = 92.4% | 61 (7.6%) | 225 | 140 |
+| cncf (66) | 17 | 15 (88.2%) | 15/15 (jq field reads) | 0 | 0 | 2 |
 | wild (95) | 420 | 353 (84.0%) | 353/370 = 95.4% | 17 (4.6%) | 20 | 30 |
-| COMBINED | 1590 | 1093 | 1093/1173 = 93.2% | 80 (6.8%) | 245 | 172 |
+| COMBINED | 1605 | 1110 (69.2%) | 1110/1188 = 93.4% | 78 (6.6%) | 245 | 172 |
 
 Interpretation: of the JSONPath reads that are genuine document-field references,
-92% (AWS) / 93% (combined) fall in the modeled dotted fragment; only ~7-8% use
+92% (AWS) / 93% (combined) fall in the modeled dotted fragment; only ~7% use
 bracket/wildcard/filter syntax abstracted to Maybe. The `$$` context-object and
 `States.*` intrinsic operands are not document references and cannot miss a field.
+CNCF uses jq expressions; the 15 jq field reads StepCheck lowers all fall in the dotted fragment.

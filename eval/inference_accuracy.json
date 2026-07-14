@@ -1,25 +1,25 @@
 {
   "workflows": 23,
-  "tasks_labeled": 137,
+  "tasks_labeled": 172,
   "idempotency": {
     "property": "idempotency",
-    "labeled": 137,
-    "predicted": 110,
-    "abstained": 27,
-    "correct": 77,
+    "labeled": 172,
+    "predicted": 140,
+    "abstained": 32,
+    "correct": 107,
     "wrong": 33,
-    "accuracy_on_predicted": 70,
-    "coverage": 80.3
+    "accuracy_on_predicted": 76.4,
+    "coverage": 81.4
   },
   "persistence": {
     "property": "persistence",
-    "labeled": 137,
-    "predicted": 110,
-    "abstained": 27,
-    "correct": 96,
-    "wrong": 14,
-    "accuracy_on_predicted": 87.3,
-    "coverage": 80.3
+    "labeled": 172,
+    "predicted": 140,
+    "abstained": 32,
+    "correct": 119,
+    "wrong": 21,
+    "accuracy_on_predicted": 85,
+    "coverage": 81.4
   },
   "per_task": [
     {
@@ -49,7 +49,7 @@
     {
       "file": "ship-order.asl.json",
       "task": "Initate Packaging and Shipping",
-      "gold_idem": false,
+      "gold_idem": true,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -87,6 +87,22 @@
       "pred_pers": false
     },
     {
+      "file": "ship-order.asl.json",
+      "task": "Reserve Product",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "ship-order.asl.json",
+      "task": "Notify Delayed",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
       "file": "statemachine.asl.json",
       "task": "ReserveFlight",
       "gold_idem": false,
@@ -115,7 +131,7 @@
       "task": "ConfirmFlight",
       "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -123,7 +139,7 @@
       "task": "ConfirmCarRental",
       "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -139,13 +155,13 @@
       "task": "RefundPayment",
       "gold_idem": false,
       "pred_idem": false,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": true
     },
     {
       "file": "statemachine.asl.json",
       "task": "CancelRentalReservation",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -153,7 +169,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "CancelFlightReservation",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -175,8 +191,48 @@
       "pred_pers": false
     },
     {
-      "file": "create-purchase-order-statemachine.asl.json",
-      "task": "Send Purchase Order Email",
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Update stock",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": false
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Send stock reserved event",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Write Item to InventoryReservationTable",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Send create-purchase-order event",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Send stock unavailable event",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "reserve-stock-statemachine.asl.json",
+      "task": "Send stock unavailable notification",
       "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
@@ -184,10 +240,18 @@
     },
     {
       "file": "create-purchase-order-statemachine.asl.json",
-      "task": "Update Inventory",
+      "task": "Send Purchase Order Email",
       "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
+      "pred_pers": false
+    },
+    {
+      "file": "create-purchase-order-statemachine.asl.json",
+      "task": "Update Inventory",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": false,
       "pred_pers": false
     },
     {
@@ -205,6 +269,22 @@
       "pred_idem": true,
       "gold_pers": false,
       "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Update record",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Add record to target DDB table",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
     },
     {
       "file": "statemachine.asl.json",
@@ -243,7 +323,7 @@
       "task": "Move Account To OU",
       "gold_idem": true,
       "pred_idem": true,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -265,7 +345,7 @@
     {
       "file": "StateMachine.asl.json",
       "task": "Bedrock InvokeModel",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -273,7 +353,7 @@
     {
       "file": "dataquality.asl.json",
       "task": "Copy input file",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -307,7 +387,7 @@
       "task": "Aggregate Data",
       "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -321,9 +401,9 @@
     {
       "file": "businessrules_orchestration.asl.json",
       "task": "Audit Request",
-      "gold_idem": false,
+      "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -337,9 +417,9 @@
     {
       "file": "businessrules_orchestration.asl.json",
       "task": "Audit Response",
-      "gold_idem": false,
+      "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -384,27 +464,19 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "StartContentModeration",
-      "gold_idem": false,
-      "pred_idem": null,
-      "gold_pers": false,
-      "pred_pers": null
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "Wait for ContentModeration Callback",
-      "gold_idem": true,
-      "pred_idem": false,
-      "gold_pers": false,
-      "pred_pers": true
-    },
-    {
-      "file": "statemachine.asl.json",
       "task": "GetContentModeration",
       "gold_idem": true,
       "pred_idem": true,
       "gold_pers": false,
       "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "StartContentModeration",
+      "gold_idem": false,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
     },
     {
       "file": "statemachine.asl.json",
@@ -416,27 +488,19 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "Write Rekognition Content Moderation Results to file",
-      "gold_idem": null,
-      "pred_idem": false,
-      "gold_pers": null,
-      "pred_pers": false
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "StartLabelDetection",
-      "gold_idem": false,
-      "pred_idem": true,
-      "gold_pers": false,
-      "pred_pers": false
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "Wait for LabelDetection Callback",
+      "task": "Wait for ContentModeration Callback",
       "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Write Rekognition Content Moderation Results to file",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": false
     },
     {
       "file": "statemachine.asl.json",
@@ -444,6 +508,14 @@
       "gold_idem": true,
       "pred_idem": true,
       "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "StartLabelDetection",
+      "gold_idem": false,
+      "pred_idem": true,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -456,27 +528,27 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "Write Rekognition Label Detection Results to File",
-      "gold_idem": null,
-      "pred_idem": false,
-      "gold_pers": null,
-      "pred_pers": false
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "StartSegmentDetection",
-      "gold_idem": false,
-      "pred_idem": true,
-      "gold_pers": false,
-      "pred_pers": false
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "Wait for SegmentDetection Callback",
+      "task": "Wait for LabelDetection Callback",
       "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Write Rekognition Label Detection Results to File",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "MoveProcessedFiles",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": true,
+      "pred_pers": false
     },
     {
       "file": "statemachine.asl.json",
@@ -484,6 +556,14 @@
       "gold_idem": true,
       "pred_idem": true,
       "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "StartSegmentDetection",
+      "gold_idem": false,
+      "pred_idem": true,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -496,18 +576,18 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "Write Rekognition Segmet Results to File",
-      "gold_idem": null,
+      "task": "Wait for SegmentDetection Callback",
+      "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": null,
-      "pred_pers": false
+      "gold_pers": true,
+      "pred_pers": true
     },
     {
       "file": "statemachine.asl.json",
-      "task": "MoveProcessedFiles",
-      "gold_idem": null,
-      "pred_idem": true,
-      "gold_pers": null,
+      "task": "Write Rekognition Segmet Results to File",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -523,7 +603,7 @@
       "task": "Disable Instance Termination",
       "gold_idem": true,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -541,6 +621,30 @@
       "pred_idem": null,
       "gold_pers": true,
       "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Attach Volume",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Allow Forensic Instance Ingress",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Tag Instance as Quarantine",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
     },
     {
       "file": "statemachine.asl.json",
@@ -583,33 +687,9 @@
       "pred_pers": false
     },
     {
-      "file": "statemachine.asl.json",
-      "task": "Attach Volume",
-      "gold_idem": true,
-      "pred_idem": null,
-      "gold_pers": true,
-      "pred_pers": null
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "Allow Forensic Instance Ingress",
-      "gold_idem": true,
-      "pred_idem": null,
-      "gold_pers": false,
-      "pred_pers": null
-    },
-    {
-      "file": "statemachine.asl.json",
-      "task": "Tag Instance as Quarantine",
-      "gold_idem": true,
-      "pred_idem": false,
-      "gold_pers": false,
-      "pred_pers": true
-    },
-    {
       "file": "checkout_workflow.asl.json",
       "task": "Set Order, Payment and Shipping Status",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -617,15 +697,15 @@
     {
       "file": "checkout_workflow.asl.json",
       "task": "Third Party Payment Service HTTPS Endpoint",
-      "gold_idem": null,
+      "gold_idem": false,
       "pred_idem": false,
-      "gold_pers": null,
+      "gold_pers": true,
       "pred_pers": true
     },
     {
       "file": "checkout_workflow.asl.json",
       "task": "Set Payment Status: Unsuccessful",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -641,7 +721,7 @@
     {
       "file": "checkout_workflow.asl.json",
       "task": "Set Payment Status: Successful",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -649,15 +729,15 @@
     {
       "file": "checkout_workflow.asl.json",
       "task": "Third Party Shipping Service HTTPS Endpoint",
-      "gold_idem": null,
+      "gold_idem": false,
       "pred_idem": false,
-      "gold_pers": null,
+      "gold_pers": true,
       "pred_pers": true
     },
     {
       "file": "checkout_workflow.asl.json",
       "task": "Set Shipping Status: Successful",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -665,7 +745,7 @@
     {
       "file": "checkout_workflow.asl.json",
       "task": "Set Shipping Status: Unsuccessful",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": true
@@ -713,7 +793,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "ConfirmFlight",
-      "gold_idem": false,
+      "gold_idem": true,
       "pred_idem": null,
       "gold_pers": true,
       "pred_pers": null
@@ -721,7 +801,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "ConfirmCarRental",
-      "gold_idem": false,
+      "gold_idem": true,
       "pred_idem": null,
       "gold_pers": true,
       "pred_pers": null
@@ -737,7 +817,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "RefundPayment",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": true
@@ -745,7 +825,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "CancelRentalReservation",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -753,7 +833,7 @@
     {
       "file": "statemachine.asl.json",
       "task": "CancelFlightReservation",
-      "gold_idem": true,
+      "gold_idem": false,
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
@@ -779,7 +859,7 @@
       "task": "CPUStressInstances",
       "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -803,7 +883,7 @@
       "task": "StopInstances",
       "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -827,7 +907,7 @@
       "task": "TerminateInstances",
       "gold_idem": false,
       "pred_idem": false,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -907,7 +987,7 @@
       "task": "StartTranscriptionJob",
       "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -928,26 +1008,10 @@
     },
     {
       "file": "workflow.asl.json",
-      "task": "Bedrock InvokeModel",
+      "task": "Wait for user feedback",
       "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": false,
-      "pred_pers": false
-    },
-    {
-      "file": "workflow.asl.json",
-      "task": "Call third-party API",
-      "gold_idem": null,
-      "pred_idem": null,
-      "gold_pers": null,
-      "pred_pers": null
-    },
-    {
-      "file": "workflow.asl.json",
-      "task": "Wait for user feedback",
-      "gold_idem": null,
-      "pred_idem": false,
-      "gold_pers": null,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -955,7 +1019,7 @@
       "task": "Generate Avatar",
       "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": false
     },
     {
@@ -965,6 +1029,22 @@
       "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
+    },
+    {
+      "file": "workflow.asl.json",
+      "task": "Bedrock InvokeModel",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "workflow.asl.json",
+      "task": "Call third-party API",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
     },
     {
       "file": "statemachine.asl.json",
@@ -1000,17 +1080,17 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "CheckDeletingStackSetStatus",
+      "task": "DeleteStackInstances",
       "gold_idem": true,
-      "pred_idem": true,
+      "pred_idem": false,
       "gold_pers": false,
       "pred_pers": false
     },
     {
       "file": "statemachine.asl.json",
-      "task": "DeleteStackInstances",
+      "task": "CheckDeletingStackSetStatus",
       "gold_idem": true,
-      "pred_idem": false,
+      "pred_idem": true,
       "gold_pers": false,
       "pred_pers": false
     },
@@ -1041,9 +1121,9 @@
     {
       "file": "BlogBuySellSM.asl.json",
       "task": "Route For Approval (Callback)",
-      "gold_idem": null,
+      "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": null,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -1075,7 +1155,7 @@
       "task": "Log Reject",
       "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -1139,7 +1219,7 @@
       "task": "Combine Part Files",
       "gold_idem": false,
       "pred_idem": null,
-      "gold_pers": false,
+      "gold_pers": true,
       "pred_pers": null
     },
     {
@@ -1160,10 +1240,26 @@
     },
     {
       "file": "statemachine.asl.json",
-      "task": "Create idempotency settings (key and ttl)",
-      "gold_idem": null,
+      "task": "Get location Summary",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Extract Data",
+      "gold_idem": true,
       "pred_idem": false,
-      "gold_pers": null,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create idempotency settings (key and ttl)",
+      "gold_idem": true,
+      "pred_idem": false,
+      "gold_pers": false,
       "pred_pers": true
     },
     {
@@ -1197,6 +1293,110 @@
       "pred_idem": false,
       "gold_pers": true,
       "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "(which can fail occasionally)",
+      "gold_idem": true,
+      "pred_idem": null,
+      "gold_pers": false,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Data Source",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Evaluation Job",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "CreateKnowledgeBase",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get Evaluation Job Status",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get Ingestion Job",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Start Ingestion Job",
+      "gold_idem": false,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Data Source 2",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Evaluation Job 2",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Create Knowledge Base 2",
+      "gold_idem": false,
+      "pred_idem": false,
+      "gold_pers": true,
+      "pred_pers": true
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get Evaluation Job Status 2",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Get Ingestion Job 2",
+      "gold_idem": true,
+      "pred_idem": true,
+      "gold_pers": false,
+      "pred_pers": false
+    },
+    {
+      "file": "statemachine.asl.json",
+      "task": "Start Ingestion Job 2",
+      "gold_idem": false,
+      "pred_idem": null,
+      "gold_pers": true,
+      "pred_pers": null
     }
   ]
 }

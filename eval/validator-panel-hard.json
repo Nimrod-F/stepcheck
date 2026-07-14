@@ -1,5 +1,6 @@
 {
   "generated_by": "eval/validator_panel.js",
+  "hard_mutants": true,
   "corpus_dir": "C:\\Users\\foldv\\Downloads\\ICSOC_Typecheking\\corpus\\asl",
   "workflows": 193,
   "tools": {
@@ -11,93 +12,88 @@
   "in_the_wild": {
     "per_tool": {
       "statelint": {
-        "flagged": 113,
-        "problems": 499
+        "flagged": 0,
+        "problems": 0
       },
       "asl-validator": {
-        "flagged": 18,
-        "problems": 29
+        "flagged": 0,
+        "problems": 0
       },
       "aws": {
-        "flagged": 30,
-        "problems": 94
+        "flagged": 0,
+        "problems": 0
       }
     },
-    "stepcheck_by_class": {
-      "retry": 20,
-      "compensation": 78,
-      "temporal": 22,
-      "structural": 10
-    },
+    "stepcheck_by_class": {},
     "venn_vs_stepcheck": {
-      "stepcheck_only": 36,
-      "baseline_only": 55,
-      "both": 63,
-      "neither": 39
+      "stepcheck_only": 0,
+      "baseline_only": 0,
+      "both": 0,
+      "neither": 0
     },
     "note": "baseline = union of the available validators; stepcheck_only is dominated by the semantic classes no validator expresses."
   },
   "mutation_detection": {
     "structural": {
       "label": "Dangling transition (SC0002)",
-      "applicable": 166,
+      "applicable": 42,
       "statelint": {
-        "detected": 166,
+        "detected": 42,
         "recall_pct": 100,
-        "any_new_problem": 166
+        "any_new_problem": 42
       },
       "asl-validator": {
-        "detected": 156,
-        "recall_pct": 94,
-        "any_new_problem": 156
+        "detected": 35,
+        "recall_pct": 83.3,
+        "any_new_problem": 35
       },
       "aws": {
-        "detected": 166,
+        "detected": 42,
         "recall_pct": 100,
-        "any_new_problem": 166
+        "any_new_problem": 42
       }
     },
     "contract": {
       "label": "Broken data binding (SC1003)",
-      "applicable": 141,
+      "applicable": 166,
       "statelint": {
-        "detected": 140,
-        "recall_pct": 99.3,
-        "any_new_problem": 140
+        "detected": 165,
+        "recall_pct": 99.4,
+        "any_new_problem": 165
       },
       "asl-validator": {
-        "detected": 132,
-        "recall_pct": 93.6,
-        "any_new_problem": 132
+        "detected": 161,
+        "recall_pct": 97,
+        "any_new_problem": 161
       },
       "aws": {
-        "detected": 136,
-        "recall_pct": 96.5,
-        "any_new_problem": 136
+        "detected": 166,
+        "recall_pct": 100,
+        "any_new_problem": 166
       }
     },
     "retry": {
       "label": "Unsafe retry (SC3001)",
-      "applicable": 103,
+      "applicable": 111,
       "statelint": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 103
+        "any_new_problem": 111
       },
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 2
       },
       "aws": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 103
+        "any_new_problem": 111
       }
     },
     "compensation": {
       "label": "Missing compensation (SC4001)",
-      "applicable": 19,
+      "applicable": 56,
       "statelint": {
         "detected": 0,
         "recall_pct": 0,
@@ -106,7 +102,7 @@
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 6
+        "any_new_problem": 5
       },
       "aws": {
         "detected": 0,
@@ -125,12 +121,12 @@
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 1
       },
       "aws": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 1
       }
     },
     "temporal": {
@@ -144,12 +140,12 @@
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 2
       },
       "aws": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 3
       }
     }
   },

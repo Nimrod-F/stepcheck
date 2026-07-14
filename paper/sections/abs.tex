@@ -1,0 +1,32 @@
+AWS Step Functions workflows are executable JSON artifacts that run
+real business processes, yet available validators check only syntax
+and structural well-formedness: data-flow mistakes, unsafe retries,
+missing compensations, parallel write races, and unbounded callbacks
+all deploy and fail only in production. We present \textsc{StepCheck},
+a static verifier for the deployed artifact itself. Its core is a
+flow-sensitive analysis of the \textsc{Asl} I/O pipeline that reports
+a missing-field access as an error only when, under the modeled ASL I/O semantics, every execution reaching
+the read would fail: in the native and declared tiers, every
+error-level report is a true positive,
+while inferred premises yield only non-blocking warnings. Seven
+further checks cover structural, contract, ordering, retry,
+concurrency, temporal, and compensation properties, graded by the
+provenance of the semantic facts behind them. On real workflows
+spanning AWS samples, CNCF examples, independent definitions, and
+SAM/CloudFormation/CDK deployments, schema validators miss all the
+targeted semantic classes, and three formal workflow-soundness
+checkers (Woflan, BPMN Analyzer, BProVe) detect almost none of them
+while misclassifying 8--29\% of valid multi-terminal workflows as
+unsound. An industrial automotive case study's lead developer
+confirmed timeout, data-flow, and concurrency faults, and
+\textsc{StepCheck} re-finds independently fixed production bugs. It
+runs as a drop-in build-time gate with latency below 21\,ms.
+
+
+
+
+
+
+\keywords{Serverless computing \and Workflow orchestration \and AWS
+Step Functions \and Static analysis \and Data-flow analysis \and Saga
+compensation}

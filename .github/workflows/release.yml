@@ -27,6 +27,7 @@ jobs:
       matrix:
         include:
           - { os: ubuntu-latest,  target: x86_64-unknown-linux-gnu, asset: stepcheck-linux-x64 }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, asset: stepcheck-linux-arm64 }
           # Intel-Mac binary is cross-compiled on the Apple-Silicon runner: the
           # scarce macos-13 (Intel) runner queues for a long time, whereas
           # macos-14 targets x86_64-apple-darwin fine and is readily available.

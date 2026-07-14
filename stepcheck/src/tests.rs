@@ -615,6 +615,22 @@ fn dataflow_no_dead_guard_on_opaque_input() {
     assert!(!sink.has_code("SC1110"), "must not flag a guard against opaque input: {:#?}", sink.diagnostics);
 }
 
+// ----- retry safety (SC3001) ------------------------------------------------
+
+#[test]
+fn retry_flags_broad_retry_on_non_idempotent_task() {
+    let src = r#"{"StartAt":"Charge","States":{
+        "Charge":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+          "Retry":[{"ErrorEquals":["States.ALL"]}],"End":true}}}"#;
+    let mut sc = annot::Sidecar::default();
+    sc.tasks.insert(
+        "Charge".into(),
+        annot::TaskAnnot { idempotent: Some(false), effect: Some("charge".into()), ..Default::default() },
+    );
+    let sink = check_asl(src, Some(&sc));
+    assert!(sink.has_code("SC3001"), "expected unsafe-retry diagnostic: {:#?}", sink.diagnostics);
+}
+
 // ----- execution oracle: independent witness of the soundness theorem -------
 
 #[test]
@@ -1005,4 +1021,91 @@ fn dataflow_certificate_checks_cyclic_report() {
     assert!(cert.ok(), "certificate obligations should hold");
     assert_eq!(cert.sc1101_reports, sc1101, "certificate and diagnostics should agree");
     assert!(cert.postconditions > 0, "certificate should check finite edge obligations");
+}
+
+// ---------------------------------------------------------------------------
+// Hard mutants (W1): each boundary variant is a genuine, reparsable defect, and
+// each behaves at its analysis's ⊤ / coverage / family boundary as designed.
+// ---------------------------------------------------------------------------
+
+use crate::mutate::{mutate, mutate_hard, MutationKind};
+
+/// Full pipeline with naming inference (the tier the mutation study uses).
+fn verify_infer(mut wf: ir::Workflow) -> diag::DiagnosticSink {
+    let mut sink = diag::DiagnosticSink::new();
+    annot::resolve(&mut wf, None, true, &mut sink);
+    passes::run_pipeline(&passes::default_pipeline(), &wf, &mut sink);
+    sink
+}
+
+#[test]
+fn hard_concurrency_dynamic_name_escapes_sc5001() {
+    let src = r#"{"StartAt":"P","States":{
+        "P":{"Type":"Parallel","End":true,"Branches":[
+            {"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}},
+            {"StartAt":"B","States":{"B":{"Type":"Pass","End":true}}}]}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    // Easy: static shared table is a statically-resolvable resource -> SC5001.
+    let easy = mutate(&wf, MutationKind::Concurrency, 0).unwrap();
+    assert!(verify_infer(easy).has_code("SC5001"), "easy concurrency mutant should raise SC5001");
+    // Hard: dynamically-named table -> resource identity lifts to ⊤ -> no SC5001.
+    let hard = mutate_hard(&wf, MutationKind::Concurrency, 0).unwrap();
+    assert!(!verify_infer(hard).has_code("SC5001"), "hard concurrency mutant must escape SC5001 (dynamic resource)");
+}
+
+#[test]
+fn hard_temporal_reference_paths_escape_sc6003() {
+    let src = r#"{"StartAt":"T","States":{
+        "T":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","Parameters":{"FunctionName":"f"},"End":true}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    let easy = mutate(&wf, MutationKind::Temporal, 0).unwrap();
+    assert!(verify_infer(easy).has_code("SC6003"), "easy temporal mutant should raise SC6003");
+    let hard = mutate_hard(&wf, MutationKind::Temporal, 0).unwrap();
+    assert!(!verify_infer(hard.clone()).has_code("SC6003"), "hard temporal mutant must escape SC6003 (reference-path values)");
+    let json = serde_json::to_string(&asl::emit(&hard)).unwrap();
+    assert!(json.contains("HeartbeatSecondsPath") && json.contains("TimeoutSecondsPath"),
+            "hard temporal mutant must emit reference-path fields: {json}");
+}
+
+#[test]
+fn hard_compensation_non_compensating_catch_caught_by_sibling() {
+    let src = r#"{"StartAt":"Reserve","States":{
+        "Reserve":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","Parameters":{"FunctionName":"reserveInventory"},"End":true}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    let hard = mutate_hard(&wf, MutationKind::Compensation, 0).unwrap();
+    let sink = verify_infer(hard);
+    // The presence-only SC4001 does NOT fire (there is a Catch); the effect-aware
+    // sibling SC4010 does -- the family catches it, the operator's code does not.
+    assert!(!sink.has_code("SC4001"), "hard compensation mutant should not raise the presence-only SC4001");
+    assert!(sink.has_code("SC4010"), "hard compensation mutant should be caught by the sibling SC4010");
+}
+
+#[test]
+fn hard_structural_nested_dangling_still_caught() {
+    let src = r#"{"StartAt":"P","States":{
+        "P":{"Type":"Parallel","End":true,"Branches":[
+            {"StartAt":"A","States":{"A":{"Type":"Pass","Next":"B"},"B":{"Type":"Pass","End":true}}}]}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    let hard = mutate_hard(&wf, MutationKind::Structural, 0).unwrap();
+    assert!(verify_infer(hard).has_code("SC0002"),
+            "structural reachability is exact and recurses: a nested dangling edge must still be caught");
+}
+
+#[test]
+fn hard_mutants_emit_reparsable_asl() {
+    // Every hard mutant that applies must round-trip through the ASL emitter.
+    let src = r#"{"StartAt":"Reserve","States":{
+        "Reserve":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke",
+                   "Parameters":{"FunctionName":"reserveInventory","Payload":{"id.$":"$.orderId"}},"Next":"P"},
+        "P":{"Type":"Parallel","End":true,"Branches":[
+            {"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}},
+            {"StartAt":"B","States":{"B":{"Type":"Pass","End":true}}}]}}}"#;
+    let wf = asl::parse_str(src, "t").unwrap();
+    for kind in MutationKind::all_hard() {
+        if let Some(m) = mutate_hard(&wf, kind, 0) {
+            let json = serde_json::to_string(&asl::emit(&m)).unwrap();
+            asl::parse_str(&json, "roundtrip")
+                .unwrap_or_else(|e| panic!("hard {kind:?} mutant must emit reparsable ASL: {e}\n{json}"));
+        }
+    }
 }

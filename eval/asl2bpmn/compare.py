@@ -46,6 +46,17 @@ EXPECTED = {  # mutation class -> the SC code that must catch it
     "concurrency": "SC5001",
     "temporal": "SC6003",
 }
+# Analysis-family codes (siblings) that also legitimately catch a class. Used by
+# the hard-mutant study, where a boundary defect may be caught by a sibling
+# (e.g. a non-compensating Catch by SC4010 rather than SC4001).
+FAMILY = {
+    "structural": ["SC0002"],
+    "contract": ["SC1003"],
+    "retry": ["SC3001"],
+    "compensation": ["SC4001", "SC4010", "SC4011"],
+    "concurrency": ["SC5001", "SC5002", "SC5003"],
+    "temporal": ["SC6003"],
+}
 CLASS_LABEL = {
     "structural": "Dangling transition (SC0002)",
     "contract": "Broken data binding (SC1003)",
@@ -86,10 +97,21 @@ def run_stepcheck(binexe, args):
     except Exception as e:
         return "", -1
 
-def native_codes(binexe, aslpath):
-    out, _ = run_stepcheck(binexe, ["check", "--json", "--infer", aslpath])
+def native_codes(binexe, aslpath, result_shapes=False):
+    """Per-code diagnostic *counts* (dict code->n). A fresh detection is a count
+    increase over the control, so a newly-injected instance of a code counts even
+    when that code already fires elsewhere in the workflow (matching the native
+    hard study's count-based fresh criterion). `code in counts` still works for the
+    easy presence check."""
+    args = ["check", "--json", "--infer"]
+    if result_shapes:
+        args.append("--result-shapes")
+    out, _ = run_stepcheck(binexe, args + [aslpath])
     try:
-        return sorted({d["code"] for d in json.loads(out).get("diagnostics", [])})
+        counts = {}
+        for d in json.loads(out).get("diagnostics", []):
+            counts[d["code"]] = counts.get(d["code"], 0) + 1
+        return counts
     except Exception:
         return None
 
@@ -333,7 +355,9 @@ def main():
     ap.add_argument("--bin", default=os.path.join(ROOT, "stepcheck", "target", "release", "stepcheck.exe"))
     ap.add_argument("--node", default="node")
     ap.add_argument("--encode", default=os.path.join(ROOT, "eval", "asl2bpmn", "encode.js"))
-    ap.add_argument("--out", default=os.path.join(ROOT, "eval", "asl2bpmn-comparison.json"))
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--hard", action="store_true",
+                    help="inject the hard (⊤/coverage-boundary) mutant of each class and credit StepCheck at the analysis-family level")
     ap.add_argument("--bpmn-analyzer", default=BPMN_ANALYZER, help="path to rust_bpmn_analyzer_cli(.exe)")
     ap.add_argument("--bprove-parser", default=BPROVE_PARSER, help="path to BPMNOS_Parser.jar")
     ap.add_argument("--bprove-maude-model", default=BPROVE_MAUDE_MODEL, help="path to BPMNOS_MODEL_CHECKER.maude")
@@ -343,6 +367,9 @@ def main():
     BPROVE_PARSER = args.bprove_parser
     BPROVE_MAUDE_MODEL = args.bprove_maude_model
     BPROVE_TIMEOUT = args.bprove_timeout
+    if args.out is None:
+        args.out = os.path.join(ROOT, "eval",
+                                "asl2bpmn-comparison-hard.json" if args.hard else "asl2bpmn-comparison.json")
 
     files = sorted(glob.glob(os.path.join(args.corpus, "**", "*.json"), recursive=True))
     if args.include:
@@ -368,6 +395,9 @@ def main():
         out, rc = run_stepcheck(args.bin, ["emit", f, "--out", ctl_asl])
         if rc != 0 or not os.path.exists(ctl_asl):
             print(f"  emit failed: {base}", file=sys.stderr); continue
+        # Control StepCheck codes, so hard-mutant detection is credited only for a
+        # *fresh* finding (matching the native fresh criterion), not a pre-existing one.
+        ctl_counts = native_codes(args.bin, ctl_asl, result_shapes=args.hard) or {}
         encode(args.node, args.encode, ctl_asl, ctl_bpmn)
         control = woflan_verdict(ctl_bpmn)
         control_ba = bpmn_analyzer_verdict(ctl_bpmn)
@@ -394,12 +424,21 @@ def main():
                "classes": {}}
         for k in EXPECTED:
             mut_asl = os.path.join(tmp, f"{base}.{k}.json")
-            out, rc = run_stepcheck(args.bin, ["mutate", f, "--kind", k, "--out", mut_asl])
+            mut_args = ["mutate", f, "--kind", k, "--out", mut_asl]
+            if args.hard:
+                mut_args.append("--hard")
+            out, rc = run_stepcheck(args.bin, mut_args)
             if rc != 0 or not os.path.exists(mut_asl):
                 continue  # no applicable site
             per_class[k]["applicable"] += 1
-            codes = native_codes(args.bin, mut_asl) or []
-            nat = EXPECTED[k] in codes
+            codes = native_codes(args.bin, mut_asl, result_shapes=args.hard) or {}
+            # Hard mutants credit any *fresh* sibling in the class's analysis
+            # family: a count increase over the control (matching the native
+            # study); easy mutants require the single expected code (unchanged).
+            if args.hard:
+                nat = any(codes.get(c, 0) > ctl_counts.get(c, 0) for c in FAMILY[k])
+            else:
+                nat = EXPECTED[k] in codes
             mut_bpmn = os.path.join(tmp, f"{base}.{k}.bpmn")
             encode(args.node, args.encode, mut_asl, mut_bpmn)
             mutant = woflan_verdict(mut_bpmn)
@@ -447,6 +486,8 @@ def main():
 
     report = {
         "generated_by": "eval/asl2bpmn/compare.py",
+        "hard_mutants": args.hard,
+        "stepcheck_crediting": "analysis-family (siblings)" if args.hard else "single expected code",
         "verifier": "Woflan (van der Aalst & Verbeek) via pm4py " + pm4py.__version__,
         "verifier2": "BPMN Analyzer 2.0 (Kraeuter 2024) via rust_bpmn_analyzer CLI" if BPMN_ANALYZER else "not configured",
         "verifier3": "BProVe/BPMNOS (Corradini et al.) via BPMNOS parser + Maude" if bprove_configured() else "not configured",

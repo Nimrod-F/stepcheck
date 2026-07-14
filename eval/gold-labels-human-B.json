@@ -68,7 +68,7 @@
     },
     "RefundPayment": {
       "idempotent": false,
-      "persistent": false
+      "persistent": true
     },
     "CancelRentalReservation": {
       "idempotent": false,
@@ -119,8 +119,8 @@
       "persistent": true
     },
     "Update Inventory": {
-      "idempotent": true,
-      "persistent": true
+      "idempotent": false,
+      "persistent": false
     }
   },
   "sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json": {
@@ -173,14 +173,14 @@
   },
   "sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json": {
     "Bedrock InvokeModel": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": false
     }
   },
   "sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json": {
     "Copy input file": {
-      "idempotent": true,
-      "persistent": true
+      "idempotent": false,
+      "persistent": false
     },
     "Data quality using Lambda": {
       "idempotent": true,
@@ -357,7 +357,7 @@
   },
   "sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json": {
     "Set Order, Payment and Shipping Status": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Third Party Payment Service HTTPS Endpoint": {
@@ -365,7 +365,7 @@
       "persistent": true
     },
     "Set Payment Status: Unsuccessful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Send PaymentFailed Event to Notification Bus": {
@@ -373,7 +373,7 @@
       "persistent": false
     },
     "Set Payment Status: Successful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Third Party Shipping Service HTTPS Endpoint": {
@@ -381,11 +381,11 @@
       "persistent": true
     },
     "Set Shipping Status: Successful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Set Shipping Status: Unsuccessful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Send ShippingFailed Event to Notification Bus": {

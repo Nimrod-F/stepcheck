@@ -18,6 +18,10 @@ back to executable ASL. Because raw ASL omits task semantics, StepCheck pairs so
 *native* checks with a lightweight *annotation* layer whose defaults are *inferred* from
 task names and resource bindings.
 
+## Implementation source hierarchy
+
+![StepCheck implementation source hierarchy](paper/figures/figure3-source-hierarchy.drawio.png)
+
 ## Layout
 
 | Path | What |
@@ -47,7 +51,7 @@ $BIN demo order-bad  | $BIN check /dev/stdin --annot ../corpus/dsl/order.sidecar
 $BIN stats ../corpus/asl                 # E1 corpus characterization
 $BIN eval  ../corpus/asl --infer         # E2 in-the-wild + E3 mutation study + E5 timing
 node ../eval/inference_accuracy.js       # E4 inference accuracy vs gold
-$BIN fixpoint-stats ../corpus/asl ../corpus/cncf > ../eval/fixpoint-stats.json  # data-flow fixpoint round/bound utilisation (termination)
+$BIN fixpoint-stats ../corpus/asl ../corpus/cncf ../corpus/dsl > ../eval/fixpoint-stats.json  # data-flow fixpoint round/bound utilisation (termination)
 node ../eval/asl2bpmn/encode.js ../corpus/asl --limit 30 --out ../eval/asl2bpmn/out --summary ../eval/asl2bpmn-summary.json  # WS-D BPMN baseline setup
 node ../eval/asl2bpmn/run_baselines.js --summary ../eval/asl2bpmn-summary.json --out ../eval/bpmn-baseline.json  # records BProVe/BPMN Analyze availability or raw runs
 ```
@@ -56,10 +60,12 @@ node ../eval/asl2bpmn/run_baselines.js --summary ../eval/asl2bpmn-summary.json -
 
 - **CI** (`.github/workflows/ci.yml`): builds and runs the full test suite on Linux,
   macOS, and Windows on every push and pull request (`cargo build`/`cargo test` gate;
-  `cargo fmt`/`cargo clippy` advisory).
+  `node eval/check_repro.js` replays the deterministic fixpoint claims; `cargo fmt`/
+  `cargo clippy` advisory).
 - **Release** (`.github/workflows/release.yml`): pushing a `vX.Y.Z` tag builds a
-  self-contained binary per platform, attaches them to the GitHub release, and
-  publishes the crate to **crates.io** and the wrapper package to **npm**.
+  self-contained binary for Linux x86_64/aarch64, macOS x86_64/arm64, and Windows
+  x86_64, attaches them to the GitHub release, and publishes the crate to
+  **crates.io** and the wrapper package to **npm**.
 - **Install**: `cargo install stepcheck` (Rust) or `npm install -g @nimrod-f/stepcheck`
   (the `npm/` wrapper downloads the matching prebuilt binary and exposes the `stepcheck`
   command; the npm package is scoped because the unscoped name collides with an existing
@@ -98,15 +104,23 @@ elsewhere.
 
 ## Headline results (all reproducible)
 
-- **193** real workflows analysed; **95** flagged in the wild. The data-flow analysis
-  fires **0** false positives (soundness); the concurrency analysis (conservative
-  overwriting-write rule) also fires **0** in the wild; the temporal analysis adds **33**
-  findings (SC6001 unbounded `waitForTaskToken` callbacks).
+- **193** real workflows analysed; **99** flagged in the wild. The data-flow analysis
+  fires **0** false positives on the default native run (soundness); the conservative
+  overwriting-write rule fires **0** in the wild, while cross-child composition adds **2**
+  SC5003 warnings; the temporal analysis adds **33** findings (SC6001 unbounded
+  `waitForTaskToken` callbacks).
 - Mutation study: **616** injected defects across six classes, **100%** detection.
   Baseline `statelint` detects structural (166/166) and broken-binding (140/141) but
   **0** of unsafe retry, missing compensation, concurrency, or temporal — **306/616 (50%)**.
-- Data-flow provenance (SC1101): **0/193** false positives; native + typed demonstrators in
-  `corpus/dataflow/`; typed-tier missing-field recall **84/126 (67%)** (`eval --strict-input`).
+- Hard-mutant study (operator–check independence): one boundary variant per class
+  (`--hard`), still a genuine defect. Recall maps where each check's power ends rather than
+  confirming it — data-flow/concurrency/temporal drop to **0** at their ⊤-boundary (sound
+  silence, not a false negative), compensation is caught by the sibling **SC4010** not the
+  operator's **SC4001**, retry degrades to **0.69**, structural stays exact at **1.00**, and the
+  contract break escapes SC1003 but is caught by the schema validators. See `eval/results-hard-mutants.json`.
+- Data-flow provenance (SC1101): **0/193** false positives on the default native run;
+  native + typed demonstrators in `corpus/dataflow/`; typed-tier missing-field recall
+  **88/126 (70%)** with `--result-shapes`.
 - Inference accuracy vs agreement-checked gold (23 wf, 137 labelled tasks): **70%** idempotency,
   **87%** persistence (≈80% coverage). In-the-wild warning precision vs human gold (κ 0.89/0.99):
   **92%** overall (46/50), **89%** for compensation warnings (SC4001).

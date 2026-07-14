@@ -1,0 +1,448 @@
+{
+  "generated_at": "2026-07-12T08:44:49.955Z",
+  "generated_by": "eval/native_census_verify.js",
+  "description": "Code-disjoint structural re-verification of all native-tier findings; structural_tp=true iff the ASL exhibits the flagged construct at the referenced state.",
+  "population_file": "eval/diagnostic-precision-population.json",
+  "scope": "native (census of all eligible findings)",
+  "totals": {
+    "by_code": {
+      "SC6001": {
+        "n": 33,
+        "tp": 33,
+        "fp": 0,
+        "unknown": 0
+      },
+      "SC0007": {
+        "n": 9,
+        "tp": 9,
+        "fp": 0,
+        "unknown": 0
+      },
+      "SC0010": {
+        "n": 1,
+        "tp": 1,
+        "fp": 0,
+        "unknown": 0
+      },
+      "SC5003": {
+        "n": 2,
+        "tp": 2,
+        "fp": 0,
+        "unknown": 0
+      }
+    },
+    "overall": {
+      "n": 45,
+      "tp": 45,
+      "fp": 0,
+      "unknown": 0
+    }
+  },
+  "findings": [
+    {
+      "audit_id": "DP-0009",
+      "workflow_id": "wf183",
+      "source_path": "wait-for-callback/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Start Task And Wait For Callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0021",
+      "workflow_id": "wf064",
+      "source_path": "dynamic-rest-api/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Choice based on API Call Method",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0026",
+      "workflow_id": "wf073",
+      "source_path": "event-driven-workflow-monitor/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "executeParallel[Branch0]/StartWorkflowMonitoring",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0027",
+      "workflow_id": "wf073",
+      "source_path": "event-driven-workflow-monitor/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "executeParallel[Branch1]/StopWorkflowMontoring",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0028",
+      "workflow_id": "wf093",
+      "source_path": "inventory-management-sam/statemachine/create-purchase-order-statemachine.asl.json",
+      "code": "SC0007",
+      "state": "ManualApprovalChoiceState",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0029",
+      "workflow_id": "wf093",
+      "source_path": "inventory-management-sam/statemachine/create-purchase-order-statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Send Purchase Order Email",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0032",
+      "workflow_id": "wf151",
+      "source_path": "shared-fallback-state-jsonata/statemachine/statemachine.asl.json",
+      "code": "SC0010",
+      "state": "QueryLanguage",
+      "structural_tp": true,
+      "basis": "not a valid state object"
+    },
+    {
+      "audit_id": "DP-0039",
+      "workflow_id": "wf189",
+      "source_path": "workflow-within-a-workflow/statemachines/main-state-machine.asl.json",
+      "code": "SC5003",
+      "state": "Start in parallel",
+      "structural_tp": true,
+      "basis": "branches 0 and 1 start ${NestingPatternAnotherStateMachineArn}"
+    },
+    {
+      "audit_id": "DP-0040",
+      "workflow_id": "wf189",
+      "source_path": "workflow-within-a-workflow/statemachines/main-state-machine.asl.json",
+      "code": "SC6001",
+      "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0044",
+      "workflow_id": "wf191",
+      "source_path": "workflow-within-a-workflow-cdk/statemachines/main-state-machine.asl.json",
+      "code": "SC5003",
+      "state": "Start in parallel",
+      "structural_tp": true,
+      "basis": "branches 0 and 1 start arn:aws:states:me-south-1:112233445566:stateMachine:NestedStateMachine0545D63E-B7mTHyUm3dld"
+    },
+    {
+      "audit_id": "DP-0045",
+      "workflow_id": "wf191",
+      "source_path": "workflow-within-a-workflow-cdk/statemachines/main-state-machine.asl.json",
+      "code": "SC6001",
+      "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0051",
+      "workflow_id": "wf087",
+      "source_path": "human-in-the-loop-tf/statemachines/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Notify Approver",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0055",
+      "workflow_id": "wf108",
+      "source_path": "parallel-human-approval/statemachine/StateMachine.asl.json",
+      "code": "SC6001",
+      "state": "Parallel[Branch0]/SNS Publish to Approver 1",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0056",
+      "workflow_id": "wf108",
+      "source_path": "parallel-human-approval/statemachine/StateMachine.asl.json",
+      "code": "SC6001",
+      "state": "Parallel[Branch1]/SNS Publish to Approver2",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0057",
+      "workflow_id": "wf108",
+      "source_path": "parallel-human-approval/statemachine/StateMachine.asl.json",
+      "code": "SC6001",
+      "state": "Parallel[Branch2]/SNS Publish to Approver3",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0081",
+      "workflow_id": "wf095",
+      "source_path": "lambda-orchestration-cdk/lambda_orchestration_cdk/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Buy or Sell?",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0082",
+      "workflow_id": "wf095",
+      "source_path": "lambda-orchestration-cdk/lambda_orchestration_cdk/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Request Human Approval",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0083",
+      "workflow_id": "wf096",
+      "source_path": "lambda-orchestration-cdk/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Buy or Sell?",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0084",
+      "workflow_id": "wf096",
+      "source_path": "lambda-orchestration-cdk/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Request Human Approval",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0085",
+      "workflow_id": "wf097",
+      "source_path": "lambda-orchestration-sam/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Buy or Sell?",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0086",
+      "workflow_id": "wf097",
+      "source_path": "lambda-orchestration-sam/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Request Human Approval",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0087",
+      "workflow_id": "wf098",
+      "source_path": "lambda-orchestration-tf/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Buy or Sell?",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0088",
+      "workflow_id": "wf098",
+      "source_path": "lambda-orchestration-tf/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Request Human Approval",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0097",
+      "workflow_id": "wf099",
+      "source_path": "lookout-for-vision-inference-sam/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "Anomalous Image?",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0100",
+      "workflow_id": "wf131",
+      "source_path": "selective-checkpointing/statemachine/statemachineParent.asl.json",
+      "code": "SC6001",
+      "state": "Approve Order Request",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0101",
+      "workflow_id": "wf131",
+      "source_path": "selective-checkpointing/statemachine/statemachineParent.asl.json",
+      "code": "SC6001",
+      "state": "Process Payment",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0104",
+      "workflow_id": "wf133",
+      "source_path": "selective-checkpointing-cdk/typescript/statemachine/statemachineParent.asl.json",
+      "code": "SC6001",
+      "state": "Approve Order Request",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0105",
+      "workflow_id": "wf133",
+      "source_path": "selective-checkpointing-cdk/typescript/statemachine/statemachineParent.asl.json",
+      "code": "SC6001",
+      "state": "Process Payment",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0108",
+      "workflow_id": "wf032",
+      "source_path": "automating-a-security-incident-with-step-functions-cdk/python/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "AskUser",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0110",
+      "workflow_id": "wf177",
+      "source_path": "uml-statemachine/statemachine/BlogBackgroundChecksSM.asl.json",
+      "code": "SC6001",
+      "state": "Parallel[Branch0]/Run Criminal Check",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0111",
+      "workflow_id": "wf177",
+      "source_path": "uml-statemachine/statemachine/BlogBackgroundChecksSM.asl.json",
+      "code": "SC6001",
+      "state": "Parallel[Branch1]/Run Financial Check",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0112",
+      "workflow_id": "wf178",
+      "source_path": "uml-statemachine/statemachine/BlogBuySellSM.asl.json",
+      "code": "SC6001",
+      "state": "Route For Approval (Callback)",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0113",
+      "workflow_id": "wf180",
+      "source_path": "uml-statemachine/statemachine/BlogServiceRequestSM.asl.json",
+      "code": "SC0007",
+      "state": "Choice After Open",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0115",
+      "workflow_id": "wf180",
+      "source_path": "uml-statemachine/statemachine/BlogServiceRequestSM.asl.json",
+      "code": "SC6001",
+      "state": "Cancel Request (Callback)",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0129",
+      "workflow_id": "wf119",
+      "source_path": "s3-glacier-multi-file-restore-sam/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Request Restore[Map]/Restore Object in S3",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0130",
+      "workflow_id": "wf138",
+      "source_path": "sfn-continous-running-glue-workflow-tf/statemachine/statemachine.asl.json",
+      "code": "SC0007",
+      "state": "CheckWorkFlowRunStatistics",
+      "structural_tp": true,
+      "basis": "Choice without Default"
+    },
+    {
+      "audit_id": "DP-0134",
+      "workflow_id": "wf179",
+      "source_path": "uml-statemachine/statemachine/BlogOpenRequestSM.asl.json",
+      "code": "SC6001",
+      "state": "Make STP Request (Callback)",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0135",
+      "workflow_id": "wf179",
+      "source_path": "uml-statemachine/statemachine/BlogOpenRequestSM.asl.json",
+      "code": "SC6001",
+      "state": "Route To Analyst (Callback)",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0136",
+      "workflow_id": "wf179",
+      "source_path": "uml-statemachine/statemachine/BlogOpenRequestSM.asl.json",
+      "code": "SC6001",
+      "state": "Route To Manager (Callback)",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0149",
+      "workflow_id": "wf048",
+      "source_path": "checkout-processing-workflow/statemachine/checkout_workflow.asl.json",
+      "code": "SC6001",
+      "state": "Third Party Payment Service HTTPS Endpoint",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0150",
+      "workflow_id": "wf048",
+      "source_path": "checkout-processing-workflow/statemachine/checkout_workflow.asl.json",
+      "code": "SC6001",
+      "state": "Third Party Shipping Service HTTPS Endpoint",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0173",
+      "workflow_id": "wf023",
+      "source_path": "usecases/genai-prompt-chaining-hitl/src/workflow.asl.json",
+      "code": "SC6001",
+      "state": "Wait for user feedback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0213",
+      "workflow_id": "wf146",
+      "source_path": "sfn-rekognition-video-catalog-workflow/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0214",
+      "workflow_id": "wf146",
+      "source_path": "sfn-rekognition-video-catalog-workflow/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Label Detection Map[Map]/Wait for LabelDetection Callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    },
+    {
+      "audit_id": "DP-0215",
+      "workflow_id": "wf146",
+      "source_path": "sfn-rekognition-video-catalog-workflow/statemachine/statemachine.asl.json",
+      "code": "SC6001",
+      "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
+      "structural_tp": true,
+      "basis": "callback with no Timeout/Heartbeat"
+    }
+  ]
+}

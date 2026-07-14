@@ -19,6 +19,7 @@ const VERSION = require("./package.json").version;
 // process.platform-process.arch -> release asset name.
 const ASSETS = {
   "linux-x64": "stepcheck-linux-x64",
+  "linux-arm64": "stepcheck-linux-arm64",
   "darwin-x64": "stepcheck-darwin-x64",
   "darwin-arm64": "stepcheck-darwin-arm64",
   "win32-x64": "stepcheck-win32-x64.exe",

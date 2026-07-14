@@ -1,0 +1,1097 @@
+{
+  "generated_at": "2026-07-09T14:36:01.767Z",
+  "generated_by": "eval/aws_validate_latency.js",
+  "corpus": {
+    "manifest": "corpus/manifest.json",
+    "workflows": 193
+  },
+  "sampling": {
+    "requested_calls": 50,
+    "completed_workflows": 50,
+    "seed": 20260709,
+    "unit": "one AWS ValidateStateMachineDefinition API call on one ASL definition"
+  },
+  "command": {
+    "aws": "aws stepfunctions validate-state-machine-definition --definition file://<workflow> --output json",
+    "stepcheck": "stepcheck check --json --infer <workflow>"
+  },
+  "environment": {
+    "aws_cli": "aws-cli/2.27.22 Python/3.13.3 Windows/11 exe/AMD64",
+    "node": "v22.16.0",
+    "region": "eu-central-1",
+    "profile": "research-profile",
+    "stepcheck_binary": "stepcheck/target/release/stepcheck.exe"
+  },
+  "summary": {
+    "aws_validate_state_machine_definition": {
+      "n": 50,
+      "errors": 0,
+      "mean_ms": 1806.3,
+      "p50_ms": 1716.3,
+      "p95_ms": 2429.1,
+      "max_ms": 3522.5,
+      "min_ms": 1571.6
+    },
+    "stepcheck_local_process": {
+      "n": 50,
+      "errors": 0,
+      "mean_ms": 14,
+      "p50_ms": 13.5,
+      "p95_ms": 16.4,
+      "max_ms": 33.2,
+      "min_ms": 11.5
+    }
+  },
+  "details": [
+    {
+      "id": "wf183",
+      "file": "corpus/asl/sfn-collection__wait-for-callback__statemachine__statemachine.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1723.9,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 33.2,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf014",
+      "file": "corpus/asl/sfn-examples__sam__app-sfn-appflow-integration__statemachines__CreateCatalogTable.json",
+      "topLevelStates": 23,
+      "totalStates": 26,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1919.8,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 16.1,
+        "diagnostics": 4,
+        "error": null
+      }
+    },
+    {
+      "id": "wf016",
+      "file": "corpus/asl/sfn-examples__sam__demo-bulk-delete-s3-objects__bulk-delete-objects-from-s3.asl.json",
+      "topLevelStates": 6,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1983.9,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.8,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf059",
+      "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator__sam__statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 2,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1574.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf148",
+      "file": "corpus/asl/sfn-collection__sfn-sns-task-timer__statemachine__TimeBoundedTasks.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 1,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1575.8,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.4,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf176",
+      "file": "corpus/asl/sfn-collection__tts-converter-cdk__typescript__statemachine__statemachine.asl.json",
+      "topLevelStates": 7,
+      "totalStates": 7,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1998.3,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 15.5,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf025",
+      "file": "corpus/asl/sfn-collection__activity-state-machine__statemachine__activity_state.asl.json",
+      "topLevelStates": 2,
+      "totalStates": 2,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1699.8,
+        "result": "FAIL",
+        "diagnostics": 1,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.8,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf010",
+      "file": "corpus/asl/sfn-examples__sam__app-local-testing-mock-config__statemachine__local_testing.asl.json",
+      "topLevelStates": 8,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1599.1,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf026",
+      "file": "corpus/asl/sfn-collection__activity-state-machine-tf__statemachines__statemachine.asl.json",
+      "topLevelStates": 2,
+      "totalStates": 2,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1656.8,
+        "result": "FAIL",
+        "diagnostics": 1,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.2,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf027",
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__dynamodb-semaphore-cleanfromincomplete.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1639.7,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.9,
+        "diagnostics": 3,
+        "error": null
+      }
+    },
+    {
+      "id": "wf048",
+      "file": "corpus/asl/sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json",
+      "topLevelStates": 12,
+      "totalStates": 12,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1772.2,
+        "result": "FAIL",
+        "diagnostics": 2,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.2,
+        "diagnostics": 9,
+        "error": null
+      }
+    },
+    {
+      "id": "wf150",
+      "file": "corpus/asl/sfn-collection__sfn-textract-callback-ts-cdk__statemachine__statemachine.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1666.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.8,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf063",
+      "file": "corpus/asl/sfn-collection__distributed-map-state-gif-generator__statemachine__workflow.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 6,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1611.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.4,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf129",
+      "file": "corpus/asl/sfn-collection__segment-detection-workflow__statemachine__statemachine.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 5,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 2731.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.5,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf049",
+      "file": "corpus/asl/sfn-collection__common-error-handling__statemachine__common_error_option1.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1865.8,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 11.8,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf024",
+      "file": "corpus/asl/sfn-collection__account-vending-machine__statemachine__statemachine.asl.json",
+      "topLevelStates": 13,
+      "totalStates": 16,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1622.7,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14,
+        "diagnostics": 4,
+        "error": null
+      }
+    },
+    {
+      "id": "wf134",
+      "file": "corpus/asl/sfn-collection__sfn-athena-query__statemachine__statemachine.asl.json",
+      "topLevelStates": 6,
+      "totalStates": 7,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1635.5,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.5,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf061",
+      "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator-tf__statemachines__statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 2,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1616.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 16.5,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf186",
+      "file": "corpus/asl/sfn-collection__word-filtering-script-generator__statemachine__statemachine.asl.json",
+      "topLevelStates": 9,
+      "totalStates": 9,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1716.3,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.7,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf185",
+      "file": "corpus/asl/sfn-collection__webhook-provider__statemachine__statemachine.asl.json",
+      "topLevelStates": 7,
+      "totalStates": 7,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1983.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.2,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf152",
+      "file": "corpus/asl/sfn-collection__simple-retry__statemachine__statemachine.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1571.6,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.6,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf182",
+      "file": "corpus/asl/sfn-collection__vod-transcode-delivery-cdk__typescript__statemachine__transcoding-statemachine.asl.json.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 8,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1638.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 15.7,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf128",
+      "file": "corpus/asl/sfn-collection__script-generator__statemachine__statemachine.asl.json",
+      "topLevelStates": 7,
+      "totalStates": 7,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1879.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.9,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf037",
+      "file": "corpus/asl/sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 27,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 2429.1,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.2,
+        "diagnostics": 6,
+        "error": null
+      }
+    },
+    {
+      "id": "wf053",
+      "file": "corpus/asl/sfn-collection__data-processing__sam__statemachine__statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 5,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1609.6,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.4,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf060",
+      "file": "corpus/asl/sfn-collection__distributed-map-csv-iterator__statemachine__statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 2,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1661.5,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.3,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf121",
+      "file": "corpus/asl/sfn-collection__saga-pattern-cdk__resources__statemachine.asl.json",
+      "topLevelStates": 12,
+      "totalStates": 12,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1821.8,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.6,
+        "diagnostics": 4,
+        "error": null
+      }
+    },
+    {
+      "id": "wf015",
+      "file": "corpus/asl/sfn-examples__sam__app-video-segment-detection-and-edition__statemachine__statemachine.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 5,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 3522.5,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 16.4,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf103",
+      "file": "corpus/asl/sfn-collection__moderated-image-catalog-cdk__python__statemachine__statemachine.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 8,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1797.6,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf029",
+      "file": "corpus/asl/sfn-collection__app-control-concurrency-with-dynamodb-tf__statemachines__statemachine.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 15,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1648,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 15,
+        "diagnostics": 6,
+        "error": null
+      }
+    },
+    {
+      "id": "wf056",
+      "file": "corpus/asl/sfn-collection__distributed-data-stream-aggregator__statemachine__data-processing-child.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 6,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1746.3,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf111",
+      "file": "corpus/asl/sfn-collection__quorum-with-parallel-pattern__statemachine__statemachine.asl.json",
+      "topLevelStates": 6,
+      "totalStates": 33,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1798.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.9,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf055",
+      "file": "corpus/asl/sfn-collection__distributed-data-stream-aggregator__statemachine__data-extraction-child.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1676.6,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.8,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf138",
+      "file": "corpus/asl/sfn-collection__sfn-continous-running-glue-workflow-tf__statemachine__statemachine.asl.json",
+      "topLevelStates": 10,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1656.1,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.4,
+        "diagnostics": 2,
+        "error": null
+      }
+    },
+    {
+      "id": "wf020",
+      "file": "corpus/asl/sfn-examples__sam__demo-fis-stepfunctions__stepfunction__fis.ec2.asl.json",
+      "topLevelStates": 15,
+      "totalStates": 15,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1774.3,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.1,
+        "diagnostics": 3,
+        "error": null
+      }
+    },
+    {
+      "id": "wf141",
+      "file": "corpus/asl/sfn-collection__sfn-eks-inventory__statemachine__statemachine.asl.json",
+      "topLevelStates": 2,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1958.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.5,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf081",
+      "file": "corpus/asl/sfn-collection__explicit-failure-with-parallel-states__statemachine__statemachine.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 8,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1621.4,
+        "result": "FAIL",
+        "diagnostics": 2,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.9,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf191",
+      "file": "corpus/asl/sfn-collection__workflow-within-a-workflow-cdk__statemachines__main-state-machine.asl.json",
+      "topLevelStates": 2,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1626.1,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 15.6,
+        "diagnostics": 5,
+        "error": null
+      }
+    },
+    {
+      "id": "wf151",
+      "file": "corpus/asl/sfn-collection__shared-fallback-state-jsonata__statemachine__statemachine.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1726,
+        "result": "FAIL",
+        "diagnostics": 14,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 1,
+        "ms": 13.1,
+        "diagnostics": 1,
+        "error": "{\n  \"diagnostics\": [\n    {\n      \"code\": \"SC0010\",\n      \"severity\": \"error\",\n      \"state\": \"QueryLanguage\",\n      \"message\": \"state 'QueryLanguage' is not a valid state object\",\n      \"note\": \"a top-level directive (e.g. QueryLanguage) may be misplaced inside States\"\n    }\n  ]\n}"
+      }
+    },
+    {
+      "id": "wf062",
+      "file": "corpus/asl/sfn-collection__distributed-map-montecarlo__statemachine__statemachine.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1795.8,
+        "result": "FAIL",
+        "diagnostics": 3,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.3,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf007",
+      "file": "corpus/asl/sfn-examples__sam__app-decompose-for-parallelism__statemachine__main.asl.json",
+      "topLevelStates": 7,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1609.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.3,
+        "diagnostics": 6,
+        "error": null
+      }
+    },
+    {
+      "id": "wf188",
+      "file": "corpus/asl/sfn-collection__word-filtering-script-generator-cdk__typescript__statemachine__statemachine.asl.json",
+      "topLevelStates": 11,
+      "totalStates": 11,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1718.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf023",
+      "file": "corpus/asl/sfn-examples__usecases__genai-prompt-chaining-hitl__src__workflow.asl.json",
+      "topLevelStates": 12,
+      "totalStates": 15,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1860.9,
+        "result": "FAIL",
+        "diagnostics": 2,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf119",
+      "file": "corpus/asl/sfn-collection__s3-glacier-multi-file-restore-sam__statemachine__statemachine.asl.json",
+      "topLevelStates": 2,
+      "totalStates": 10,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1681.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 12.5,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf087",
+      "file": "corpus/asl/sfn-collection__human-in-the-loop-tf__statemachines__statemachine.asl.json",
+      "topLevelStates": 5,
+      "totalStates": 5,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1668.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 11.5,
+        "diagnostics": 1,
+        "error": null
+      }
+    },
+    {
+      "id": "wf165",
+      "file": "corpus/asl/sfn-collection__support-notifications-cdk__python__statemachine__statemachine.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1815.3,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.7,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf005",
+      "file": "corpus/asl/sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json",
+      "topLevelStates": 10,
+      "totalStates": 11,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1731.2,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.2,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf040",
+      "file": "corpus/asl/sfn-collection__call-microservice-apigw__statemachine__statemachine.asl.json",
+      "topLevelStates": 4,
+      "totalStates": 4,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 2032.8,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 14.6,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf160",
+      "file": "corpus/asl/sfn-collection__step-functions-load-testing__statemachine__load-generator-statemachine.asl.json",
+      "topLevelStates": 1,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 1597.6,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 13.2,
+        "diagnostics": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "wf154",
+      "file": "corpus/asl/sfn-collection__stateless-roundrobin__statemachine__statemachine.asl.json",
+      "topLevelStates": 3,
+      "totalStates": 3,
+      "aws": {
+        "ok": true,
+        "attempts": 1,
+        "ms": 2046.4,
+        "result": "OK",
+        "diagnostics": 0,
+        "truncated": false
+      },
+      "stepcheck": {
+        "ok": true,
+        "code": 0,
+        "ms": 11.8,
+        "diagnostics": 0,
+        "error": null
+      }
+    }
+  ]
+}

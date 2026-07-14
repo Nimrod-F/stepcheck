@@ -74,10 +74,17 @@
 }
 \lstset{style=base}
 
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+
 \begin{document}
 
-\title{Static Verification of AWS Step Functions with\\ Sound Data-Flow Analysis and Workflow Semantics}
-\titlerunning{StepCheck: Verifying AWS Step Functions}
+\title{StepCheck: Sound Static Verification of Deployed\\
+AWS Step Functions Workflows}
+\titlerunning{StepCheck: Verifying AWS Step Functions Workflows}
 
 \author{Anonymous Author(s)}
 \authorrunning{Anonymous}
@@ -87,33 +94,15 @@
 \raggedbottom
 
 \begin{abstract}
-AWS Step Functions workflows are executable JSON artifacts, yet existing validators mostly check
-syntax and structural well-formedness. Data-flow mistakes, unsafe retries, missing compensations,
-parallel write races, and unbounded callbacks can therefore deploy and fail only at run time. We
-present \tool{}, a static verifier for Step Functions. Its core is a flow-sensitive analysis of the
-\asl{} I/O pipeline that reports a missing-field access only when every execution reaching the read
-would fail, giving no false positives under the modeled JSONPath semantics. Around this native core,
-seven further checks cover structural correctness, typed contracts, typestate ordering, retry
-safety, Saga compensation, conservative concurrency, and temporal bounds. Native \asl{} facts run
-immediately; omitted task semantics can be declared or inferred, with severity graded by provenance.
-Against \emph{three} formal workflow-soundness verifiers (Woflan, BPMN Analyzer 2.0, and BProVe)
-run as baselines over 193 real AWS workflows, \tool{} is complementary---all overlap on control-flow
-soundness while \tool{} alone covers the data-flow, atomicity, concurrency, and temporal classes that
-have no workflow-net expression; the verifiers over-report $8$--$29\%$ of valid serverless workflows.
-On an industrial saga set
-\tool{} runs as a sub-$12$\,ms build-time gate that fails the build on injected defects the platform
-validator deploys silently. It also rediscovers independently fixed real bugs and detects injected
-missing-field reads confirmed by a code-disjoint bounded-loop oracle, with every controlled recall
-reported with an exact confidence interval rather than a bare percentage.
-
-\keywords{Serverless computing \and AWS Step Functions \and Workflow verification
-\and Data-flow analysis \and Saga transactions}
+\input{sections/abs}
 \end{abstract}
 
 \input{sections/intro}
 \input{sections/background}
 \input{sections/approach}
+\vspace{-0.25cm}
 \input{sections/implementation}
+\vspace{-0.25cm}
 \input{sections/evaluation}
 \input{sections/related}
 \input{sections/conclusion}

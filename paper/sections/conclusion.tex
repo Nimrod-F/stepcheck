@@ -1,22 +1,18 @@
 \section{Conclusion}
 \label{sec:concl}
 
-\tool{} shows that useful static verification can run directly on the AWS Step Functions artifact
-developers already deploy. Its native data-flow analysis reports only definite missing-field
-failures. Its layered annotations make retry, typestate, and Saga checks precise relative to
-supplied facts. On real workflows it rediscovers independently fixed bugs, detects targeted semantic
-mutants missed by existing validators, and runs fast enough for CI.
+\tool{} shows that useful static verification can run directly on the workflow artifacts developers
+already deploy: raw \asl{}, generated templates, and cross-format definitions. Its native data-flow
+analysis reports only definite missing-field failures---free of false positives relative to the modeled I/O semantics, with every error report machine-certified against that model---while layered annotations turn retry,
+typestate, and Saga assumptions into provenance-graded diagnostics. The central lesson from the
+evaluation is quantitative: classical workflow-net soundness misclassifies 8–29\% of valid workflows—a definitional mismatch with Asl's multi-terminal model—while its vocabulary omits the production bug classes---data flow, retry, concurrency, and
+temporal---that \tool{} catches at the artifact level, cheaply enough for a build gate.
+Serverless orchestration need not wait until execution to expose data,
+ordering, retry, timing, and compensation mistakes, provided the
+verifier makes explicit which facts are native, declared, or inferred.
 
-The sound core and the higher-stakes semantic checks sit in different tiers by design. Missing-field
-faults are caught with certainty on the raw artifact; the rediscovered and in-the-wild
-\code{SC1101} bugs show how they escape testing behind \texttt{Choice} branches. Retry, race, and
-compensation faults instead begin as provenance-graded warnings and harden into declared-tier errors
-as effects are annotated or inferred. The layering is a migration path, not a fixed line. Serverless
-orchestration need not wait until execution to expose data, ordering, retry, timing, and
-compensation mistakes.
+\textbf{Artifact availability.} An anonymized artifact---\tool{}, corpus,
+scripts, and reproduction instructions---plus a companion technical report
+with the full formal development is at
+\url{https://anonymous.4open.science/r/StepCheck}~\cite{stepcheck-repo}.
 
-\paragraph{Artifact availability.}
-An anonymized artifact---\tool{}, the corpus, scripts, figures, and reproduction instructions---is
-at \url{https://anonymous.4open.science/r/StepCheck}. The paper is self-contained; the artifact adds
-a companion technical report with the full formal development, algorithms, feature matrices, and
-extended limitations.

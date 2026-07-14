@@ -17,16 +17,16 @@
     {
       "dir": "corpus/cncf",
       "files": 66,
-      "reads_total": 2,
-      "dotted": 0,
+      "reads_total": 17,
+      "dotted": 15,
       "whole_doc": 0,
       "complex": 0,
       "context": 0,
       "variable": 0,
       "intrinsic": 2,
-      "precise": 0,
-      "precise_pct": 0.0,
-      "conservative_pct": 100.0
+      "precise": 15,
+      "precise_pct": 88.2,
+      "conservative_pct": 11.8
     },
     {
       "dir": "corpus/wild-external",
@@ -46,15 +46,15 @@
   "combined": {
     "dir": null,
     "files": 354,
-    "reads_total": 1590,
-    "dotted": 892,
+    "reads_total": 1605,
+    "dotted": 907,
     "whole_doc": 203,
     "complex": 78,
     "context": 245,
     "variable": 0,
     "intrinsic": 172,
-    "precise": 1095,
-    "precise_pct": 68.9,
-    "conservative_pct": 31.1
+    "precise": 1110,
+    "precise_pct": 69.2,
+    "conservative_pct": 30.8
   }
 }

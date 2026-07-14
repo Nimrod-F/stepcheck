@@ -40,17 +40,17 @@ pub fn pipeline_with_result_shapes() -> Vec<Box<dyn Pass>> {
 fn pipeline(result_shapes: bool) -> Vec<Box<dyn Pass>> {
     vec![
         Box::new(structural::StructuralPass),
+        Box::new(contract::ContractPass),
+        Box::new(typestate::TypestatePass),
         if result_shapes {
             Box::new(dataflow::DataFlowPass::with_result_shapes())
         } else {
             Box::new(dataflow::DataFlowPass::new())
         },
-        Box::new(contract::ContractPass),
-        Box::new(typestate::TypestatePass),
-        Box::new(retry::RetrySafetyPass),
-        Box::new(compensation::CompensationPass),
         Box::new(concurrency::ConcurrencyPass),
         Box::new(temporal::TemporalPass),
+        Box::new(retry::RetrySafetyPass),
+        Box::new(compensation::CompensationPass),
     ]
 }
 

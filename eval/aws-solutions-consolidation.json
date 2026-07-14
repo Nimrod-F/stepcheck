@@ -142,7 +142,7 @@
     "by_injected_defects": {
       "0": {
         "platform_silent_pass_rate": 0.333,
-        "gate_p95_ms": 18.9
+        "gate_p95_ms": 19.1
       },
       "1": {
         "applied": 6,
@@ -151,7 +151,7 @@
         "platform_silent_pass": 2,
         "platform_n": 2,
         "platform_silent_pass_rate": 1.0,
-        "gate_p95_ms": 19.7
+        "gate_p95_ms": 20.9
       },
       "5": {
         "applied": 5,
@@ -160,7 +160,7 @@
         "platform_silent_pass": 0,
         "platform_n": 1,
         "platform_silent_pass_rate": 0.0,
-        "gate_p95_ms": 18.3
+        "gate_p95_ms": 20.0
       }
     }
   }

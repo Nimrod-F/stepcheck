@@ -195,9 +195,86 @@ real_bugs = {
                "on independent repositories. We do not claim a population prevalence.",
 }
 
+def load_opt(p):
+    try:
+        return load(p)
+    except Exception:
+        return None
+
+# --- Hard-mutant study (W1: operator-circularity rebuttal) -------------------
+# Each class's boundary variant is a genuine defect placed just past the
+# analysis's ⊤ / coverage boundary. We report StepCheck's recall from the native
+# typed-tier study (count-based fresh, family-credited), the formal verifiers from
+# the round-trip comparison, and the schema validators from the panel, all with
+# exact Clopper-Pearson CIs. A recall < 1 here is a *characterized* boundary, not
+# a soundness defect: at ⊤ the analysis correctly stays silent (no false alarm).
+def hard_mutant_metrics():
+    native = load_opt("eval/results-hard-mutants.json")
+    if not native:
+        return None
+    formal = load_opt("eval/asl2bpmn-comparison-hard.json")
+    schema = load_opt("eval/validator-panel-hard.json")
+    study = native["mutation_study_hard"]
+    conf = native.get("hard_confusion_matrix", {})
+    # (native kind, code, formal/schema key, boundary description)
+    HARD_CLASSES = [
+        ("Structural", "SC0002", "structural", "exact decision procedure (reachability; recurses into nested scopes)"),
+        ("Contract", "SC1003", "contract", "syntactic-scan coverage boundary (ResultSelector is outside the SC1003 scan)"),
+        ("Retry", "SC3001", "retry", "inference-tier boundary (non-idempotence unprovable once name/FunctionName are generic)"),
+        ("Compensation", "SC4001", "compensation", "family generalization (caught by the effect-aware sibling SC4010, not the presence-only SC4001)"),
+        ("Concurrency", "SC5001", "concurrency", "sound ⊤-lift (dynamically-named shared resource)"),
+        ("Temporal", "SC6003", "temporal", "sound ⊤-lift (heartbeat/timeout supplied via reference paths)"),
+        ("Dataflow", "SC1101", None, "sound ⊤-lift (filter-expression InputPath re-roots the document to ⊤)"),
+    ]
+    out = {}
+    for kind, code, key, boundary in HARD_CLASSES:
+        row = study.get(kind)
+        if not row:
+            continue
+        n = row["applicable"]
+        de = row["detected_expected_code"]
+        df = row["detected_family"]
+        entry = {
+            "code": code,
+            "n": n,
+            "boundary": boundary,
+            "stepcheck_expected_code": {"detected": de, "recall": round(de / n, 3) if n else None, "cp95": clopper_pearson(de, n)},
+            "stepcheck_family": {"detected": df, "recall": round(df / n, 3) if n else None, "cp95": clopper_pearson(df, n)},
+            "codes_fired": conf.get(kind, {}),
+        }
+        if formal and key and key in formal.get("classes", {}):
+            fc = formal["classes"][key]
+            nf = fc["applicable"]
+            for tool, field in [("woflan", "woflan_detected"), ("bpmn_analyzer", "bpmn_analyzer_detected"), ("bprove", "bprove_detected")]:
+                k = fc.get(field)
+                if k is None:
+                    continue
+                entry[tool] = {"detected": k, "recall": round(k / nf, 3) if nf else None, "cp95": clopper_pearson(k, nf)}
+        if schema and key and key in schema.get("mutation_detection", {}):
+            sc = schema["mutation_detection"][key]
+            ns = sc["applicable"]
+            for tool in ["statelint", "asl-validator", "aws"]:
+                d = sc.get(tool, {}).get("detected")
+                if d is None:
+                    continue
+                entry[tool.replace("-", "_")] = {"detected": d, "recall": round(d / ns, 3) if ns else None, "cp95": clopper_pearson(d, ns)}
+        out[kind] = entry
+    return {
+        "method": "Boundary variant per class (stepcheck mutate --hard). StepCheck recall from the native typed-tier study "
+                  "(count-based fresh, family-credited); formal verifiers from the round-trip comparison; schema validators "
+                  "from the panel. Exact Clopper-Pearson 95% CIs throughout.",
+        "interpretation": "recall < 1 is a measured completeness boundary, not a soundness violation: at ⊤ the sound analyses "
+                          "decline to report what they cannot prove (no false alarm). The abstraction-gap classes (data-flow, "
+                          "concurrency, temporal) drop to 0 at their boundary; compensation is caught by a sibling code rather "
+                          "than the operator's expected code; structural reachability stays exact; retry degrades gracefully at "
+                          "the inference tier; the contract break escapes the syntactic scan (and is covered by schema validators).",
+        "classes": out,
+    }
+
 report = {
     "generated_by": "eval/mutation_stats.py",
     "method": "Clopper-Pearson exact 95% CI on per-class recall k/n over the full 193-workflow corpus; Fisher exact vs each formal verifier.",
+    "hard_mutants": hard_mutant_metrics(),
     "verifier_comparison": cmp_full["verifier"],
     "verifier_comparison2": cmp_full.get("verifier2"),
     "verifier_comparison3": cmp_full.get("verifier3"),

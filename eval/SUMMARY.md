@@ -12,22 +12,22 @@ All numbers produced by the committed tool over the committed corpus. Reproduce:
 - Breadth/generalization corpora: **193** workflows mined exhaustively from 2 AWS sample repos
   (`aws-samples/aws-stepfunctions-examples`, `aws-samples/step-functions-workflows-collection`),
   **66** CNCF examples, and **95** independent external ASL definitions.
-- **1355** states total; per workflow min 1 / median 6 / mean 7.0 / max 33.
+- **1355** recursive states total by `stepcheck stats`; per workflow min 1 / median 6 / mean 7.0 / max 33.
 - State types: Task 747, Choice 166, Pass 159, Wait 71, Fail 65, Map 64, Succeed 49, Parallel 33.
 - 84 workflows use retry policies; 51 use catch handlers.
 
 ## E2 — Findings in the wild (unmodified corpus, with inference)
-- **95 / 193** workflows flagged.
+- **99 / 193** workflows flagged.
 - **Sound native findings (high confidence):**
   - `SC0007` × 9  — Choice state with no Default (non-exhaustive).
   - `SC0010` × 1  — malformed state (a top-level `QueryLanguage` directive nested inside `States`).
   - `SC1101` × 0  — data-flow provenance: **zero false positives** (soundness; see E10).
 - **New native analyses:**
   - `SC6001` × 33 — unbounded `waitForTaskToken`/Activity callback (no Timeout/Heartbeat).
-  - `SC5001`/`SC5002` × 0 — concurrency interference fires **0** in the wild: the
-    conservative overwriting-write rule (only PutItem/PutObject, never UpdateItem-merge or
-    item-keyed writes) finds no genuine last-writer-wins race among these correct samples
-    (detection power shown by the mutation study, E3/E9).
+  - `SC5001`/`SC5002` × 0 and `SC5003` × 2 — the conservative overwriting-write rule
+    (only PutItem/PutObject, never UpdateItem-merge or item-keyed writes) finds no
+    last-writer-wins race among these samples, while cross-child composition flags two
+    parallel starts of the same child workflow (detection power shown by the mutation study, E3/E9).
 - **Inference-driven warnings (need triage):**
   - `SC3001` × 36 — broad retry on an inferred non-idempotent task.
   - `SC4001` × 117 — inferred persistent task with no compensation/error handling.
@@ -47,20 +47,45 @@ Each mutant injects exactly one defect; "detected" means the expected diagnostic
 count strictly increased vs the unmutated baseline. The data-flow class (SC1101) is
 studied separately (E10) because its detection depends on a known document shape.
 
-## E4 — Inference accuracy vs agreement-checked gold (23 workflows, 147 tasks)
-Gold set expanded from 10→23 workflows; new workflows labelled in **two independent
-passes** (Cohen's kappa **1.00** idempotency, **0.745** persistence) reconciled by
-adjudication. `node eval/inference_accuracy.js` (gold in `corpus/gold-labels.json`).
+## E3h — Hard-mutant study (operator–check independence, W1)
+`stepcheck eval corpus/asl --infer --result-shapes --hard` → `eval/results-hard-mutants.json`.
+Same fault classes, but each variant is placed just past the analysis's ⊤/coverage boundary
+(a genuine, deployable defect). Recall is family-credited (a sibling code counts) with
+count-based freshness; the comparison tools are re-run on the same mutants
+(`python eval/asl2bpmn/compare.py --hard`, `STEPCHECK_AWS=1 node eval/validator_panel.js --hard`).
+Exact CIs and the merged table live in `eval/mutation-stats.json` under `hard_mutants`.
+
+| Class | Check | Easy | Hard (family, CP95) | Boundary probed |
+|---|---|---|---|---|
+| Structural | SC0002 | 1.00 | 1.00 [.92,1] | exact reachability (recurses into nested scopes) |
+| Retry | SC3001 | 1.00 | 0.69 [.59,.77] | inference tier (opaque name/FunctionName) |
+| Compensation | SC4001 | 1.00 | 0.79 [.66,.88]* | sibling SC4010 (logging-only Catch); SC4001 = 0/56 |
+| Data-flow | SC1101 | 0.70 | 0.00 [0,.03] | ⊤-lift (filter-expression InputPath) |
+| Concurrency | SC5001 | 1.00 | 0.00 [0,.16] | ⊤-lift (dynamically-named resource) |
+| Temporal | SC6003 | 1.00 | 0.00 [0,.02] | ⊤-lift (reference-path heartbeat/timeout) |
+| Contract | SC1003 | 1.00 | 0.00 [0,.02] | syntactic-scan gap (ResultSelector unscanned) |
+
+A hard value <1 is a **measured completeness boundary, not a soundness violation**: at ⊤ the sound
+analyses decline to report rather than emit a false alarm. Woflan catches only structural (.31) and a
+compensation side effect (.13); schema validators catch structural and the ResultSelector break that
+SC1003 misses (complementarity). *Compensation is caught by the effect-aware sibling SC4010, not the
+operator's expected SC4001 — direct evidence the check family is not tuned to the operator.
+
+## E4 — Inference accuracy vs agreement-checked gold (23 workflows, 137 tasks)
+Gold set expanded from 10→23 workflows; the human-labelled expansion was labelled in
+**two independent passes** (Cohen's kappa **0.888** idempotency, **0.988** persistence)
+and reconciled by adjudication. `node eval/inference_accuracy.js` (gold in
+`corpus/gold-labels.json`).
 | Property | Labeled | Predicted | Abstained | Correct | Accuracy (of predicted) | Coverage |
 |---|---|---|---|---|---|---|
-| Idempotency | 147 | 118 | 29 | 73  | **61.9%** | 80.3% |
-| Persistence | 147 | 118 | 29 | 101 | **85.6%** | 80.3% |
+| Idempotency | 137 | 110 | 27 | 77 | **70.0%** | 80.3% |
+| Persistence | 137 | 110 | 27 | 96 | **87.3%** | 80.3% |
 
-The larger, more diverse set reveals idempotency inference is genuinely weak (62%): the
-write-verb heuristic misreads stable-key DynamoDB writes and cancel/release/refund
+The larger, more diverse set reveals idempotency inference is the weaker heuristic (70%):
+the write-verb heuristic misreads stable-key DynamoDB writes and cancel/release/refund
 compensators (idempotent in effect) as non-idempotent. Persistence (which drives the
-compensation check) holds up at 86%. High annotator agreement + low heuristic accuracy =
-the truth is clear but names don't carry it → findings are warnings.
+compensation check) holds up at 87%. The findings remain warnings because names alone do
+not carry enough evidence for blocking verification.
 
 ## E4b — In-the-wild warning precision (vs human gold)
 `node eval/score-human-gold.js --reconciled` (human gold = reconciled `gold-labels-human-{A,B}.json`
@@ -182,21 +207,21 @@ no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe
   before charge) → **3 SC1010 errors** derived directly from the declared schemas.
 - Verification: mean **3.9 µs**/workflow.
 
-## Implementation size — 6,224 physical source lines of Rust (excludes the 783-line test suite)
+## Implementation size — 7,567 physical source lines of Rust (excludes the 1,111-line test suite)
 Definition: physical source lines counted by `wc -l` over `stepcheck/src/**.rs` excluding `tests.rs`.
-The paper and this file report the same number under the same definition (reconciles the earlier
-3,692 code-only vs 5,045 figures the review flagged).
+The technical report and this file report the same number under the same definition (reconciles the
+earlier 3,692 code-only vs 5,045 vs 6,224 figures as the tool grew).
 | Component | Module(s) | LOC |
 |---|---|---|
-| Workflow IR | ir.rs | ~300 |
-| Frontends (ASL parse+emit incl. full-fidelity emitter + CNCF jq model, typed DSL) | asl.rs, dsl.rs, cncf.rs | 922 |
-| Annotations + inference | annot.rs | ~380 |
-| Analysis passes (8 + SC5003 composition + manager) | passes/* | 2683 |
-| Concrete-execution oracle (bounded loop unrolling) | concrete.rs | ~430 |
-| Diagnostics | diag.rs | ~120 |
-| Mutation engine | mutate.rs | ~320 |
-| CLI + stats + eval harness | main.rs | ~1050 |
-| **Total (excl. tests.rs)** | | **6224** |
+| Workflow IR | ir.rs | 362 |
+| Frontends (ASL parse+emit incl. full-fidelity emitter + CNCF jq model, typed DSL, CloudFormation/SAM) | asl.rs, dsl.rs, cncf.rs, cfn.rs | 1380 |
+| Annotations + inference | annot.rs | 397 |
+| Analysis passes (8 + SC5003 composition + manager) | passes/* | 2906 |
+| Concrete-execution oracle (bounded loop unrolling) | concrete.rs | 431 |
+| Diagnostics | diag.rs | 115 |
+| Mutation engine | mutate.rs | 632 |
+| CLI + stats + eval harness | main.rs | 1344 |
+| **Total (excl. tests.rs)** | | **7567** |
 
 ## WS-A..H — acceptance-round evidence (2026-07, reproducible)
 - **Formal competitor (WS-D):** `python eval/asl2bpmn/compare.py --limit 193` → `eval/asl2bpmn-comparison-full.json`.

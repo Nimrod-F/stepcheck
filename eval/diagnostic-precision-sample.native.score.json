@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-07-09T14:29:48.264Z",
+  "generated_by": "eval/diagnostic_precision_audit.js score",
+  "sample_file": "eval/diagnostic-precision-sample.native.json",
+  "scope": "native",
+  "score": {
+    "code:SC0007": {
+      "true_positive": 6,
+      "false_positive": 0,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 6,
+      "precision": 1,
+      "wilson_ci95": [
+        0.61,
+        1
+      ]
+    },
+    "code:SC0010": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 1,
+      "precision": 1,
+      "wilson_ci95": [
+        0.207,
+        1
+      ]
+    },
+    "code:SC5003": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 1,
+      "precision": 1,
+      "wilson_ci95": [
+        0.207,
+        1
+      ]
+    },
+    "code:SC6001": {
+      "true_positive": 21,
+      "false_positive": 1,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 22,
+      "precision": 0.955,
+      "wilson_ci95": [
+        0.782,
+        0.992
+      ]
+    },
+    "overall": {
+      "true_positive": 29,
+      "false_positive": 1,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 30,
+      "precision": 0.967,
+      "wilson_ci95": [
+        0.833,
+        0.994
+      ]
+    },
+    "tier:native": {
+      "true_positive": 29,
+      "false_positive": 1,
+      "unclear": 0,
+      "unlabelled": 0,
+      "labelled_for_precision": 30,
+      "precision": 0.967,
+      "wilson_ci95": [
+        0.833,
+        0.994
+      ]
+    }
+  }
+}

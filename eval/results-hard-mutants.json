@@ -1,0 +1,121 @@
+{
+  "study": "hard_mutants",
+  "note": "Each class's boundary variant (mutate_hard): a genuine defect placed just past the analysis's ⊤ / coverage boundary. recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
+  "corpus": {
+    "files": 193
+  },
+  "ablation": {
+    "result_shapes": true
+  },
+  "mutation_study_hard": {
+    "Contract": {
+      "expected_code": "SC1003",
+      "expected_family": [
+        "SC1003"
+      ],
+      "applicable": 166,
+      "detected_expected_code": 0,
+      "detected_family": 0,
+      "recall_expected_code": 0.0,
+      "recall_family": 0.0
+    },
+    "Dataflow": {
+      "expected_code": "SC1101",
+      "expected_family": [
+        "SC1101"
+      ],
+      "applicable": 126,
+      "detected_expected_code": 0,
+      "detected_family": 0,
+      "recall_expected_code": 0.0,
+      "recall_family": 0.0
+    },
+    "Retry": {
+      "expected_code": "SC3001",
+      "expected_family": [
+        "SC3001"
+      ],
+      "applicable": 111,
+      "detected_expected_code": 76,
+      "detected_family": 76,
+      "recall_expected_code": 0.6846846846846847,
+      "recall_family": 0.6846846846846847
+    },
+    "Compensation": {
+      "expected_code": "SC4001",
+      "expected_family": [
+        "SC4001",
+        "SC4010",
+        "SC4011"
+      ],
+      "applicable": 56,
+      "detected_expected_code": 0,
+      "detected_family": 44,
+      "recall_expected_code": 0.0,
+      "recall_family": 0.7857142857142857
+    },
+    "Structural": {
+      "expected_code": "SC0002",
+      "expected_family": [
+        "SC0002"
+      ],
+      "applicable": 42,
+      "detected_expected_code": 42,
+      "detected_family": 42,
+      "recall_expected_code": 1.0,
+      "recall_family": 1.0
+    },
+    "Concurrency": {
+      "expected_code": "SC5001",
+      "expected_family": [
+        "SC5001",
+        "SC5002",
+        "SC5003"
+      ],
+      "applicable": 21,
+      "detected_expected_code": 0,
+      "detected_family": 0,
+      "recall_expected_code": 0.0,
+      "recall_family": 0.0
+    },
+    "Temporal": {
+      "expected_code": "SC6003",
+      "expected_family": [
+        "SC6003"
+      ],
+      "applicable": 166,
+      "detected_expected_code": 0,
+      "detected_family": 0,
+      "recall_expected_code": 0.0,
+      "recall_family": 0.0
+    }
+  },
+  "hard_confusion_matrix": {
+    "Compensation": {
+      "SC0003": 7,
+      "SC4010": 44
+    },
+    "Concurrency": {
+      "SC1101": 16,
+      "SC1110": 1
+    },
+    "Contract": {
+      "SC1101": 20,
+      "SC1110": 11
+    },
+    "Dataflow": {
+      "SC1001": 10
+    },
+    "Retry": {
+      "SC3001": 76
+    },
+    "Structural": {
+      "SC0002": 42,
+      "SC0003": 37,
+      "SC0005": 33
+    },
+    "Temporal": {
+      "SC6001": 3
+    }
+  }
+}

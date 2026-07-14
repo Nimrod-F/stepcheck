@@ -2,6 +2,7 @@
 name = "stepcheck"
 version = "0.1.3"
 edition = "2021"
+rust-version = "1.88"
 description = "A static verifier for serverless workflows (Amazon States Language): sound data-flow (field-provenance) analysis plus contract, typestate, retry-safety, concurrency, temporal, and Saga-compensation checking."
 license = "Apache-2.0"
 readme = "README.md"

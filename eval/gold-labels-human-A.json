@@ -33,7 +33,7 @@
       "persistent": false
     },
     "Reserve Product": {
-      "idempotent": false,
+      "idempotent": true,
       "persistent": true
     },
     "Notify Delayed": {
@@ -68,7 +68,7 @@
     },
     "RefundPayment": {
       "idempotent": false,
-      "persistent": false
+      "persistent": true
     },
     "CancelRentalReservation": {
       "idempotent": false,
@@ -119,8 +119,8 @@
       "persistent": true
     },
     "Update Inventory": {
-      "idempotent": true,
-      "persistent": true
+      "idempotent": false,
+      "persistent": false
     }
   },
   "sfn-collection__dynamodb-transfer__statemachine__statemachine.asl.json": {
@@ -133,7 +133,7 @@
       "persistent": false
     },
     "Update record": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": true
     },
     "Add record to target DDB table": {
@@ -173,17 +173,17 @@
   },
   "sfn-collection__bedrock-invokemodel__statemachine__StateMachine.asl.json": {
     "Bedrock InvokeModel": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": false
     }
   },
   "sfn-examples__sam__app-dataquality-using-lambda__statemachine__dataquality.asl.json": {
     "Copy input file": {
-      "idempotent": null,
-      "persistent": true
+      "idempotent": false,
+      "persistent": false
     },
     "Data quality using Lambda": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": false
     },
     "List Data Quality Results": {
@@ -195,7 +195,7 @@
       "persistent": false
     },
     "Aggregate Data": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": true
     },
     "Send Success Message": {
@@ -205,15 +205,15 @@
   },
   "sfn-examples__sam__app-business-rules-orchestration__statemachine__businessrules_orchestration.asl.json": {
     "Audit Request": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": true
     },
     "Execute Ruleset": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": false
     },
     "Audit Response": {
-      "idempotent": null,
+      "idempotent": true,
       "persistent": true
     }
   },
@@ -357,7 +357,7 @@
   },
   "sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json": {
     "Set Order, Payment and Shipping Status": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Third Party Payment Service HTTPS Endpoint": {
@@ -365,7 +365,7 @@
       "persistent": true
     },
     "Set Payment Status: Unsuccessful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Send PaymentFailed Event to Notification Bus": {
@@ -373,7 +373,7 @@
       "persistent": false
     },
     "Set Payment Status: Successful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Third Party Shipping Service HTTPS Endpoint": {
@@ -381,11 +381,11 @@
       "persistent": true
     },
     "Set Shipping Status: Successful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Set Shipping Status: Unsuccessful": {
-      "idempotent": true,
+      "idempotent": false,
       "persistent": true
     },
     "Send ShippingFailed Event to Notification Bus": {
@@ -541,8 +541,8 @@
       "persistent": false
     },
     "Call third-party API": {
-      "idempotent": null,
-      "persistent": null
+      "idempotent": true,
+      "persistent": true
     }
   },
   "sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json": {
@@ -653,7 +653,7 @@
       "persistent": false
     },
     "Extract Data": {
-      "idempotent": false,
+      "idempotent": true,
       "persistent": true
     }
   },

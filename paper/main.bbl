@@ -3,24 +3,31 @@
 \providecommand{\urlprefix}{URL }
 \providecommand{\doi}[1]{https://doi.org/#1}
 
-\bibitem{vanDerAalst1998petri}
-van~der Aalst, W.M.P.: The application of {P}etri nets to workflow management.
-  Journal of Circuits, Systems and Computers  \textbf{8}(1),  21--66 (1998)
-
 \bibitem{awsServerlessAirline}
 {Amazon Web Services}: {AWS Serverless Airline Booking}.
-  \url{https://github.com/aws-samples/aws-serverless-airline-booking} (2019),
-  public aws-samples application; accessed 2026-07-08
+  \url{https://github.com/aws-samples/aws-serverless-airline-booking} (2019)
 
 \bibitem{awsValidateDefinition}
 {Amazon Web Services}: {ValidateStateMachineDefinition} --- {AWS} {Step
-  Functions} {API} reference.
-  \url{https://docs.aws.amazon.com/step-functions/latest/apireference/API_ValidateStateMachineDefinition.html}
+  Functions} {API} reference. \url{https://docs.aws.amazon.com/step-functions/}
   (2024)
+
+\bibitem{awsTestState}
+{Amazon Web Services}: {TestState} --- {AWS} step functions developer guide.
+  \url{https://docs.aws.amazon.com/step-functions/latest/apireference/API_TestState.html}
+  (2025)
+
+\bibitem{awsSolutionsLibrary}
+{Amazon Web Services}: {AWS Solutions Library}.
+  \url{https://aws.amazon.com/solutions/} (2026)
 
 \bibitem{awsStepFunctions}
 {Amazon Web Services}: {AWS} step functions developer guide (amazon states
   language). \url{https://docs.aws.amazon.com/step-functions/} (2026)
+
+\bibitem{awsServerlessPatterns}
+{Amazon Web Services}: {Serverless Patterns Collection}.
+  \url{https://github.com/aws-samples/serverless-patterns} (2026)
 
 \bibitem{awsStatelint}
 {Amazon Web Services Labs}: statelint: A validator for {Amazon} states language
@@ -29,18 +36,12 @@ van~der Aalst, W.M.P.: The application of {P}etri nets to workflow management.
 \bibitem{arjona2021triggerflow}
 Arjona, A., Garc{\'\i}a~L{\'o}pez, P., Samp{\'e}, J., Slominski, A., Villard,
   L.: Triggerflow: Trigger-based orchestration of serverless workflows. Future
-  Generation Computer Systems  (2021)
+  Gen. Comp. Syst.  (2021)
 
 \bibitem{backes2018zelkova}
 Backes, J., Bolignano, P., Cook, B., Dodge, C., Gacek, A., Luckow, K., Rungta,
   N., Tkachuk, O., Varming, C.: Semantic-based automated reasoning for {AWS}
-  access policies using {SMT}. In: Formal Methods in Computer-Aided Design
-  (FMCAD). pp.~1--9 (2018)
-
-\bibitem{oracleproblem}
-Barr, E.T., Harman, M., McMinn, P., Shahbaz, M., Yoo, S.: The oracle problem in
-  software testing: A survey. IEEE Transactions on Software Engineering
-  \textbf{41}(5),  507--525 (2015). \doi{10.1109/TSE.2014.2372785}
+  access policies using {SMT}. In: {FMCAD}. pp.~1--9 (2018)
 
 \bibitem{aslValidator}
 Boug{\`e}re, C.: {asl-validator}: A {JSON}-schema validator for {Amazon} states
@@ -49,83 +50,63 @@ Boug{\`e}re, C.: {asl-validator}: A {JSON}-schema validator for {Amazon} states
 
 \bibitem{burckhardt2021durable}
 Burckhardt, S., Gillum, C., Justo, D., Kallas, K., McMahon, C., Meiklejohn,
-  C.S.: Durable functions: Semantics for stateful serverless. Proc. ACM
-  Program. Lang.  \textbf{5}(OOPSLA) (2021)
-
-\bibitem{cncfServerlessWorkflow}
-{Cloud Native Computing Foundation}: Serverless workflow specification.
-  \url{https://serverlessworkflow.io/} (2026)
+  C.S.: Durable functions: Semantics for stateful serverless. {OOPSLA}
+  \textbf{5} (2021)
 
 \bibitem{bprove}
 Corradini, F., Fornari, F., Polini, A., Re, B., Tiezzi, F., Vandin, A.: A
-  formal approach for the analysis of {BPMN} collaboration models. Journal of
-  Systems and Software  \textbf{180},  111007 (2021)
+  formal approach for the analysis of {BPMN} collaboration models. J.Sys.
+  Softw.  \textbf{180} (2021)
 
 \bibitem{cousot1977}
 Cousot, P., Cousot, R.: Abstract interpretation: A unified lattice model for
-  static analysis of programs by construction or approximation of fixpoints.
-  In: Proceedings of the 4th ACM SIGACT-SIGPLAN Symposium on Principles of
-  Programming Languages (POPL). pp. 238--252. ACM (1977)
+  static analysis of programs by construction or approx. of fixpoints. In:
+  {POPL} (1977)
+
+\bibitem{dehnert2001relaxed}
+Dehnert, J., Rittgen, P.: Relaxed soundness of business processes. In: {CAiSE}
+  (2001)
 
 \bibitem{ding2023flux}
 Ding, H., Wang, Z., Shen, Z., Chen, R., Chen, H.: Automated verification of
-  idempotence for stateful serverless applications. In: USENIX Symp. on
-  Operating Systems Design and Implementation (OSDI) (2023)
-
-\bibitem{eismann2022stability}
-Eismann, S., Costa, D.E., Liao, L., Bezemer, C.P., Shang, W., van Hoorn, A.,
-  Kounev, S.: A case study on the stability of performance tests for serverless
-  applications. Journal of Systems and Software  \textbf{189},  111294 (2022).
-  \doi{10.1016/j.jss.2022.111294}
+  idempotence for stateful serverless applications. In: {OSDI} (2023)
 
 \bibitem{garciaMolina1987sagas}
-Garcia-Molina, H., Salem, K.: Sagas. In: ACM SIGMOD Int. Conf. on Management of
-  Data. pp. 249--259 (1987)
+Garcia-Molina, H., Salem, K.: Sagas. In: ACM SIGMOD ICMD. pp. 249--259 (1987)
 
 \bibitem{honda2008multiparty}
 Honda, K., Yoshida, N., Carbone, M.: Multiparty asynchronous session types. In:
-  ACM SIGPLAN-SIGACT Symp. on Principles of Programming Languages (POPL). pp.
-  273--284 (2008)
+  {POPL}. pp. 273--284 (2008)
 
 \bibitem{jangda2019serverless}
 Jangda, A., Pinckney, D., Brun, Y., Guha, A.: Formal foundations of serverless
-  computing. Proc. ACM Program. Lang.  \textbf{3}(OOPSLA),  1--26 (2019)
-
-\bibitem{difftestanalyzers}
-Klinger, C., Christakis, M., W{\"u}stholz, V.: Differentially testing soundness
-  and precision of program analyzers. In: International Symposium on Software
-  Testing and Analysis (ISSTA). pp. 239--250 (2019)
+  computing. {OOPSLA}  \textbf{3},  1--26 (2019)
 
 \bibitem{bpmnanalyzer}
 Kr{\"a}uter, T., St{\"u}nkel, P., Rutle, A., Lamo, Y., K{\"o}nig, H.: {BPMN}
   {Analyzer} 2.0: Instantaneous, comprehensible, and fixable control flow
-  analysis for realistic {BPMN} models. In: International Conference on
-  Business Process Management (BPM) (2024)
+  analysis for realistic {BPMN} models. In: {BPM} (2024)
 
 \bibitem{newcombe2015awsformal}
 Newcombe, C., Rath, T., Zhang, F., Munteanu, B., Brooker, M., Deardeuff, M.:
-  How {A}mazon web services uses formal methods. Communications of the ACM
-  \textbf{58}(4),  66--73 (2015)
+  How {A}mazon web services uses formal methods. ACM Communications  (2015)
 
 \bibitem{translationvalidation}
-Pnueli, A., Siegel, M., Singerman, E.: Translation validation. In: Tools and
-  Algorithms for the Construction and Analysis of Systems (TACAS). LNCS,
-  vol.~1384, pp. 151--166 (1998)
+Pnueli, A., Siegel, M., Singerman, E.: Translation validation. In: {TACAS}
+  (1998)
+
+\bibitem{stepcheck-repo}
+StepCheck: { Repository}. \url{https://anonymous.4open.science/r/StepCheck},
+  (2026)
 
 \bibitem{stromYemini1986typestate}
 Strom, R.E., Yemini, S.: Typestate: A programming language concept for
-  enhancing software reliability. IEEE Transactions on Software Engineering
-  \textbf{SE-12}(1),  157--171 (1986)
-
-\bibitem{suliu2024}
-Su, G., Liu, L.: Workflow trace profiling and execution time analysis in
-  quantitative verification. Future Internet  \textbf{16}(9), ~319 (2024).
-  \doi{10.3390/fi16090319}
+  enhancing software reliability. IEEE TSE (1),  157--171 (1986)
 
 \bibitem{sun2006dataflow}
 Sun, S.X., Zhao, J.L., Nunamaker, J.F., Sheng, O.R.L.: Formulating the
-  data-flow perspective for business process management. Information Systems
-  Research  \textbf{17}(4),  374--391 (2006)
+  data-flow perspective for business process management. Inf. Syst. Research
+  \textbf{17}(4) (2006)
 
 \bibitem{temporal}
 {Temporal Technologies}: Temporal: Durable execution and workflow
@@ -133,8 +114,8 @@ Sun, S.X., Zhao, J.L., Nunamaker, J.F., Sheng, O.R.L.: Formulating the
 
 \bibitem{trcka2009antipatterns}
 Trcka, N., van~der Aalst, W.M.P., Sidorova, N.: Data-flow anti-patterns:
-  Discovering data-flow errors in workflows. In: Int. Conf. on Advanced
-  Information Systems Engineering (CAiSE). LNCS, vol.~5565, pp. 425--439 (2009)
+  Discovering data-flow errors in workflows. In: {CAiSE}. LNCS, vol.~5565, pp.
+  425--439 (2009)
 
 \bibitem{woflan}
 Verbeek, H.M.W., Basten, T., van~der Aalst, W.M.P.: Diagnosing workflow
@@ -143,7 +124,6 @@ Verbeek, H.M.W., Basten, T., van~der Aalst, W.M.P.: Diagnosing workflow
 
 \bibitem{zhang2020beldi}
 Zhang, H., Cardoza, A., Chen, P.B., Angel, S., Liu, V.: Fault-tolerant and
-  transactional stateful serverless workflows. In: USENIX Symp. on Operating
-  Systems Design and Implementation (OSDI) (2020)
+  transactional stateful serverless workflows. In: {OSDI} (2020)
 
 \end{thebibliography}

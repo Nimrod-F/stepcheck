@@ -1,56 +1,66 @@
+% ------------------------------------------------------------------
+% StepCheck -- ICSOC 2026 -- Background and Problem Setting, revised
+% Changes vs. background.tex:
+%  (a) Sec 2.1 split into three paragraphs (graph & I/O pipeline;
+%      reads, variables, JSONata; fault handling) -- the original was
+%      one dense paragraph mixing five concerns. The tool-scoping
+%      sentence now carries an explicit forward pointer to Sec 3.2.
+%      "Current \asl{}" -> "\asl{} additionally provides" (the former
+%      dates the paper).
+%  (b) Sec 2.2 FIX: the original said the defect classes "require
+%      four semantic facts", but defects (1), (4), (5) are checkable
+%      natively; only (2), (3), (6) need omitted facts. The rewrite
+%      maps each defect to its tier (native-sound / native-
+%      conservative / declared), which previews the architecture of
+%      Sec 3 and motivates requirements (ii)/(iii) instead of leaving the reader to
+%      reconstruct the mapping.
+%  (c) The design requirements formerly in Sec 2.3 were moved to the
+%      start of Sec 3 (Verification Framework) as an inline (i)-(iv)
+%      paragraph; the redundant three-tier summary (in Table 1) dropped.
+% ------------------------------------------------------------------
+
 \section{Background and Problem Setting}
 \label{sec:bg}
 
 \asl{} exposes enough structure for native checks, but hides the business facts needed for deeper
 workflow verification. This section fixes the small slice of \asl{} semantics used by the
-analyses, then states the omitted facts and design requirements.
-
-\subsection{The Amazon States Language as a verification target}
-\label{sec:bg:asl}
-
-A Step Functions workflow is a state machine with a \texttt{StartAt} state and named states of
-eight kinds: \texttt{Task}, \texttt{Choice}, \texttt{Parallel}, \texttt{Map}, \texttt{Wait},
-\texttt{Pass}, \texttt{Succeed}, and \texttt{Fail}. A single JSON document is threaded through
-the graph. Each state may reshape it through the fixed \asl{} I/O pipeline:
-\texttt{InputPath} selects input; \texttt{Parameters} or \texttt{ItemSelector} constructs a task
-payload; \texttt{ResultSelector} reshapes the raw result; \texttt{ResultPath} merges that result
-back into the raw input; and \texttt{OutputPath} selects the successor document. A key ending in
-\texttt{.\$} reads a JSONPath from the current document (e.g.\ a
-\texttt{"Payload.\$": "\$.detail.customer"} constructor reads \texttt{\$.detail.customer}), and the
-runtime fails the reference when that path is absent. Current \asl{} also has workflow variables
-and JSONata: \texttt{Assign} stores \texttt{\$var} values for later states, and JSONata fields read
-\texttt{\$states.input}, \texttt{\$states.result}, and workflow variables. \tool{} tracks variables
-and modeled JSONata object/direct-reference fragments; arbitrary expressions collapse to $\top$.
-Fault handling is also explicit: \texttt{Retry} re-executes a state on matching errors,
+analyses, then states the omitted facts that leave the harder defects latent.
+A Step Functions workflow is a state machine with a \texttt{StartAt}
+state and named states of eight kinds: \texttt{Task}, \texttt{Choice},
+\texttt{Parallel}, \texttt{Map}, \texttt{Wait}, \texttt{Pass},
+\texttt{Succeed}, and \texttt{Fail}. A single JSON document is threaded
+through the graph, and each state may reshape it through a fixed
+five-stage I/O pipeline (\texttt{InputPath} through \texttt{OutputPath})
+whose per-stage semantics Section~\ref{sec:approach:dataflow} models
+directly.
+Reads against the document are explicit in the syntax. A key ending in \texttt{.\$} reads a
+JSONPath from the current document (e.g.\ a \texttt{"Payload.\$": "\$.detail.customer"}
+constructor reads \texttt{\$.detail.customer}), and the runtime fails the reference when that path
+is absent. \asl{} additionally provides workflow variables and JSONata expressions:
+\texttt{Assign} stores \texttt{\$var} values for later states, and JSONata fields read
+\texttt{\$states.input}, \texttt{\$states.result}, and workflow variables.
+Fault handling is likewise explicit: \texttt{Retry} re-executes a state on matching errors,
 \texttt{Catch} routes an error to a handler, and \texttt{TimeoutSeconds}/\texttt{HeartbeatSeconds}
-bound long-running tasks and callbacks.
+bound long-running tasks and callbacks. What the artifact records, an analysis can check; the
+question is how far that record reaches.
 
-\subsection{What \asl{} omits, and why the defects are latent}
 \label{sec:bg:defects}
 
-Figure~\ref{fig:intro} uses the AWS Serverless Airline Booking \texttt{ProcessBooking} saga. The
-intended protocol is reserve flight/booking $\to$ paid $\to$ confirmed $\to$ notified, with failure
-paths through refund, cancel-booking, release-seat, and a booking DLQ. \asl{} records the graph,
-JSON reshaping, retries, catches, and native DynamoDB calls. The defect classes in this paper
-require semantic facts that \asl{} omits: a task contract $T:A\to B$ over input/output fields; a
-typestate edge $s_{\mathrm{in}}^T\to s_{\mathrm{out}}^T$ in a business protocol $\delta$;
-idempotency of external effects; persistence plus a compensator for durable effects; and, for
-fan-out workflows outside \texttt{ProcessBooking}, write footprints and callback bounds.
+The intended protocol in Figure~\ref{fig:intro} is
+$\textit{created} \to \textit{reserved} \to \textit{paid} \to
+\textit{shipped}$. What \asl{} records already decides three of the six
+defects: the missing read~(1) follows from the I/O pipeline alone, and
+the racing writes~(4) and unbounded callback~(5) from statically named
+resources and absent bounds---natively but conservatively. The other
+three depend on facts \asl{} has no syntax for: a task contract
+$T : A \to B$, without which reordering~(2) is just another valid edge;
+a typestate edge $s^{T}_{\mathit{in}} \to s^{T}_{\mathit{out}}$ in a
+business protocol~$\delta$; idempotency of external effects, without
+which the double-charging retry~(3) looks safe; and persistence plus a
+compensator, without which the uncompensated reservation~(6) looks like
+any other task.
+Because deployed validators inspect only syntax and structural
+well-formedness, all six defects deploy: each is valid JSON over a
+valid graph.
 
-Because validators inspect only syntax and structural well-formedness, these faults or invalid
-mutations deploy: each is valid JSON over a valid graph, and the platform retries and routes errors
-but infers no contract, business protocol, idempotency, write footprint, timeout obligation, or Saga
-intent.
 
-\subsection{Design requirements for an in-place verifier}
-\label{sec:bg:gap}
-
-An in-place verifier must therefore satisfy four requirements. \textbf{(R1) In place:} check the
-deployed \asl{} artifact at build time, without a new runtime. \textbf{(R2) Sound where native:}
-when a property follows from \asl{} alone, report only definite faults. \textbf{(R3) Semantic
-premises:} accept omitted facts from sidecars, DSLs, generated metadata, or inference, and grade
-severity by provenance. \textbf{(R4) One framework:} cover data-flow, ordering, retry, concurrency,
-temporal, and compensation defects in one tool.
-In summary, control flow and JSONPath movement are native, sound passes. Contracts, typestate,
-idempotency, persistence, and compensators are declared or inferred. Resources and time bounds are
-partially native, conservative passes (full matrix in the technical report).
