@@ -20,7 +20,7 @@ task names and resource bindings.
 
 ## Implementation source hierarchy
 
-![StepCheck implementation source hierarchy](paper/figures/figure3-source-hierarchy.drawio.png)
+![StepCheck implementation source hierarchy](paper/figures/figure3-source-hierarchy.png)
 
 ## Layout
 
