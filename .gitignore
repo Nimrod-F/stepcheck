@@ -1,10 +1,7 @@
 # Rust build artifacts
 /stepcheck/target/
 
-# github-explorer cache (large third-party repo dumps, not part of this project)
-/.github-explorer-cache/
-
-# LaTeX auxiliary files (keep main.pdf and main.bbl)
+# LaTeX auxiliary files
 *.aux
 *.log
 *.out
@@ -30,36 +27,19 @@ infra/execution-*.json
 # build artifacts (regenerable)
 infra/echo.zip
 
-# internal memos / plans (not for public repo)
-comparatie reala - ICSOC.pdf
-recenzie-JENNI-ICSOC.pdf
-stepcheck_acceptance_plan_*.md
-stepcheck_icsoc_audit_*.md
-stepcheck_paper_review_*.md
-stepcheck_review_audit.md
-stepcheck_trim_plan_*.md
-icsoc_panel_review_*.md
-/PLAN.md
-
-# paper sources / compiled PDF (kept out of the public repo while under review)
-/paper/
-
-# personal working documents / old drafts (not for public repo)
-/Typechecking*.pdf
-/ICSOC2026*.pdf
-/Introduction Evaluation and Review.pdf
-/paper_original.zip
-
-# OS
-.DS_Store
-Thumbs.db
-
-# draw.io backup / temp files
-*.bkp
-.$*
-
 # real-bug miner work dir (transient clones)
 eval/.realbugs-work/
 
 # generated BPMN baseline encodings
 eval/asl2bpmn/out/
+
+# caches
+/.github-explorer-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor backup / temp files
+*.bkp
+.$*

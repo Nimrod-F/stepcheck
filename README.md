@@ -2,8 +2,10 @@
 
 This repository is the artifact for the paper *"StepCheck: Sound Static Verification of
 Deployed AWS Step Functions Workflows"*: the **StepCheck** tool, the evaluation corpora,
-the evaluation harness, and the AWS round-trip scripts. The paper and technical-report
-sources are not distributed here while the paper is under double-blind review.
+the evaluation harness, and the AWS round-trip scripts. The accompanying anonymous
+**technical report** (formal development and proofs, cited from the paper) is included at
+[`docs/techreport.pdf`](docs/techreport.pdf); the paper sources themselves are not
+distributed while the paper is under double-blind review.
 
 StepCheck is a static verifier for AWS Step Functions / Amazon States Language (ASL)
 workflows. Its centrepiece is a **sound data-flow / field-provenance analysis**
@@ -34,7 +36,7 @@ task names and resource bindings.
 | `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds 95 ASL definitions from 16 independent public repositories (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. |
 | `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, hold-out κ 0.97/0.98), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling), `WILD-EXTERNAL-SUMMARY.md`. |
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
-| `docs/` | figures (implementation source hierarchy). |
+| `docs/` | `techreport.pdf` — the anonymous technical report (*Static Verification of AWS Step Functions with Sound Data-Flow Analysis and Workflow Semantics*: formal development and proofs, cited from the paper) — and figures. |
 
 ## Build & run the tool
 
