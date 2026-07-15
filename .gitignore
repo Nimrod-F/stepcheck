@@ -38,6 +38,14 @@ stepcheck_icsoc_audit_*.md
 stepcheck_paper_review_*.md
 stepcheck_review_audit.md
 stepcheck_trim_plan_*.md
+icsoc_panel_review_*.md
+/PLAN.md
+
+# personal working documents / old drafts (not for public repo)
+/Typechecking*.pdf
+/ICSOC2026*.pdf
+/Introduction Evaluation and Review.pdf
+/paper_original.zip
 
 # OS
 .DS_Store
