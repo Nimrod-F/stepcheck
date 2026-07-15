@@ -228,7 +228,7 @@ for (const f of files) {
 const report = {
   generated_by: 'eval/validator_panel.js',
   hard_mutants: HARD,
-  corpus_dir: DIR,
+  corpus_dir: path.relative(ROOT, DIR).replace(/\\/g, '/') || '.',
   workflows: files.length,
   tools,
   aws_throttle_sleeps: awsThrottleSleeps,

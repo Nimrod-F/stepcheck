@@ -9,7 +9,7 @@ export const meta = {
   ],
 }
 
-const ROOT = (typeof args === 'object' && args && args.root) || 'C:/Users/foldv/Downloads/ICSOC_Typecheking'
+const ROOT = (typeof args === 'object' && args && args.root) || process.cwd()
 const ARGS = `${ROOT}/eval/wf-args.json`
 const GOLD_N = (typeof args === 'object' && args && args.goldN) || 14
 const TRIAGE_N = (typeof args === 'object' && args && args.triageN) || 79

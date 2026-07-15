@@ -1,6 +1,6 @@
 {
   "generated_by": "eval/validator_panel.js",
-  "corpus_dir": "C:\\Users\\foldv\\Downloads\\ICSOC_Typecheking\\corpus\\asl",
+  "corpus_dir": "corpus/asl",
   "workflows": 193,
   "tools": {
     "statelint": true,

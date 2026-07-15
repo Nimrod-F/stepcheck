@@ -41,6 +41,9 @@ stepcheck_trim_plan_*.md
 icsoc_panel_review_*.md
 /PLAN.md
 
+# paper sources / compiled PDF (kept out of the public repo while under review)
+/paper/
+
 # personal working documents / old drafts (not for public repo)
 /Typechecking*.pdf
 /ICSOC2026*.pdf

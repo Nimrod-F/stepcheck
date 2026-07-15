@@ -1,6 +1,6 @@
 {
-    "executionArn": "arn:aws:states:eu-central-1:683003725669:express:stepcheck-demo-order:6a90ec2f-ba90-4b57-b150-7c224def8836:0b23a59f-b8b9-47ef-91d2-5172ebbc7dfe",
-    "stateMachineArn": "arn:aws:states:eu-central-1:683003725669:stateMachine:stepcheck-demo-order",
+    "executionArn": "arn:aws:states:eu-central-1:123456789012:express:stepcheck-demo-order:6a90ec2f-ba90-4b57-b150-7c224def8836:0b23a59f-b8b9-47ef-91d2-5172ebbc7dfe",
+    "stateMachineArn": "arn:aws:states:eu-central-1:123456789012:stateMachine:stepcheck-demo-order",
     "name": "6a90ec2f-ba90-4b57-b150-7c224def8836",
     "startDate": "2026-06-18T22:23:52.781000+03:00",
     "stopDate": "2026-06-18T22:23:53.215000+03:00",

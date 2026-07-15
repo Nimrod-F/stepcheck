@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 REGION=eu-central-1
-ACCT=683003725669
+ACCT=${ACCT:-$(aws sts get-caller-identity --query Account --output text)}
 LAMBDA_ROLE="arn:aws:iam::${ACCT}:role/lambda-basic-role"
 SFN_ROLE="arn:aws:iam::${ACCT}:role/TesseraBenchmark-StepFunctions-Role"
 FN=stepcheck-demo-echo-cb

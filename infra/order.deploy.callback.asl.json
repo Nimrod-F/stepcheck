@@ -6,7 +6,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Catch": [
@@ -24,7 +24,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Catch": [
@@ -42,7 +42,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Catch": [
@@ -62,7 +62,7 @@
       "TimeoutSeconds": 3600,
       "HeartbeatSeconds": 900,
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload": {
           "TaskToken.$": "$$.Task.Token",
           "Order.$": "$"
@@ -83,7 +83,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Catch": [
@@ -101,7 +101,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Next": "OrderFailed"
@@ -110,7 +110,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Next": "OrderFailed"
@@ -119,7 +119,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Next": "OrderFailed"
@@ -128,7 +128,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:eu-central-1:683003725669:function:stepcheck-demo-echo-cb",
+        "FunctionName": "arn:aws:lambda:eu-central-1:123456789012:function:stepcheck-demo-echo-cb",
         "Payload.$": "$"
       },
       "Next": "OrderFailed"
