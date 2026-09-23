@@ -1,0 +1,31 @@
+{
+  "title": "StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows (artifact)",
+  "upload_type": "software",
+  "description": "<p>Artifact for the ICSOC 2026 paper <em>StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows</em>.</p><p>StepCheck is a static verifier for the deployed Amazon States Language (ASL) artifact. Its core is a flow-sensitive analysis of the ASL input/output pipeline that reports a missing-field access as an error only when every execution reaching the read would fail under the modeled semantics; seven further checks cover structural, contract, ordering, retry, concurrency, temporal and compensation properties, each graded by the provenance of the facts behind it.</p><p>The artifact contains the verifier (Rust), the evaluation corpora, the mutation engine, the execution oracle, the baseline harnesses and the scripts that regenerate the paper's tables, together with a companion technical report giving the formal development and proofs. Third-party workflow provenance and licensing are documented in <code>corpus/PROVENANCE.md</code>.</p>",
+  "creators": [
+    {
+      "name": "Földvári, Nimród",
+      "affiliation": "Faculty of Mathematics and Computer Science, Babes-Bolyai University, Cluj-Napoca, Romania",
+      "orcid": "0009-0008-3531-0478"
+    },
+    {
+      "name": "Crăciun, Florin",
+      "affiliation": "Faculty of Mathematics and Computer Science, Babes-Bolyai University, Cluj-Napoca, Romania",
+      "orcid": "0000-0003-0335-8369"
+    }
+  ],
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "keywords": [
+    "serverless computing",
+    "workflow orchestration",
+    "AWS Step Functions",
+    "Amazon States Language",
+    "static analysis",
+    "data-flow analysis",
+    "abstract interpretation",
+    "Saga compensation",
+    "service-oriented computing"
+  ],
+  "language": "eng"
+}

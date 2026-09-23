@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use StepCheck, please cite the ICSOC 2026 paper below."
+title: "StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows"
+abstract: >-
+  StepCheck is a static verifier for the deployed Amazon States Language (ASL)
+  artifact. A flow-sensitive analysis of the ASL input/output pipeline reports a
+  missing-field access as an error only when every execution reaching the read
+  would fail under the modeled semantics; seven further checks cover structural,
+  contract, ordering, retry, concurrency, temporal and compensation properties,
+  each graded by the provenance of the facts behind it.
+type: software
+license: Apache-2.0
+version: 0.1.4
+repository-code: "https://github.com/Nimrod-F/stepcheck"
+keywords:
+  - serverless computing
+  - workflow orchestration
+  - AWS Step Functions
+  - Amazon States Language
+  - static analysis
+  - data-flow analysis
+  - Saga compensation
+authors:
+  - family-names: "Földvári"
+    given-names: "Nimród"
+    orcid: "https://orcid.org/0009-0008-3531-0478"
+    affiliation: "Faculty of Mathematics and Computer Science, Babes-Bolyai University, Cluj-Napoca, Romania"
+  - family-names: "Crăciun"
+    given-names: "Florin"
+    orcid: "https://orcid.org/0000-0003-0335-8369"
+    affiliation: "Faculty of Mathematics and Computer Science, Babes-Bolyai University, Cluj-Napoca, Romania"
+preferred-citation:
+  type: conference-paper
+  title: "StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows"
+  year: 2026
+  collection-title: "Service-Oriented Computing (ICSOC 2026)"
+  publisher:
+    name: Springer
+  authors:
+    - family-names: "Földvári"
+      given-names: "Nimród"
+      orcid: "https://orcid.org/0009-0008-3531-0478"
+    - family-names: "Crăciun"
+      given-names: "Florin"
+      orcid: "https://orcid.org/0000-0003-0335-8369"
