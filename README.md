@@ -38,6 +38,44 @@ task names and resource bindings.
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
 | `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
 
+## Install
+
+StepCheck ships as a single self-contained binary. To use it on your own workflows
+(rather than to reproduce the paper, which is the "Build & run" section below):
+
+```bash
+# Node / npm - installs the `stepcheck` command
+npm install -g @nimrod-f/stepcheck
+
+# Rust / crates.io - builds from source
+cargo install stepcheck
+```
+
+Both publish version 0.1.3. The npm package is a thin wrapper: its postinstall script
+downloads the prebuilt binary for your platform (linux, macOS or Windows; x64 or arm64,
+Node >= 16) and puts it on your PATH as `stepcheck`. The command is `stepcheck` either
+way, so the scope in the package name does not leak into usage. If no prebuilt binary
+matches your platform, or the download is unavailable, fall back to `cargo install
+stepcheck`, which compiles it locally; you can also point the wrapper at another release
+host with `STEPCHECK_REPO=owner/repo npm install -g @nimrod-f/stepcheck`.
+
+```bash
+# verify a workflow, using name-based inference for the effect facts ASL omits
+stepcheck check workflow.asl.json --infer
+
+# check the deployment artifact a team actually ships
+stepcheck check template.yaml
+
+# check against declared premises (contracts, typestate, idempotency, compensators)
+stepcheck check workflow.asl.json --annot workflow.sidecar.toml
+```
+
+`stepcheck` exits `0` when clean, `1` when it reports errors and `2` on a parse failure,
+so it drops into a build pipeline unchanged; add `--deny-warnings` to fail on warnings
+too, once a workflow carries enough annotations for that to be meaningful. `--json` emits
+one stable object per finding (code, severity, state, message, remediation hint). See
+"Use StepCheck as a CI gate" below for a copy-pasteable GitHub Actions job.
+
 ## Build & run the tool
 
 ```bash
@@ -142,6 +180,24 @@ elsewhere.
   issues quoting the runtime error StepCheck's sound tier prevents, it flags all **3**
   SC1101 defects. On **95** ASL definitions from **16** independent repositories it produces
   representative findings on workflows we neither authored nor curated.
+  - The six fix-commit defects come from `aws-samples/aws-batch-runtime-monitoring` (SC1101),
+    `allenheltondev/serverless-ai-fitness` (SC1101 and an SC1110 dead subscriber branch),
+    `manikanta5827/leave-management` (SC6001), `sparameswaran/airway-shipment-orchestrator`
+    (SC0002) and `nicktodd/video-translation-stepfunctions` (SC0003/4/5); see
+    `corpus/realbugs/README.md` for the per-bug table.
+  - The three issues are `scttfrdmn/campus-compute` #32, `dataPlor/turbofan` #1 and
+    `aws-samples/serverless-coffee-workshop` #56, each with its URL and the verbatim reported
+    error in `eval/issue-tracker-defects.json`.
+  - The 16 independent repositories are `vdaron/StatesLanguage`,
+    `skyflow-workflow/skyflow_backend`, `wmfs/statebox`, `ChristopheBougere/asl-validator`,
+    `mugglmenzel/step-functions-example-workflow`, `yskszk63/sam-local-asl`,
+    `aws-iot-builder-tools/iot-workflow-management-and-execution`,
+    `pssolanki111/pyDelhi_step_functions` and eight `Thrubit/*` domain repositories
+    (freight-booking, credit-card-transaction, payment-settlement,
+    launch-vehicle-manufacturing, vehicle-recall-management, network-outage-management,
+    vehicle-order-fulfillment, mission-control-operations). `corpus/wild-external/manifest.json`
+    records the branch and path of every file, and `corpus/PROVENANCE.md` the licence of every
+    repository.
 - **Inference accuracy vs gold** (23 workflows, 172 double-labelled tasks): **76%**
   idempotency, **85%** persistence at **81%** coverage; hold-out set κ **0.97/0.98**.
   In-the-wild warning precision vs human gold (κ 0.89/0.99): **46/50 (92%)** overall,
