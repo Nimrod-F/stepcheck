@@ -43,3 +43,10 @@ Thumbs.db
 # editor backup / temp files
 *.bkp
 .$*
+
+# Paper sources, peer review and publisher material — never part of the artifact
+paper_ICSOC/
+ICSOC_Camera_Ready/
+REVIEW_ICSOC.pdf
+Instructions for proceedings authors (pdf).pdf
+stepcheck-icsoc2026.zip
