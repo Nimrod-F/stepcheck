@@ -33,10 +33,10 @@ task names and resource bindings.
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second format). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
 | `corpus/industrial/` | six industrial-topology workflows (65 recursive states) incl. four `aws-samples` Sagas and Serverless Airline Booking `ProcessBooking` — the CI-gate / cost study set. |
 | `corpus/aws-templates/`, `corpus/aws-solutions/` | deployment artifacts for the CloudFormation front end: `aws-samples/serverless-patterns` SAM templates (55 workflows) and AWS Solutions Library machines (26, partly CDK-generated). |
-| `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds 95 ASL definitions from 16 independent public repositories (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. |
+| `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds the independent-repository set (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. The studies were run over 95 definitions from 16 repositories and 39 fix-commit pairs; the 36 files whose upstream publishes no licence are **not redistributed here** and are re-fetched by `node eval/mine_wild.js` / `node eval/mine_realbugs.js`. See `corpus/PROVENANCE.md` for every source, its licence, and what ships. |
 | `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, hold-out κ 0.97/0.98), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling), `WILD-EXTERNAL-SUMMARY.md`. |
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
-| `docs/` | `techreport.pdf` — the anonymous technical report (*Static Verification of AWS Step Functions with Sound Data-Flow Analysis and Workflow Semantics*: formal development and proofs, cited from the paper) — and figures. |
+| `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
 
 ## Build & run the tool
 
@@ -184,3 +184,10 @@ bash infra/deploy_run_callback.sh           # Standard live callback + SendTaskS
 bash infra/bench_express_vs_standard.sh     # 100-run Express/Standard benchmark
 bash infra/teardown.sh                      # delete created state machines + Lambdas
 ```
+
+## Licence
+
+StepCheck is released under the Apache License 2.0 (see `LICENSE`). That licence covers
+the tool and the workflows we authored; the third-party workflows in `corpus/` remain
+under their upstream licences, which `corpus/PROVENANCE.md` records source by source,
+together with the attribution those licences require.
