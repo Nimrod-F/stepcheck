@@ -70,6 +70,28 @@ stepcheck check template.yaml
 stepcheck check workflow.asl.json --annot workflow.sidecar.toml
 ```
 
+### What it reports, and when it stays silent
+
+Severity tells you how much evidence is behind a finding. An **error** rests on the
+artifact itself or on premises you declared, so a CI gate can block on it; a **warning**
+rests on premises inferred from naming conventions (`--infer`), so it never blocks.
+
+The data-flow check `SC1101` reports a missing field only when it can prove the field is
+absent on *every* path, which is why it is silent more often than a linter would be. It
+fires when the document is one the workflow itself constructs:
+
+```bash
+stepcheck check corpus/dataflow/native-bad.asl.json
+# error[SC1101]: 'ChargeCard' reads '$.order.total', a field no execution reaching it can have produced
+```
+
+If the read instead resolves against the raw execution input, that input is unconstrained,
+the analysis abstracts it to "any field may be present", and it stays silent by design
+rather than guessing. To check those reads, declare the input schema in a sidecar and pass
+it with `--annot`; the same sidecar unlocks the contract, typestate, retry and compensation
+checks, which need facts ASL cannot express. `corpus/dsl/order.sidecar.toml` is a worked
+example and `corpus/PROVENANCE.md` documents the corpora used above.
+
 `stepcheck` exits `0` when clean, `1` when it reports errors and `2` on a parse failure,
 so it drops into a build pipeline unchanged; add `--deny-warnings` to fail on warnings
 too, once a workflow carries enough annotations for that to be meaningful. `--json` emits
