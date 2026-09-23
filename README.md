@@ -51,7 +51,7 @@ npm install -g @nimrod-f/stepcheck
 cargo install stepcheck
 ```
 
-Both publish version 0.1.3. The npm package is a thin wrapper: its postinstall script
+Both publish version 0.1.4. The npm package is a thin wrapper: its postinstall script
 downloads the prebuilt binary for your platform (linux, macOS or Windows; x64 or arm64,
 Node >= 16) and puts it on your PATH as `stepcheck`. The command is `stepcheck` either
 way, so the scope in the package name does not leak into usage. If no prebuilt binary
