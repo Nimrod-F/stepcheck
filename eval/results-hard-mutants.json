@@ -1,6 +1,6 @@
 {
   "study": "hard_mutants",
-  "note": "Each class's boundary variant (mutate_hard): a genuine defect placed just past the analysis's ⊤ / coverage boundary. recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
+  "note": "Each class's boundary variant (mutate_hard): a genuine defect moved to the edge of what the analysis can prove. recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
   "corpus": {
     "files": 193
   },
@@ -14,10 +14,10 @@
         "SC1003"
       ],
       "applicable": 166,
-      "detected_expected_code": 0,
-      "detected_family": 0,
-      "recall_expected_code": 0.0,
-      "recall_family": 0.0
+      "detected_expected_code": 166,
+      "detected_family": 166,
+      "recall_expected_code": 1.0,
+      "recall_family": 1.0
     },
     "Dataflow": {
       "expected_code": "SC1101",
@@ -100,6 +100,7 @@
       "SC1110": 1
     },
     "Contract": {
+      "SC1003": 166,
       "SC1101": 20,
       "SC1110": 11
     },

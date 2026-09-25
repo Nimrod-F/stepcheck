@@ -24,6 +24,7 @@ licences of the third-party workflows listed below, which remain under their own
 | `realbugs/` | 12 pairs + issues | — | five public repos (see below) | mixed, **2 repos unlicensed** | partly |
 | `wild-external/` | 95 (+manifest) | 93 | 16 public repos (see below) | mixed, **9 repos unlicensed** | partly |
 | `dataflow/`, `dsl/`, `wild-annot/` | 10 | 10 | authored by us | Apache-2.0 | yes |
+| `examples/` | 1 (+README) | 1 | authored by us (paper's running example, Fig. 1) | Apache-2.0 | yes |
 | `gold-labels*.json`, `manifest.json` | 3 | 2 | authored by us (labels over the `asl/` corpus) | Apache-2.0 | yes |
 
 MIT-0 is MIT without the attribution clause, so the AWS sample workflows carry no

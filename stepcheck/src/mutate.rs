@@ -355,11 +355,12 @@ fn mutate_temporal_hard(w: &mut Workflow, seed: u64) -> bool {
     true
 }
 
-/// **Contract (SC1003), coverage boundary via `ResultSelector`.** A syntactically
-/// invalid `.$` payload, but placed inside a `ResultSelector` — which the SC1003
-/// syntactic scan does not descend into (it covers `Parameters`, `Assign`, and
-/// `Choice` conditions). The broken path is a genuine deploy/run-time error that
-/// StepCheck's contract scan does not reach.
+/// **Contract (SC1003), generalization control via `ResultSelector`.** The same
+/// syntactically invalid `.$` payload as the easy contract mutant, but placed in a
+/// `ResultSelector` instead of `Parameters`. The scan reads every payload template
+/// (`Parameters`, `ResultSelector`, a Distributed `Map`'s `ItemSelector`, `Assign`)
+/// and `Choice` guards, so this should still be caught — the point is to confirm the
+/// check is not tuned to where the easy operator puts the break.
 fn mutate_contract_hard(w: &mut Workflow, seed: u64) -> bool {
     let sites: Vec<String> = w
         .states

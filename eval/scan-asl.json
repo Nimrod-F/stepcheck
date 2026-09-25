@@ -2,13 +2,14 @@
   "files": 193,
   "flagged_files": 99,
   "total_errors": 1,
-  "total_warnings": 223,
+  "total_warnings": 225,
   "code_totals": {
     "SC0007": 9,
     "SC0010": 1,
     "SC3001": 36,
     "SC4001": 117,
     "SC4010": 28,
+    "SC5003": 2,
     "SC6001": 33
   },
   "per_file": [
@@ -459,6 +460,20 @@
       },
       "diagnostics": [
         {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Third Party Payment Service HTTPS Endpoint",
+          "message": "callback task 'Third Party Payment Service HTTPS Endpoint' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Third Party Shipping Service HTTPS Endpoint",
+          "message": "callback task 'Third Party Shipping Service HTTPS Endpoint' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "Set Order, Payment and Shipping Status",
@@ -506,20 +521,6 @@
           "state": "Set Shipping Status: Unsuccessful",
           "message": "persistent task 'Set Shipping Status: Unsuccessful' (ship) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Third Party Payment Service HTTPS Endpoint",
-          "message": "callback task 'Third Party Payment Service HTTPS Endpoint' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Third Party Shipping Service HTTPS Endpoint",
-          "message": "callback task 'Third Party Shipping Service HTTPS Endpoint' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
         }
       ]
     },
@@ -949,13 +950,6 @@
       },
       "diagnostics": [
         {
-          "code": "SC4001",
-          "severity": "warning",
-          "state": "executeParallel[Branch0]/StartWorkflowMonitoring",
-          "message": "persistent task 'StartWorkflowMonitoring' (putitem) has no compensating action or failure handling",
-          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
           "code": "SC6001",
           "severity": "warning",
           "state": "executeParallel[Branch0]/StartWorkflowMonitoring",
@@ -968,6 +962,13 @@
           "state": "executeParallel[Branch1]/StopWorkflowMontoring",
           "message": "callback task 'StopWorkflowMontoring' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
           "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "executeParallel[Branch0]/StartWorkflowMonitoring",
+          "message": "persistent task 'StartWorkflowMonitoring' (putitem) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
         }
       ]
     },
@@ -1781,20 +1782,6 @@
       },
       "diagnostics": [
         {
-          "code": "SC4010",
-          "severity": "warning",
-          "state": "Process Payment",
-          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
-          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
-        },
-        {
-          "code": "SC4001",
-          "severity": "warning",
-          "state": "Workflow to Update Backend Systems",
-          "message": "persistent task 'Workflow to Update Backend Systems' (startexecution) has no compensating action or failure handling",
-          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
           "code": "SC6001",
           "severity": "warning",
           "state": "Approve Order Request",
@@ -1807,6 +1794,20 @@
           "state": "Process Payment",
           "message": "callback task 'Process Payment' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
           "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Process Payment",
+          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "Workflow to Update Backend Systems",
+          "message": "persistent task 'Workflow to Update Backend Systems' (startexecution) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
         }
       ]
     },
@@ -1828,20 +1829,6 @@
       },
       "diagnostics": [
         {
-          "code": "SC4010",
-          "severity": "warning",
-          "state": "Process Payment",
-          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
-          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
-        },
-        {
-          "code": "SC4001",
-          "severity": "warning",
-          "state": "Workflow to Update Backend Systems",
-          "message": "persistent task 'Workflow to Update Backend Systems' (startexecution) has no compensating action or failure handling",
-          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
           "code": "SC6001",
           "severity": "warning",
           "state": "Approve Order Request",
@@ -1854,6 +1841,20 @@
           "state": "Process Payment",
           "message": "callback task 'Process Payment' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
           "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC4010",
+          "severity": "warning",
+          "state": "Process Payment",
+          "message": "persistent task 'Process Payment' has a Catch, but no error path reaches a compensating action (it only logs/notifies/fails)",
+          "note": "route the failure to a state that undoes the effect (refund/cancel/release/rollback), or annotate a compensation"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "Workflow to Update Backend Systems",
+          "message": "persistent task 'Workflow to Update Backend Systems' (startexecution) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
         }
       ]
     },
@@ -2004,6 +2005,27 @@
       },
       "diagnostics": [
         {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
+          "message": "callback task 'Wait for ContentModeration Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Label Detection Map[Map]/Wait for LabelDetection Callback",
+          "message": "callback task 'Wait for LabelDetection Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
+          "message": "callback task 'Wait for SegmentDetection Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
           "code": "SC4001",
           "severity": "warning",
           "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
@@ -2030,27 +2052,6 @@
           "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
           "message": "persistent task 'Wait for SegmentDetection Callback' (putitem) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Content Moderation Map[Map]/Wait for ContentModeration Callback",
-          "message": "callback task 'Wait for ContentModeration Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Label Detection Map[Map]/Wait for LabelDetection Callback",
-          "message": "callback task 'Wait for LabelDetection Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Segment Detection Map[Map]/Wait for SegmentDetection Callback",
-          "message": "callback task 'Wait for SegmentDetection Callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
         }
       ]
     },
@@ -2486,18 +2487,18 @@
           "note": "an input matching no rule fails at runtime with States.NoChoiceMatched"
         },
         {
-          "code": "SC4001",
-          "severity": "warning",
-          "state": "Start Open Request (Wait to Complete)",
-          "message": "persistent task 'Start Open Request (Wait to Complete)' (startexecution) has no compensating action or failure handling",
-          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
           "code": "SC6001",
           "severity": "warning",
           "state": "Cancel Request (Callback)",
           "message": "callback task 'Cancel Request (Callback)' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
           "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
+        {
+          "code": "SC4001",
+          "severity": "warning",
+          "state": "Start Open Request (Wait to Complete)",
+          "message": "persistent task 'Start Open Request (Wait to Complete)' (startexecution) has no compensating action or failure handling",
+          "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
         }
       ]
     },
@@ -2648,12 +2649,27 @@
     {
       "file": "sfn-collection__workflow-within-a-workflow-cdk__statemachines__main-state-machine.asl.json",
       "errors": 0,
-      "warnings": 4,
+      "warnings": 5,
       "codes": {
         "SC4001": 3,
+        "SC5003": 1,
         "SC6001": 1
       },
       "diagnostics": [
+        {
+          "code": "SC5003",
+          "severity": "warning",
+          "state": "Start in parallel",
+          "message": "parallel branches concurrently invoke the same child workflow 'arn:aws:states:me-south-1:112233445566:stateMachine:NestedStateMachine0545D63E-B7mTHyUm3dld' (branch0:Start new workflow and wait for completion, branch1:Start new workflow and wait for callback) \u00e2\u20ac\u201d its external effects run twice concurrently",
+          "note": "startExecution composes: a non-idempotent child run concurrently may duplicate or interleave its writes"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+          "message": "callback task 'Start new workflow and wait for callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -2674,13 +2690,6 @@
           "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
           "message": "persistent task 'Start new workflow and wait for callback' (startexecution) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
-          "message": "callback task 'Start new workflow and wait for callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
         }
       ]
     },
@@ -2694,12 +2703,27 @@
     {
       "file": "sfn-collection__workflow-within-a-workflow__statemachines__main-state-machine.asl.json",
       "errors": 0,
-      "warnings": 4,
+      "warnings": 5,
       "codes": {
         "SC4001": 3,
+        "SC5003": 1,
         "SC6001": 1
       },
       "diagnostics": [
+        {
+          "code": "SC5003",
+          "severity": "warning",
+          "state": "Start in parallel",
+          "message": "parallel branches concurrently invoke the same child workflow '${NestingPatternAnotherStateMachineArn}' (branch0:Start new workflow and wait for completion, branch1:Start new workflow and wait for callback) \u00e2\u20ac\u201d its external effects run twice concurrently",
+          "note": "startExecution composes: a non-idempotent child run concurrently may duplicate or interleave its writes"
+        },
+        {
+          "code": "SC6001",
+          "severity": "warning",
+          "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
+          "message": "callback task 'Start new workflow and wait for callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
+          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
+        },
         {
           "code": "SC4001",
           "severity": "warning",
@@ -2720,13 +2744,6 @@
           "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
           "message": "persistent task 'Start new workflow and wait for callback' (startexecution) has no compensating action or failure handling",
           "note": "persistence inferred from naming; add a Catch to a compensating state or annotate the task idempotent/non-persistent"
-        },
-        {
-          "code": "SC6001",
-          "severity": "warning",
-          "state": "Start in parallel[Branch1]/Start new workflow and wait for callback",
-          "message": "callback task 'Start new workflow and wait for callback' has no TimeoutSeconds or HeartbeatSeconds and may wait indefinitely",
-          "note": "a lost task token leaves the execution blocked for up to one year; set a TimeoutSeconds/HeartbeatSeconds"
         }
       ]
     },

@@ -3,7 +3,7 @@
   "method": "Clopper-Pearson exact 95% CI on per-class recall k/n over the full 193-workflow corpus; Fisher exact vs each formal verifier.",
   "hard_mutants": {
     "method": "Boundary variant per class (stepcheck mutate --hard). StepCheck recall from the native typed-tier study (count-based fresh, family-credited); formal verifiers from the round-trip comparison; schema validators from the panel. Exact Clopper-Pearson 95% CIs throughout.",
-    "interpretation": "recall < 1 is a measured completeness boundary, not a soundness violation: at \u22a4 the sound analyses decline to report what they cannot prove (no false alarm). The abstraction-gap classes (data-flow, concurrency, temporal) drop to 0 at their boundary; compensation is caught by a sibling code rather than the operator's expected code; structural reachability stays exact; retry degrades gracefully at the inference tier; the contract break escapes the syntactic scan (and is covered by schema validators).",
+    "interpretation": "recall < 1 is a measured completeness boundary, not a soundness violation: at \u22a4 the sound analyses decline to report what they cannot prove (no false alarm). The abstraction-gap classes (data-flow, concurrency, temporal) drop to 0 at their boundary; compensation is caught by a sibling code rather than the operator's expected code; structural reachability stays exact; retry degrades gracefully at the inference tier; the contract break is caught wherever it hides, because the SC1003 scan covers every payload template (Parameters, ResultSelector, ItemSelector, Assign) and Choice guards.",
     "classes": {
       "Structural": {
         "code": "SC0002",
@@ -66,24 +66,25 @@
       "Contract": {
         "code": "SC1003",
         "n": 166,
-        "boundary": "syntactic-scan coverage boundary (ResultSelector is outside the SC1003 scan)",
+        "boundary": "generalization control: the break moves from Parameters into a ResultSelector, which SC1003 reads like every other payload template",
         "stepcheck_expected_code": {
-          "detected": 0,
-          "recall": 0.0,
+          "detected": 166,
+          "recall": 1.0,
           "cp95": [
-            0.0,
-            0.022
+            0.978,
+            1.0
           ]
         },
         "stepcheck_family": {
-          "detected": 0,
-          "recall": 0.0,
+          "detected": 166,
+          "recall": 1.0,
           "cp95": [
-            0.0,
-            0.022
+            0.978,
+            1.0
           ]
         },
         "codes_fired": {
+          "SC1003": 166,
           "SC1101": 20,
           "SC1110": 11
         },

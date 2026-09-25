@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-12T08:44:49.955Z",
+  "generated_at": "2026-09-23T20:19:40.414Z",
   "generated_by": "eval/native_census_verify.js",
   "description": "Code-disjoint structural re-verification of all native-tier findings; structural_tp=true iff the ASL exhibits the flagged construct at the referenced state.",
   "population_file": "eval/diagnostic-precision-population.json",

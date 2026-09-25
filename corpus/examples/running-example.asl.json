@@ -1,0 +1,144 @@
+{
+  "Comment": "Running example of the StepCheck paper (ICSOC 2026, Fig. 1): order processing with defects (1), (3)-(6); (2) is a one-edge mutation. See README.md.",
+  "StartAt": "CreateOrder",
+  "States": {
+    "CreateOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:CreateOrder",
+        "Payload.$": "$"
+      },
+      "Next": "ReserveInventory"
+    },
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ReserveInventory",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "orderId.$": "$.Payload.orderId",
+        "amount.$": "$.Payload.amount"
+      },
+      "ResultPath": "$",
+      "Next": "CheckStock"
+    },
+    "CheckStock": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.amount",
+          "NumericGreaterThan": 0,
+          "Next": "Fulfil"
+        }
+      ],
+      "Default": "WaitRestock"
+    },
+    "WaitRestock": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "CheckStock"
+    },
+    "Fulfil": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "ChargeCard",
+          "States": {
+            "ChargeCard": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ChargeCard",
+                "Payload.$": "$.total"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "MaxAttempts": 3
+                }
+              ],
+              "ResultPath": null,
+              "Next": "RecordPayment"
+            },
+            "RecordPayment": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:putItem",
+              "Parameters": {
+                "TableName": "orders",
+                "Item": {
+                  "id": {
+                    "S.$": "$.orderId"
+                  },
+                  "status": {
+                    "S": "PAID"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "ScreenFraud",
+          "States": {
+            "ScreenFraud": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ScreenFraud",
+                "Payload.$": "$"
+              },
+              "ResultPath": null,
+              "Next": "RecordScreening"
+            },
+            "RecordScreening": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:putItem",
+              "Parameters": {
+                "TableName": "orders",
+                "Item": {
+                  "id": {
+                    "S.$": "$.orderId"
+                  },
+                  "status": {
+                    "S": "SCREENED"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": null,
+      "Next": "AwaitApproval"
+    },
+    "AwaitApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:RequestApproval",
+        "Payload": {
+          "token.$": "$$.Task.Token",
+          "orderId.$": "$.orderId"
+        }
+      },
+      "ResultPath": null,
+      "Next": "ShipOrder"
+    },
+    "ShipOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ShipOrder",
+        "Payload.$": "$"
+      },
+      "End": true
+    }
+  }
+}

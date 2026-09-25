@@ -760,7 +760,7 @@ fn cmd_eval_hard(
 
     let report = json!({
         "study": "hard_mutants",
-        "note": "Each class's boundary variant (mutate_hard): a genuine defect placed just past the analysis's ⊤ / coverage boundary. \
+        "note": "Each class's boundary variant (mutate_hard): a genuine defect moved to the edge of what the analysis can prove. \
                  recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
         "corpus": { "files": files },
         "ablation": { "result_shapes": result_shapes },

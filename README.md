@@ -51,7 +51,7 @@ npm install -g @nimrod-f/stepcheck
 cargo install stepcheck
 ```
 
-Both publish version 0.1.4. The npm package is a thin wrapper: its postinstall script
+Both publish version 0.1.5. The npm package is a thin wrapper: its postinstall script
 downloads the prebuilt binary for your platform (linux, macOS or Windows; x64 or arm64,
 Node >= 16) and puts it on your PATH as `stepcheck`. The command is `stepcheck` either
 way, so the scope in the package name does not leak into usage. If no prebuilt binary
@@ -185,11 +185,15 @@ elsewhere.
   37% on compensation and 5% on concurrency, and misclassify **8.3% / 8.3% / 29%** of the
   *valid* workflows; StepCheck's ASL-native model accepts all 193.
 - **Hard-mutant study (operator–check independence)**: a matched suite of **688** boundary
-  mutants (`--hard`) — each a genuine defect placed just past the analysis's ⊤ boundary.
-  Aggregate recall **0.24** (162/688): data-flow, contract, concurrency, and temporal drop
+  mutants (`--hard`) — each a genuine defect moved to the edge of what the analysis can prove.
+  Aggregate recall **0.48** (328/688; 0.24 before 0.1.5 extended the SC1003 scan to `ResultSelector`/`ItemSelector`): data-flow, concurrency, and temporal drop
   to **0** at their ⊤ boundary (sound silence, not false negatives), retry degrades to
-  **0.68**, compensation to **0.79** via the family siblings SC4010/SC4011, and structural
-  stays exact at **1.00**. See `eval/results-hard-mutants.json`.
+  **0.68**, and compensation to **0.79** via the family siblings SC4010/SC4011. Two
+  variants are generalization controls rather than ⊤ boundaries — the dangling edge
+  hidden in a nested sub-machine, and the broken payload moved from `Parameters` into a
+  `ResultSelector` — and both stay exact at **1.00**, since the structural pass recurses
+  into sub-machines and SC1003 reads every payload template. See
+  `eval/results-hard-mutants.json`.
 - **Data-flow provenance, SC1101 (RQ2)**: **0** false positives on the clean corpus; a
   missing-field read injected into each of the **126/193** applicable workflows is detected
   in **88 (70%)** with `--result-shapes` — the other 38 sit behind constructs the analysis

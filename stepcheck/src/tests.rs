@@ -949,6 +949,29 @@ fn temporal_flags_unbounded_callback_and_bad_heartbeat() {
 }
 
 #[test]
+fn contract_scan_covers_every_payload_template() {
+    // SC1003 descends into every payload template, not just Parameters:
+    // a broken `.$` in a ResultSelector or in a Map's ItemSelector is the same
+    // deploy-time error and must be reported wherever it sits.
+    let src = r#"{"StartAt":"A","States":{
+        "A":{"Type":"Task","Resource":"r","ResultSelector":{"picked.$":"BROKEN.notapath"},"Next":"M"},
+        "M":{"Type":"Map","ItemSelector":{"item.$":"ALSO.broken"},
+             "ItemProcessor":{"StartAt":"I","States":{"I":{"Type":"Pass","End":true}}},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    let n = sink.diagnostics.iter().filter(|d| d.code == "SC1003").count();
+    assert_eq!(n, 2, "expected SC1003 for ResultSelector and ItemSelector: {:#?}", sink.diagnostics);
+}
+
+#[test]
+fn contract_scan_accepts_valid_payload_templates() {
+    let src = r#"{"StartAt":"A","States":{
+        "A":{"Type":"Task","Resource":"r","ResultSelector":{"picked.$":"$.Payload.id",
+             "made.$":"States.Format('{}', $.Payload.id)"},"End":true}}}"#;
+    let sink = check_asl(src, None);
+    assert!(!sink.has_code("SC1003"), "valid paths must stay silent: {:#?}", sink.diagnostics);
+}
+
+#[test]
 fn structural_pass_flags_dangling_transition() {
     let src = r#"{"StartAt":"A","States":{
         "A":{"Type":"Task","Resource":"r","Next":"Missing"}}}"#;

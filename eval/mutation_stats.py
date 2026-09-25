@@ -219,7 +219,7 @@ def hard_mutant_metrics():
     # (native kind, code, formal/schema key, boundary description)
     HARD_CLASSES = [
         ("Structural", "SC0002", "structural", "exact decision procedure (reachability; recurses into nested scopes)"),
-        ("Contract", "SC1003", "contract", "syntactic-scan coverage boundary (ResultSelector is outside the SC1003 scan)"),
+        ("Contract", "SC1003", "contract", "generalization control: the break moves from Parameters into a ResultSelector, which SC1003 reads like every other payload template"),
         ("Retry", "SC3001", "retry", "inference-tier boundary (non-idempotence unprovable once name/FunctionName are generic)"),
         ("Compensation", "SC4001", "compensation", "family generalization (caught by the effect-aware sibling SC4010, not the presence-only SC4001)"),
         ("Concurrency", "SC5001", "concurrency", "sound ⊤-lift (dynamically-named shared resource)"),
@@ -267,7 +267,8 @@ def hard_mutant_metrics():
                           "decline to report what they cannot prove (no false alarm). The abstraction-gap classes (data-flow, "
                           "concurrency, temporal) drop to 0 at their boundary; compensation is caught by a sibling code rather "
                           "than the operator's expected code; structural reachability stays exact; retry degrades gracefully at "
-                          "the inference tier; the contract break escapes the syntactic scan (and is covered by schema validators).",
+                          "the inference tier; the contract break is caught wherever it hides, because the SC1003 scan covers every payload "
+                          "template (Parameters, ResultSelector, ItemSelector, Assign) and Choice guards.",
         "classes": out,
     }
 

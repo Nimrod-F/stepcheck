@@ -3,16 +3,20 @@
     "files": 193,
     "total_states": 1355
   },
+  "ablation": {
+    "result_shapes": false
+  },
   "baseline": {
     "flagged_files": 99,
     "errors": 1,
-    "warnings": 223,
+    "warnings": 225,
     "code_totals": {
       "SC0007": 9,
       "SC0010": 1,
       "SC3001": 36,
       "SC4001": 117,
       "SC4010": 28,
+      "SC5003": 2,
       "SC6001": 33
     }
   },
@@ -54,10 +58,33 @@
       "recall": 1.0
     }
   },
+  "confusion_matrix": {
+    "Compensation": {
+      "SC0003": 9,
+      "SC4001": 19
+    },
+    "Concurrency": {
+      "SC5001": 21
+    },
+    "Contract": {
+      "SC1003": 141
+    },
+    "Retry": {
+      "SC3001": 103
+    },
+    "Structural": {
+      "SC0002": 166,
+      "SC0003": 157,
+      "SC0005": 133
+    },
+    "Temporal": {
+      "SC6003": 166
+    }
+  },
   "timing_us": {
-    "mean": 36.572020725388604,
-    "median": 27.5,
-    "max": 1027.4,
-    "total_ms": 7.0584
+    "mean": 61.4300518134715,
+    "median": 35.3,
+    "max": 1816.7,
+    "total_ms": 11.856
   }
 }

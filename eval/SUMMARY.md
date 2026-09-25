@@ -63,13 +63,18 @@ Exact CIs and the merged table live in `eval/mutation-stats.json` under `hard_mu
 | Data-flow | SC1101 | 0.70 | 0.00 [0,.03] | ⊤-lift (filter-expression InputPath) |
 | Concurrency | SC5001 | 1.00 | 0.00 [0,.16] | ⊤-lift (dynamically-named resource) |
 | Temporal | SC6003 | 1.00 | 0.00 [0,.02] | ⊤-lift (reference-path heartbeat/timeout) |
-| Contract | SC1003 | 1.00 | 0.00 [0,.02] | syntactic-scan gap (ResultSelector unscanned) |
+| Contract | SC1003 | 1.00 | 1.00 [.98,1] | generalization control: the break moves into a `ResultSelector`, which the scan reads like any other payload template |
 
+Aggregate: **328/688 = 0.48** family-credited.
 A hard value <1 is a **measured completeness boundary, not a soundness violation**: at ⊤ the sound
-analyses decline to report rather than emit a false alarm. Woflan catches only structural (.31) and a
-compensation side effect (.13); schema validators catch structural and the ResultSelector break that
-SC1003 misses (complementarity). *Compensation is caught by the effect-aware sibling SC4010, not the
-operator's expected SC4001 — direct evidence the check family is not tuned to the operator.
+analyses decline to report rather than emit a false alarm. The structural and contract rows are
+generalization controls rather than ⊤ boundaries: the dangling edge hides in a nested sub-machine and
+the broken `.$` moves from `Parameters` into a `ResultSelector` or a Distributed Map's `ItemSelector`.
+Both stay exact, because the structural pass recurses into sub-machines and SC1003 reads every payload
+template (`contract_scan_covers_every_payload_template`). Woflan catches only structural (.31) and a
+compensation side effect (.13); schema validators catch structural and the contract break.
+*Compensation is caught by the effect-aware sibling SC4010, not the operator's expected SC4001 —
+direct evidence the check family is not tuned to the operator.
 
 ## E4 — Inference accuracy vs agreement-checked gold (23 workflows, 137 tasks)
 Gold set expanded from 10→23 workflows; the human-labelled expansion was labelled in

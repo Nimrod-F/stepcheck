@@ -30,8 +30,17 @@ impl Pass for ContractPass {
 
 fn refs_of(st: &State) -> Vec<String> {
     let mut out = Vec::new();
+    // Every payload template a state can carry: the argument constructor
+    // (`Parameters`), the result reshaper (`ResultSelector`), a Distributed Map's
+    // `ItemSelector`, and `Assign`; plus `Choice` guards.
     if let Some(p) = &st.parameters {
         collect_jsonpath_refs(p, &mut out);
+    }
+    if let Some(rs) = &st.result_selector {
+        collect_jsonpath_refs(rs, &mut out);
+    }
+    if let Some(is) = &st.item_selector {
+        collect_jsonpath_refs(is, &mut out);
     }
     if let Some(a) = &st.assign {
         collect_jsonpath_refs(a, &mut out);
