@@ -2,10 +2,11 @@
 
 This repository is the artifact for the paper *"StepCheck: Sound Static Verification of
 Deployed AWS Step Functions Workflows"*: the **StepCheck** tool, the evaluation corpora,
-the evaluation harness, and the AWS round-trip scripts. The accompanying anonymous
-**technical report** (formal development and proofs, cited from the paper) is included at
-[`docs/techreport.pdf`](docs/techreport.pdf); the paper sources themselves are not
-distributed while the paper is under double-blind review.
+the evaluation harness, and the AWS round-trip scripts. The paper is accepted at
+ICSOC 2026 (to appear). The companion **technical report** (formal development, proofs and
+evaluation detail, cited from the paper) is included at
+[`docs/techreport.pdf`](docs/techreport.pdf), and the archived artifact is
+[doi:10.5281/zenodo.22916631](https://doi.org/10.5281/zenodo.22916631).
 
 StepCheck is a static verifier for AWS Step Functions / Amazon States Language (ASL)
 workflows. Its centrepiece is a **sound data-flow / field-provenance analysis**
@@ -29,12 +30,12 @@ task names and resource bindings.
 | Path | What |
 |---|---|
 | `stepcheck/` | the tool, in Rust (≈6.2k non-blank, non-comment lines excluding tests). `src/{ir,asl,dsl,cncf,cfn,annot,diag,concrete,mutate,main}.rs` and `src/passes/{structural,dataflow,contract,typestate,retry,compensation,concurrency,temporal}.rs` (eight passes). **Four front ends** (raw ASL, the typed DSL, CNCF Serverless Workflow, and CloudFormation/SAM/CDK templates) lower to one IR; the passes are unchanged across formats. `src/concrete.rs` is the code-disjoint bounded execution oracle. |
-| `corpus/asl/` | 193 real Step Functions workflows mined from public AWS repos. `corpus/manifest.json` records provenance; `corpus/gold-labels.json` is the inference gold set (23 workflows, 172 labelled tasks; double-labelled, Cohen's κ 0.89 idempotency / 0.99 persistence). `corpus/dsl/` holds the typed-DSL worked example; `corpus/dataflow/` the data-flow demonstrators. |
+| `corpus/asl/` | 193 real Step Functions workflows mined from public AWS repos. `corpus/manifest.json` records provenance; `corpus/gold-labels.json` is the inference gold set (23 workflows, 172 hand-labelled tasks; protocol in `eval/GOLD-LABELLING.md`). `corpus/dsl/` holds the typed-DSL worked example; `corpus/dataflow/` the data-flow demonstrators. |
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second format). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
 | `corpus/industrial/` | six industrial-topology workflows (65 recursive states) incl. four `aws-samples` Sagas and Serverless Airline Booking `ProcessBooking` — the CI-gate / cost study set. |
 | `corpus/aws-templates/`, `corpus/aws-solutions/` | deployment artifacts for the CloudFormation front end: `aws-samples/serverless-patterns` SAM templates (55 workflows) and AWS Solutions Library machines (26, partly CDK-generated). |
 | `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds the independent-repository set (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. The studies were run over 95 definitions from 16 repositories and 39 fix-commit pairs; the 36 files whose upstream publishes no licence are **not redistributed here** and are re-fetched by `node eval/mine_wild.js` / `node eval/mine_realbugs.js`. See `corpus/PROVENANCE.md` for every source, its licence, and what ships. |
-| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, hold-out κ 0.97/0.98), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `gold-labels-human-{A,B}.json` + `score-human-gold.js` (human-gold warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling), `WILD-EXTERNAL-SUMMARY.md`. |
+| `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, full set and hold-out partition), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `GOLD-LABELLING.md` + `score-human-gold.js` (gold-set protocol and warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling) and `scale/topologies/` (deep `Map` and wide `Parallel` cases), `WILD-EXTERNAL-SUMMARY.md`. |
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
 | `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
 
@@ -182,19 +183,20 @@ elsewhere.
   totals **306/616 (50%)** — and **0** of unsafe retry, missing compensation, concurrency,
   or temporal. Three formal workflow-soundness verifiers run locally (Woflan, BPMN
   Analyzer 2.0, BProVe) express only dangling transitions (95% / 87% / 69%), reach at most
-  37% on compensation and 5% on concurrency, and misclassify **8.3% / 8.3% / 29%** of the
-  *valid* workflows; StepCheck's ASL-native model accepts all 193.
+  37% on compensation and 5% on concurrency, and report **8.3% / 8.3% / 29%** of the *valid*
+  workflows as unsound under our ASL→BPMN encoding (a property of that encoding and the
+  classical soundness definition, not a defect count; see the technical report).
 - **Hard-mutant study (operator–check independence)**: a matched suite of **688** boundary
   mutants (`--hard`) — each a genuine defect moved to the edge of what the analysis can prove.
   Aggregate recall **0.48** (328/688; 0.24 before 0.1.5 extended the SC1003 scan to `ResultSelector`/`ItemSelector`): data-flow, concurrency, and temporal drop
-  to **0** at their ⊤ boundary (sound silence, not false negatives), retry degrades to
-  **0.68**, and compensation to **0.79** via the family siblings SC4010/SC4011. Two
+  to **0** at their ⊤ boundary (reports the analysis declines to make, not false alarms),
+  retry degrades to **0.68**, and compensation to **0.79** via the sibling check SC4010. Two
   variants are generalization controls rather than ⊤ boundaries — the dangling edge
   hidden in a nested sub-machine, and the broken payload moved from `Parameters` into a
   `ResultSelector` — and both stay exact at **1.00**, since the structural pass recurses
   into sub-machines and SC1003 reads every payload template. See
   `eval/results-hard-mutants.json`.
-- **Data-flow provenance, SC1101 (RQ2)**: **0** false positives on the clean corpus; a
+- **Data-flow provenance, SC1101 (RQ2)**: no report on the clean corpus; a
   missing-field read injected into each of the **126/193** applicable workflows is detected
   in **88 (70%)** with `--result-shapes` — the other 38 sit behind constructs the analysis
   soundly lifts to ⊤. A proof-certificate checker certifies all 88 reports (1,146
@@ -203,8 +205,8 @@ elsewhere.
   document-field references fall in the exactly-modeled fragment (`stepcheck path-coverage`).
 - **Real defects**: in **39** mined fix-commit pairs a diagnostic appears only on the buggy
   revision in 7; adjudication confirms **6** genuine in-scope defects. In **3** user-filed
-  issues quoting the runtime error StepCheck's sound tier prevents, it flags all **3**
-  SC1101 defects. On **95** ASL definitions from **16** independent repositories it produces
+  issues that quote a runtime error, it flags the underlying missing-field read (SC1101) in
+  all **3**. On **95** ASL definitions from **16** independent repositories it produces
   representative findings on workflows we neither authored nor curated.
   - The six fix-commit defects come from `aws-samples/aws-batch-runtime-monitoring` (SC1101),
     `allenheltondev/serverless-ai-fitness` (SC1101 and an SC1110 dead subscriber branch),
@@ -224,17 +226,18 @@ elsewhere.
     vehicle-order-fulfillment, mission-control-operations). `corpus/wild-external/manifest.json`
     records the branch and path of every file, and `corpus/PROVENANCE.md` the licence of every
     repository.
-- **Inference accuracy vs gold** (23 workflows, 172 double-labelled tasks): **76%**
-  idempotency, **85%** persistence at **81%** coverage; hold-out set κ **0.97/0.98**.
-  In-the-wild warning precision vs human gold (κ 0.89/0.99): **46/50 (92%)** overall,
-  **89%** for compensation warnings (SC4001).
+- **Inference accuracy vs gold** (23 workflows, 172 hand-labelled tasks, one labelled set):
+  **76.4%** idempotency, **85.0%** persistence at **81.4%** coverage. Warning precision on
+  gold-labelled tasks: **47/50 (94%)** overall, **34/37 (92%)** for compensation warnings
+  (SC4001); on the 13-workflow hold-out partition, SC4001 27/29. See `eval/GOLD-LABELLING.md`.
 - **Deployment artifacts (CloudFormation front end)**: on `aws-samples/serverless-patterns`
   SAM templates, with no manual extraction, StepCheck covers **55** workflows and flags
-  **13** (two sound-tier); on the AWS Solutions Library (**26** machines, partly
+  **13** (two native findings, SC0007 and SC6001; the rest advisory); on the AWS Solutions Library (**26** machines, partly
   CDK-generated) it flags **14** alongside clean true negatives, and re-running the gate on
   six CDK-synth templates catches every applicable mutation.
-- **Cost (RQ4)**: mean **≈39 µs** / median **≈24 µs** / max **≈1.2 ms** per workflow on the
-  193-workflow corpus (eight passes incl. the data-flow fixpoint); industrial set mean
+- **Cost (RQ4)**: mean **≈61 µs** / median **≈35 µs** / max **≈1.8 ms** per workflow on the
+  193-workflow corpus (eight passes incl. the data-flow fixpoint; single-run wall-clock figures
+  in `eval/results.json`, so they vary between runs); industrial set mean
   **≈91 µs**; AWS Solutions mean **≈0.28 ms**. End-to-end CI-gate latency stays below
   **21 ms** at p95 (CDK templates p50/p95 15.7/20.9 ms). The widened fixpoint (k=12)
   converges on all 262 committed definitions in at most 7 rounds. Scale: a synthetic
@@ -253,8 +256,9 @@ elsewhere.
   coverage. Where CNCF declares JSON Schemas, SC1010 enforces them natively
   (`stepcheck check corpus/cncf-typed/order-bad.yaml`).
 - **Automotive case study**: a private, anonymized production module (three Express
-  workflows) summarized in the paper — 40 initial findings; the declared-tier re-check
-  confirmed 12 errors and 25 timeout warnings as genuine, deployable defects, each
+  workflows, 34 states) summarized in the paper — an inference-mode run reported 40 findings:
+  25 retry-budget warnings (SC6002), 10 data-flow errors (SC1101) and 5 concurrency warnings
+  (SC5001). A lead developer confirmed all of them as genuine, deployable defects, each
   subsequently fixed. The module itself is not distributable and is not in this repository.
 
 ## Reproduce the AWS round-trip (optional; creates & deletes resources)

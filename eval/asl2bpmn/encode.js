@@ -1,6 +1,6 @@
 'use strict';
 
-// ASL -> BPMN 2.0 encoder for fair-class control-flow baselines (WS-D).
+// ASL -> BPMN 2.0 encoder for the control-flow baselines (Woflan, BPMN Analyzer, BProVe).
 //
 // The encoding targets a *workflow net* shape so that a Petri-net soundness
 // verifier (Woflan, via pm4py) can analyse it: exactly one start event, exactly

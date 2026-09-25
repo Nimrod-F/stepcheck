@@ -21,7 +21,7 @@ All numbers produced by the committed tool over the committed corpus. Reproduce:
 - **Sound native findings (high confidence):**
   - `SC0007` × 9  — Choice state with no Default (non-exhaustive).
   - `SC0010` × 1  — malformed state (a top-level `QueryLanguage` directive nested inside `States`).
-  - `SC1101` × 0  — data-flow provenance: **zero false positives** (soundness; see E10).
+    - `SC1101` × 0  — data-flow provenance: no report on the unmodified corpus (see E10).
 - **New native analyses:**
   - `SC6001` × 33 — unbounded `waitForTaskToken`/Activity callback (no Timeout/Heartbeat).
   - `SC5001`/`SC5002` × 0 and `SC5003` × 2 — the conservative overwriting-write rule
@@ -47,10 +47,11 @@ Each mutant injects exactly one defect; "detected" means the expected diagnostic
 count strictly increased vs the unmutated baseline. The data-flow class (SC1101) is
 studied separately (E10) because its detection depends on a known document shape.
 
-## E3h — Hard-mutant study (operator–check independence, W1)
+## E3h — Hard-mutant study (operator–check independence)
 `stepcheck eval corpus/asl --infer --result-shapes --hard` → `eval/results-hard-mutants.json`.
-Same fault classes, but each variant is placed just past the analysis's ⊤/coverage boundary
-(a genuine, deployable defect). Recall is family-credited (a sibling code counts) with
+Same fault classes, but each variant moves the defect to the edge of what the analysis can
+prove (a genuine, deployable defect): five variants sit just past a ⊤/inference boundary, two are
+generalization controls. Recall is family-credited (a sibling code counts) with
 count-based freshness; the comparison tools are re-run on the same mutants
 (`python eval/asl2bpmn/compare.py --hard`, `STEPCHECK_AWS=1 node eval/validator_panel.js --hard`).
 Exact CIs and the merged table live in `eval/mutation-stats.json` under `hard_mutants`.
@@ -58,14 +59,16 @@ Exact CIs and the merged table live in `eval/mutation-stats.json` under `hard_mu
 | Class | Check | Easy | Hard (family, CP95) | Boundary probed |
 |---|---|---|---|---|
 | Structural | SC0002 | 1.00 | 1.00 [.92,1] | exact reachability (recurses into nested scopes) |
-| Retry | SC3001 | 1.00 | 0.69 [.59,.77] | inference tier (opaque name/FunctionName) |
+| Retry | SC3001 | 1.00 | 0.68 [.59,.77] | inference tier (opaque name/FunctionName) |
 | Compensation | SC4001 | 1.00 | 0.79 [.66,.88]* | sibling SC4010 (logging-only Catch); SC4001 = 0/56 |
 | Data-flow | SC1101 | 0.70 | 0.00 [0,.03] | ⊤-lift (filter-expression InputPath) |
 | Concurrency | SC5001 | 1.00 | 0.00 [0,.16] | ⊤-lift (dynamically-named resource) |
 | Temporal | SC6003 | 1.00 | 0.00 [0,.02] | ⊤-lift (reference-path heartbeat/timeout) |
 | Contract | SC1003 | 1.00 | 1.00 [.98,1] | generalization control: the break moves into a `ResultSelector`, which the scan reads like any other payload template |
 
-Aggregate: **328/688 = 0.48** family-credited.
+Aggregate: **328/688 = 0.48** family-credited. Before 0.1.5 the SC1003 scan did not read
+`ResultSelector`/`ItemSelector`, so the contract row was 0/166 and the aggregate 162/688 = 0.24;
+the mutants are unchanged.
 A hard value <1 is a **measured completeness boundary, not a soundness violation**: at ⊤ the sound
 analyses decline to report rather than emit a false alarm. The structural and contract rows are
 generalization controls rather than ⊤ boundaries: the dangling edge hides in a nested sub-machine and
@@ -73,33 +76,30 @@ the broken `.$` moves from `Parameters` into a `ResultSelector` or a Distributed
 Both stay exact, because the structural pass recurses into sub-machines and SC1003 reads every payload
 template (`contract_scan_covers_every_payload_template`). Woflan catches only structural (.31) and a
 compensation side effect (.13); schema validators catch structural and the contract break.
-*Compensation is caught by the effect-aware sibling SC4010, not the operator's expected SC4001 —
-direct evidence the check family is not tuned to the operator.
+*Compensation is caught by the effect-aware sibling SC4010, not the operator's expected SC4001.
 
-## E4 — Inference accuracy vs agreement-checked gold (23 workflows, 137 tasks)
-Gold set expanded from 10→23 workflows; the human-labelled expansion was labelled in
-**two independent passes** (Cohen's kappa **0.888** idempotency, **0.988** persistence)
-and reconciled by adjudication. `node eval/inference_accuracy.js` (gold in
+## E4 — Inference accuracy vs the hand-labelled gold set (23 workflows, 172 tasks)
+One labelled set, produced by the authors with the rubric in `eval/GOLD-LABELLING.md`; no
+inter-annotator agreement is claimed. `node eval/inference_accuracy.js` (gold in
 `corpus/gold-labels.json`).
 | Property | Labeled | Predicted | Abstained | Correct | Accuracy (of predicted) | Coverage |
 |---|---|---|---|---|---|---|
-| Idempotency | 137 | 110 | 27 | 77 | **70.0%** | 80.3% |
-| Persistence | 137 | 110 | 27 | 96 | **87.3%** | 80.3% |
+| Idempotency | 172 | 140 | 32 | 107 | **76.4%** | 81.4% |
+| Persistence | 172 | 140 | 32 | 119 | **85.0%** | 81.4% |
 
-The larger, more diverse set reveals idempotency inference is the weaker heuristic (70%):
+Idempotency inference is the weaker heuristic:
 the write-verb heuristic misreads stable-key DynamoDB writes and cancel/release/refund
 compensators (idempotent in effect) as non-idempotent. Persistence (which drives the
-compensation check) holds up at 87%. The findings remain warnings because names alone do
+compensation check) holds up at 85%. The findings remain warnings because names alone do
 not carry enough evidence for blocking verification.
 
-## E4b — In-the-wild warning precision (vs human gold)
-`node eval/score-human-gold.js --reconciled` (human gold = reconciled `gold-labels-human-{A,B}.json`
-+ the 10-workflow hand-labelled core). Of the SC3001/SC4001 warnings landing on a gold-labelled
-task, **40/44 (91%)** are true positives — **33/37 (89%)** for SC4001 (compensation), **7/7 (100%)**
-for SC3001 (retry), and **6/6 (100%)** for SC4010; all three inferred codes together are
-**46/50 (92%)**. The residual SC4001 false positives are compensators (RefundPayment/Cancel*) or
-idempotent keyed/metadata writes. (Human inter-annotator Cohen's kappa **0.89** idempotent /
-**0.99** persistent.)
+## E4b — In-the-wild warning precision (vs the gold set)
+`node eval/score-human-gold.js`. Of the SC3001/SC4001 warnings landing on a gold-labelled task,
+**41/44 (93%)** are true positives — **34/37 (92%)** for SC4001 (compensation) and **7/7 (100%)**
+for SC3001 (retry); with **6/6** for SC4010, all three inferred codes together are **47/50 (94%)**.
+The residual SC4001 false positives are compensators (RefundPayment/Cancel*) or idempotent
+keyed/metadata writes. Hold-out partition only (`node eval/score-holdout.js`): SC3001 3/3,
+SC4001 27/29, SC4010 4/4.
 
 ## E9 — Baseline: statelint (AWS Labs reference linter, v0.8.0)
 `node eval/statelint_baseline.js` → `eval/baseline-statelint.json`. On the 616 mutants:
@@ -118,8 +118,8 @@ concurrency interference, and temporal-budget faults (all schema-valid). In the 
 flags 113/193 files with 499 problems, **410** of them schema-shape nits, none semantic.
 
 ## E10 — Data-flow provenance analysis (SC1101), `corpus/dataflow/`
-- **Soundness:** SC1101 fires on **0 / 193** unmodified workflows — zero false positives,
-  corroborating the no-false-positive guarantee of the abstract interpretation.
+- **Clean corpus:** SC1101 fires on **0 / 193** unmodified workflows, so it reports no false
+  positive there; the soundness evidence is the certificate and oracle checks below.
 - **Power (demonstrators):** `corpus/dataflow/native-bad.asl.json` → SC1101 with **no
   annotations** (a `Pass` builds `{order:{orderId,amount}}`, a task reads `$.order.total`);
   `typed-bad.asl.json` (+`typed.sidecar.toml`) → **2 SC1101**: a schema miss (`$.total`)
@@ -138,7 +138,7 @@ flags 113/193 files with 499 problems, **410** of them schema-shape nits, none s
   **207** machines, with **0** failed obligations and **0** diagnostic mismatches. The bounded
   concrete oracle remains a separate empirical check and finds **0** present-field counterexamples.
 
-## WS-D setup — ASL to BPMN baseline encoder
+## E11 — Formal-verifier baseline: ASL to BPMN encoder
 `node eval/asl2bpmn/encode.js corpus/asl --limit 30 --out eval/asl2bpmn/out --summary eval/asl2bpmn-summary.json`
 creates the BPMN input layer for Woflan/BPMN Analyzer/BProVe comparison. The 30-workflow feasibility
 slice encodes **30 / 30** workflows with **0** validation failures; the generated BPMN XML files
@@ -162,8 +162,9 @@ and F1 is StepCheck **1.00**, Woflan **0.975**, BPMN Analyzer **0.929**, BProVe 
 no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe failure.
 
 ## E5 — Verification cost
-- Mean **38.9 µs**/workflow (eight passes incl. the data-flow fixpoint), median 23.7 µs,
-  max 1.16 ms; **7.5 ms** to verify the entire 193-workflow corpus.
+- Mean **61 µs**/workflow (eight passes incl. the data-flow fixpoint), median 35 µs,
+  max 1.8 ms; **11.9 ms** to verify the entire 193-workflow corpus (`eval/results.json`,
+  `timing_us`; single-run wall-clock figures on the laptop, so they vary between runs).
 - Real industrial set (`corpus/industrial`): mean **91.1 µs**/workflow, median **99.9 µs**,
   max **0.17 ms**, total **0.55 ms** across 6 workflows / 65 recursive states.
 - AWS Solutions corpus (`corpus/aws-solutions`): mean **0.28 ms**/workflow, median **0.12 ms**,
@@ -212,24 +213,24 @@ no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe
   before charge) → **3 SC1010 errors** derived directly from the declared schemas.
 - Verification: mean **3.9 µs**/workflow.
 
-## Implementation size — 7,567 physical source lines of Rust (excludes the 1,111-line test suite)
-Definition: physical source lines counted by `wc -l` over `stepcheck/src/**.rs` excluding `tests.rs`.
-The technical report and this file report the same number under the same definition (reconciles the
-earlier 3,692 code-only vs 5,045 vs 6,224 figures as the tool grew).
+## Implementation size — 7,577 physical source lines of Rust (excludes the 1,134-line test suite)
+Definition: physical source lines counted by `wc -l` over `stepcheck/src/**.rs` excluding `tests.rs`
+(release 0.1.5). The technical report counts non-blank, non-comment lines instead, so its figure is
+smaller.
 | Component | Module(s) | LOC |
 |---|---|---|
 | Workflow IR | ir.rs | 362 |
 | Frontends (ASL parse+emit incl. full-fidelity emitter + CNCF jq model, typed DSL, CloudFormation/SAM) | asl.rs, dsl.rs, cncf.rs, cfn.rs | 1380 |
 | Annotations + inference | annot.rs | 397 |
-| Analysis passes (8 + SC5003 composition + manager) | passes/* | 2906 |
+| Analysis passes (8 + SC5003 composition + manager) | passes/* | 2915 |
 | Concrete-execution oracle (bounded loop unrolling) | concrete.rs | 431 |
 | Diagnostics | diag.rs | 115 |
-| Mutation engine | mutate.rs | 632 |
+| Mutation engine | mutate.rs | 633 |
 | CLI + stats + eval harness | main.rs | 1344 |
-| **Total (excl. tests.rs)** | | **7567** |
+| **Total (excl. tests.rs)** | | **7577** |
 
-## WS-A..H — acceptance-round evidence (2026-07, reproducible)
-- **Formal competitor (WS-D):** `python eval/asl2bpmn/compare.py --limit 193` → `eval/asl2bpmn-comparison-full.json`.
+## E12 — Further studies (reproducible)
+- **Formal-verifier comparison:** `python eval/asl2bpmn/compare.py --limit 193` → `eval/asl2bpmn-comparison-full.json`.
   Woflan, BPMN Analyzer 2.0, and BProVe run locally on the ASL→BPMN workflow-net encoding.
   Per-class recall: StepCheck 100% all classes; formal verifiers overlap on SC0002 but are 0% on
   data/retry/temporal and mostly 0% on concurrency/compensation. Over-report on valid workflows:
@@ -238,8 +239,8 @@ earlier 3,692 code-only vs 5,045 vs 6,224 figures as the tool grew).
   `python eval/asl2bpmn/compare.py --corpus corpus/industrial --include sab-booking-processbooking ...`
   → `eval/sab-bpmn-comparison.json`; all three baselines accept clean SAB and catch only SC0002,
   while StepCheck catches SC0002/SC1003/SC3001/SC4001/SC6003 (SC5001 n/a on SAB).
-- **Industrial case (WS-E):** `python eval/industrial/wse.py` → `eval/industrial-case.json`. Six
-  industrial-topology sagas (incl. SAB reconstruction). Build-gate p95 is **16--21 ms** across
+- **Industrial-topology build gate:** `python eval/industrial/wse.py` → `eval/industrial-case.json`.
+  Six industrial-topology sagas (incl. SAB reconstruction). Build-gate p95 is **16--21 ms** across
   0/1/5 injected-defect levels; it fails the build on 5/5 one-defect workflows and 3/3 five-defect
   workflows with applicable sites. CI YAML: `eval/industrial/ci-gate-example.yml`.
 - **AWS Solutions CDK gate:** `python eval/industrial/aws_solutions_cdk_gate.py` →
@@ -247,15 +248,15 @@ earlier 3,692 code-only vs 5,045 vs 6,224 figures as the tool grew).
   template before timing. StepCheck catches 6/6 one-defect and 5/5 five-defect mutants; p95 is
   18--20 ms. `asl-validator` accepts 2/6 clean CDK definitions and silently passes both one-defect
   mutants over that accepted-clean denominator.
-- **Leakage-free inference (WS-B):** `node eval/score-holdout.js` → `eval/holdout-inference.json`.
-  Rules frozen; hold-out (13 wf): warning precision SC4001 27/29, SC3001 3/3, SC4010 4/4; per-check
-  κ = 0.97/0.98; advisory reframe.
-- **CNCF jq data-flow (WS-F):** `eval/cncf-jq-coverage.json` — SC1101 fires on jq field reads;
+- **Hold-out inference:** `node eval/score-holdout.js` → `eval/holdout-inference.json`.
+  Rules frozen before the 13 hold-out workflows were labelled; hold-out warning precision
+  SC4001 27/29, SC3001 3/3, SC4010 4/4 (see `eval/GOLD-LABELLING.md`).
+- **CNCF jq data-flow:** `eval/cncf-jq-coverage.json` — SC1101 fires on jq field reads;
   12/66 workflows have modelable references.
-- **Concurrency composition (WS-G):** SC5003 (`stepcheck scan corpus/asl` → 2 findings). Same-template
+- **Concurrency composition:** SC5003 (`stepcheck scan corpus/asl` → 2 findings). Same-template
   child definitions are recursively flattened for SC5001 when referenced by logical id, `Ref`/`GetAtt`,
   `DefinitionSubstitutions`, or `StateMachineName`-derived ARNs; externally deployed children with no
   local definition remain an explicit scope boundary.
-- **Emitter fidelity (WS-H):** `node eval/emitter_fidelity.js` → `eval/emitter-fidelity.json` —
+- **Emitter fidelity:** `node eval/emitter_fidelity.js` → `eval/emitter-fidelity.json` —
   193 ASL workflows; 100% states, 99.9% transitions, 100% measured JSONPath/JSONata/Map I/O fields,
   99.5% exact ASL-object equality, idempotent emit on all 193.

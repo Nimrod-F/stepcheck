@@ -1,0 +1,18 @@
+{
+  "description": "Hold-out partition of the inference gold set: the 13 workflows added to corpus/gold-labels.json after the inference rules were frozen (see eval/GOLD-LABELLING.md). Only the file names are listed; the labels live in corpus/gold-labels.json.",
+  "workflows": [
+    "sfn-collection__bedrock-evaluations-sam__statemachine__statemachine.asl.json",
+    "sfn-collection__checkout-processing-workflow__statemachine__checkout_workflow.asl.json",
+    "sfn-collection__cqrs__statemachine__statemachine.asl.json",
+    "sfn-collection__distributed-data-stream-aggregator__statemachine__statemachine.asl.json",
+    "sfn-collection__ec2-instance-isolation-sam__statemachine__statemachine.asl.json",
+    "sfn-collection__idempotent-workflow-sam__statemachine__statemachine.asl.json",
+    "sfn-collection__saga-pattern-tf__statemachine__statemachine.asl.json",
+    "sfn-collection__sfn-cfn-stacksets-workflow-cdk__statemachine__statemachine.asl.json",
+    "sfn-collection__sfn-rds-to-aurora-migrate-postgres-cdk__statemachine__statemachine.asl.json",
+    "sfn-collection__sfn-rekognition-video-catalog-workflow__statemachine__statemachine.asl.json",
+    "sfn-collection__uml-statemachine__statemachine__BlogBuySellSM.asl.json",
+    "sfn-examples__sam__demo-fis-stepfunctions__stepfunction__fis.ec2.asl.json",
+    "sfn-examples__usecases__genai-prompt-chaining-hitl__src__workflow.asl.json"
+  ]
+}

@@ -1,8 +1,8 @@
 # Label signals for the 23 gold workflows
 
-Fill `idempotent` and `persistent` (`true` / `false` / `null`) for each task in
-`gold-labels-human-A.json` and `gold-labels-human-B.json`, using these signals and
-the rubric in HUMAN-GOLD-LABELLING.md. `null` = abstain (cannot decide).
+Signals used to label `idempotent` and `persistent` (`true` / `false` / `null`) for
+each task, following the rubric in GOLD-LABELLING.md. The labels are in
+corpus/gold-labels.json; `null` = cannot be decided.
 
 
 ## sfn-examples__sam__app-order-management__statemachines__ship-order.asl.json

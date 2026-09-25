@@ -1,6 +1,6 @@
-# WS-D — ASL→BPMN encoding and comparison with formal workflow verifiers
+# ASL→BPMN encoding and comparison with formal workflow verifiers
 
-This directory implements the acceptance-critical WS-D workstream: a head-to-head
+This directory implements a head-to-head comparison
 of StepCheck against **real, ran-as-baseline formal workflow-soundness verifiers**:
 Woflan, BPMN Analyzer 2.0, and BProVe/BPMNOS.
 
@@ -31,7 +31,7 @@ remain StepCheck-unique (data-flow SC1101 has no BPMN control-flow expression).
 node eval/asl2bpmn/encode.js corpus/asl --limit 30 --out eval/asl2bpmn/out --summary eval/asl2bpmn-summary.json
 ```
 
-## 2. Comparison (`compare.py`) — the WS-D result
+## 2. Comparison (`compare.py`)
 
 `compare.py` runs the confound-free comparison (mirrors `eval/validator_panel.js`):
 for each workflow, `control = stepcheck emit` and `mutant_k = stepcheck mutate --kind k`
@@ -100,4 +100,4 @@ a BProVe failure.
 * **Syntax-validator panel** (`validator_panel.js`) — statelint, asl-validator, and
   AWS `ValidateStateMachineDefinition` remain the second, orthogonal baseline tier.
 * **Generic external runner** (`run_baselines.js`) — kept for raw verifier availability/probing;
-  scored WS-D results now come from `compare.py`.
+  scored results come from `compare.py`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WS-E: industrial case study.
+"""Build-time gate study on the industrial-topology workflow set.
 
 Over an industrial-topology workflow set (real AWS saga / inventory / checkout /
 ETL samples plus a faithful reconstruction of the AWS Serverless Airline Booking
@@ -232,7 +232,7 @@ def main():
         "workflows_detail": per_wf,
     }
     json.dump(report, open(args.out, "w"), indent=2)
-    print("\n=== WS-E build-time gate: catch-rate vs silent pass-through (0/1/5 defects) ===")
+    print("\n=== Build-time gate: catch-rate vs silent pass-through (0/1/5 defects) ===")
     print(f"{'defects':>7} {'gate catch':>12} {'platform silent-pass':>22} {'gate p50/p95/p99 ms':>22}")
     for M in LEVELS:
         g = gate[str(M)]

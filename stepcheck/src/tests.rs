@@ -1047,7 +1047,7 @@ fn dataflow_certificate_checks_cyclic_report() {
 }
 
 // ---------------------------------------------------------------------------
-// Hard mutants (W1): each boundary variant is a genuine, reparsable defect, and
+// Hard mutants: each variant is a genuine, reparsable defect, and
 // each behaves at its analysis's ⊤ / coverage / family boundary as designed.
 // ---------------------------------------------------------------------------
 

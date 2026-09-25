@@ -1,7 +1,7 @@
 // Generates eval/label-signals.md: a human-readable reference of every Task state
-// in the 13 LLM-expanded gold workflows, with the signals you need to label it by
-// hand (Resource/action, FunctionName/target, nesting). Read this while filling
-// gold-labels-human-A.json / -B.json. Run: node eval/make-label-signals.js
+// in the 23 gold workflows, with the signals used to label it by hand
+// (Resource/action, FunctionName/target, nesting). The labels themselves live in
+// corpus/gold-labels.json. Run: node eval/make-label-signals.js
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
@@ -40,9 +40,9 @@ function signal(st) {
 }
 
 let out = `# Label signals for the ${Object.keys(template).length} gold workflows\n\n`;
-out += `Fill \`idempotent\` and \`persistent\` (\`true\` / \`false\` / \`null\`) for each task in\n`;
-out += `\`gold-labels-human-A.json\` and \`gold-labels-human-B.json\`, using these signals and\n`;
-out += `the rubric in HUMAN-GOLD-LABELLING.md. \`null\` = abstain (cannot decide).\n\n`;
+out += `Signals used to label \`idempotent\` and \`persistent\` (\`true\` / \`false\` / \`null\`) for\n`;
+out += `each task, following the rubric in GOLD-LABELLING.md. The labels are in\n`;
+out += `corpus/gold-labels.json; \`null\` = cannot be decided.\n\n`;
 
 let files = 0, tasks = 0;
 for (const file of Object.keys(template)) {

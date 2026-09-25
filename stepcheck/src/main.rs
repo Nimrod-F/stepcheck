@@ -652,7 +652,7 @@ fn cmd_eval(
     Ok(0)
 }
 
-/// The hard-mutant study (W1 / operator-circularity rebuttal). For each class we
+/// The hard-mutant study (operator-check independence). For each class we
 /// inject the *boundary* variant (`mutate_hard`) and re-verify. Detection is
 /// credited two ways: `detected_expected` (the single expected code fired, as in
 /// the easy study) and `detected_family` (any sibling code in the class's

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WS-A: exact statistics so no recall is reported as a bare "100%".
+"""Exact statistics (Clopper-Pearson CIs, Fisher tests) so no recall is reported as a bare "100%".
 
 Reads the full-corpus StepCheck-vs-formal-verifier comparison and reports, per SC
 class, the exact Clopper-Pearson 95% confidence interval on each tool's recall
@@ -201,7 +201,7 @@ def load_opt(p):
     except Exception:
         return None
 
-# --- Hard-mutant study (W1: operator-circularity rebuttal) -------------------
+# --- Hard-mutant study (operator-check independence) ----------------------
 # Each class's boundary variant is a genuine defect placed just past the
 # analysis's ⊤ / coverage boundary. We report StepCheck's recall from the native
 # typed-tier study (count-based fresh, family-credited), the formal verifiers from
@@ -286,7 +286,7 @@ report = {
 }
 json.dump(report, open(os.path.join(ROOT, "eval", "mutation-stats.json"), "w"), indent=2)
 
-print("=== WS-A exact per-class recall CIs (Clopper-Pearson 95%) ===")
+print("=== Exact per-class recall CIs (Clopper-Pearson 95%) ===")
 print(f"{'class':32} {'n':>4} {'StepCheck k/n (CI)':>26} {'Woflan k/n (CI)':>24} {'BPMN-Anlz k/n (CI)':>24} {'BProVe k/n (CI)':>24}")
 for k, c in classes.items():
     s, w = c["stepcheck"], c["woflan"]

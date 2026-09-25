@@ -1,4 +1,4 @@
-# Example CI/CD build-time gate for serverless workflows (WS-E §6.2).
+# Example CI/CD build-time gate for serverless workflows.
 #
 # Drop this into .github/workflows/ (GitHub Actions) or translate the single
 # `stepcheck check` invocation into a CodeBuild/CodePipeline buildspec step. The

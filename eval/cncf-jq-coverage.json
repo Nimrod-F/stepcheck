@@ -1,5 +1,5 @@
 {
-  "generated_by": "WS-F CNCF jq coverage probe",
+  "generated_by": "CNCF jq coverage probe",
   "cncf_workflows": 66,
   "workflows_with_jq_expression": 30,
   "workflows_with_modelable_pure_field_ref": 12,

@@ -2,8 +2,7 @@
 
 Step Functions definitions from the **AWS Solutions Library** (GitHub org
 `aws-solutions`): maintained, enterprise-deployed production solutions, not
-didactic samples. This is the artifact class the paper's threats-to-validity note
-flagged as missing.
+didactic samples: an artifact class the public sample corpus lacks.
 
 Note: many AWS solutions moved from the `aws-solutions` org to
 `aws-solutions-library-samples` (e.g. Media2Cloud is now

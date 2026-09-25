@@ -1,4 +1,4 @@
-// WS-H: emitter fidelity. Round-trips ASL through the IR (parse -> emit) and
+// Emitter fidelity. Round-trips ASL through the IR (parse -> emit) and
 // measures how much of each workflow's semantics is regenerated:
 //   * structure: the set of state names and the transition graph (Next/Default/
 //     Choice targets, Catch targets, End/terminal flags);

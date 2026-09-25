@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WS-D: head-to-head StepCheck (native) vs. formal workflow-soundness verifiers
+"""Head-to-head comparison of StepCheck (native) with formal workflow-soundness verifiers
 (Woflan, van der Aalst & Verbeek, run locally via pm4py; optionally BPMN
 Analyzer 2.0 and BProVe/BPMNOS) on the ASL->BPMN control-flow fair class.
 
@@ -519,7 +519,7 @@ def main():
     with open(args.out, "w") as f:
         json.dump(report, f, indent=2)
     # compact console summary
-    print("\n=== WS-D: StepCheck vs Woflan vs BPMN Analyzer 2.0 vs BProVe (per-class recall) ===")
+    print("\n=== StepCheck vs Woflan vs BPMN Analyzer 2.0 vs BProVe (per-class recall) ===")
     print(f"{'class':30} {'n':>3} {'StepCheck':>14} {'Woflan':>14} {'BPMN-Anlz':>14} {'BProVe':>14}")
     for k, c in classes_out.items():
         sc = f"{c['stepcheck_recall']}" if c['applicable'] else "-"

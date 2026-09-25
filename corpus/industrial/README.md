@@ -1,6 +1,7 @@
-# Industrial-topology workflow set (WS-E)
+# Industrial-topology workflow set
 
-Real-topology, service-grade workflows used for the industrial case study. Every
+Real-topology, service-grade workflows used for the build-gate and cost study (RQ4). This
+set is distinct from the private automotive case study, which is not in this repository. Every
 file is a real `aws-samples` production state machine; the AWS Serverless Airline
 Booking machine is extracted from its SAM template (see below), the rest are
 verbatim copies of patterns already in `corpus/asl/`, kept here so the industrial

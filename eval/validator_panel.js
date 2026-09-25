@@ -30,7 +30,7 @@ const ROOT = path.resolve(__dirname, '..');
 const posArg = process.argv.slice(2).find(a => !a.startsWith('--'));
 const DIR = posArg ? path.resolve(posArg) : path.join(ROOT, 'corpus', 'asl');
 const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
-// Hard-mutant mode (W1): inject each class's ⊤/coverage-boundary variant with
+// Hard-mutant mode: inject each class's ⊤/coverage-boundary variant with
 // `mutate --hard` and measure whether the schema validators catch it. Skips the
 // in-the-wild pass (A); only the mutation-detection pass (B) is boundary-relevant.
 const HARD = process.env.STEPCHECK_HARD === '1' || process.argv.includes('--hard');
