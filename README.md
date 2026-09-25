@@ -5,8 +5,10 @@ Deployed AWS Step Functions Workflows"*: the **StepCheck** tool, the evaluation 
 the evaluation harness, and the AWS round-trip scripts. The paper is accepted at
 ICSOC 2026 (to appear). The companion **technical report** (formal development, proofs and
 evaluation detail, cited from the paper) is included at
-[`docs/techreport.pdf`](docs/techreport.pdf), and the archived artifact is
-[doi:10.5281/zenodo.22916631](https://doi.org/10.5281/zenodo.22916631).
+[`docs/techreport.pdf`](docs/techreport.pdf). The version of this artifact cited in the paper
+(release 0.1.5) is archived at [doi:10.5281/zenodo.22960209](https://doi.org/10.5281/zenodo.22960209);
+[doi:10.5281/zenodo.22916631](https://doi.org/10.5281/zenodo.22916631) always resolves to the latest
+version.
 
 StepCheck is a static verifier for AWS Step Functions / Amazon States Language (ASL)
 workflows. Its centrepiece is a **sound data-flow / field-provenance analysis**
