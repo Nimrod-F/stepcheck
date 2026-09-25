@@ -261,8 +261,8 @@ elsewhere.
   workflows, 34 states) summarized in the paper — an inference-mode run reported 30 findings:
   25 retry/timeout mismatches (SC6002; Lambda tasks retrying up to 126 s against declared
   10–20 s machine timeouts) and 5 concurrency warnings (SC5001). After the team authored a
-  declared-tier sidecar, the 5 concurrency warnings rested on declared rather than inferred
-  durability. A lead developer confirmed all 30 as genuine, deployable defects, each
+  declared-tier sidecar, re-checking reported the same 5 concurrency warnings, confirming that
+  the inferred durability was correct. A lead developer confirmed all 30 as genuine, deployable defects, each
   subsequently fixed. The module itself is not distributable and is not in this repository.
 
 ## Reproduce the AWS round-trip (optional; creates & deletes resources)
