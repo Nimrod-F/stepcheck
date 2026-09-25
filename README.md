@@ -258,9 +258,11 @@ elsewhere.
   coverage. Where CNCF declares JSON Schemas, SC1010 enforces them natively
   (`stepcheck check corpus/cncf-typed/order-bad.yaml`).
 - **Automotive case study**: a private, anonymized production module (three Express
-  workflows, 34 states) summarized in the paper — an inference-mode run reported 40 findings:
-  25 retry-budget warnings (SC6002), 10 data-flow errors (SC1101) and 5 concurrency warnings
-  (SC5001). A lead developer confirmed all of them as genuine, deployable defects, each
+  workflows, 34 states) summarized in the paper — an inference-mode run reported 30 findings:
+  25 retry/timeout mismatches (SC6002; Lambda tasks retrying up to 126 s against declared
+  10–20 s machine timeouts) and 5 concurrency warnings (SC5001). After the team authored a
+  declared-tier sidecar, the 5 concurrency warnings rested on declared rather than inferred
+  durability. A lead developer confirmed all 30 as genuine, deployable defects, each
   subsequently fixed. The module itself is not distributable and is not in this repository.
 
 ## Reproduce the AWS round-trip (optional; creates & deletes resources)
