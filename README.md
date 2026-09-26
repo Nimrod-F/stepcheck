@@ -1,7 +1,7 @@
 # StepCheck (ICSOC 2026 artifact)
 
 This repository is the artifact for the paper *"StepCheck: Sound Static Verification of
-Deployed AWS Step Functions Workflows"*: the **StepCheck** tool, the evaluation corpora,
+AWS Step Functions Workflows"*: the **StepCheck** tool, the evaluation corpora,
 the evaluation harness, and the AWS round-trip scripts. The paper is accepted at
 ICSOC 2026 (to appear). The companion **technical report** (formal development, proofs and
 evaluation detail, cited from the paper) is included at
@@ -39,7 +39,7 @@ task names and resource bindings.
 | `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds the independent-repository set (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. The studies were run over 95 definitions from 16 repositories and 39 fix-commit pairs; the 36 files whose upstream publishes no licence are **not redistributed here** and are re-fetched by `node eval/mine_wild.js` / `node eval/mine_realbugs.js`. See `corpus/PROVENANCE.md` for every source, its licence, and what ships. |
 | `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, full set and hold-out partition), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `GOLD-LABELLING.md` + `score-human-gold.js` (gold-set protocol and warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling) and `scale/topologies/` (deep `Map` and wide `Parallel` cases), `WILD-EXTERNAL-SUMMARY.md`. |
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
-| `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
+| `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
 
 ## Install
 
@@ -261,8 +261,8 @@ elsewhere.
   workflows, 34 states) summarized in the paper — an inference-mode run reported 30 findings:
   25 retry/timeout mismatches (SC6002; Lambda tasks retrying up to 126 s against declared
   10–20 s machine timeouts) and 5 concurrency warnings (SC5001). After the team authored a
-  declared-tier sidecar, re-checking reported the same 5 concurrency warnings, confirming that
-  the inferred durability was correct. A lead developer confirmed all 30 as genuine, deployable defects, each
+  declared-tier sidecar, re-checking reported the same 5 concurrency warnings, so the team's
+  declarations agreed with the inferred durability. A lead developer confirmed all 30 as genuine, deployable defects, each
   subsequently fixed. The module itself is not distributable and is not in this repository.
 
 ## Reproduce the AWS round-trip (optional; creates & deletes resources)

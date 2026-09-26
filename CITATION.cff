@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use StepCheck, please cite the ICSOC 2026 paper below."
-title: "StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows"
+title: "StepCheck: Sound Static Verification of AWS Step Functions Workflows"
 abstract: >-
-  StepCheck is a static verifier for the deployed Amazon States Language (ASL)
+  StepCheck is a static verifier for the Amazon States Language (ASL) deployment
   artifact. A flow-sensitive analysis of the ASL input/output pipeline reports a
   missing-field access as an error only when every execution reaching the read
   would fail under the modeled semantics; seven further checks cover structural,
@@ -37,7 +37,7 @@ authors:
     affiliation: "Faculty of Mathematics and Computer Science, Babes-Bolyai University, Cluj-Napoca, Romania"
 preferred-citation:
   type: conference-paper
-  title: "StepCheck: Sound Static Verification of Deployed AWS Step Functions Workflows"
+  title: "StepCheck: Sound Static Verification of AWS Step Functions Workflows"
   year: 2026
   collection-title: "Service-Oriented Computing (ICSOC 2026)"
   publisher:
