@@ -6,7 +6,7 @@ the evaluation harness, and the AWS round-trip scripts. The paper is accepted at
 ICSOC 2026 (to appear). The companion **technical report** (formal development, proofs and
 evaluation detail, cited from the paper) is included at
 [`docs/techreport.pdf`](docs/techreport.pdf). The version of this artifact cited in the paper
-(release 0.1.5) is archived at [doi:10.5281/zenodo.22960209](https://doi.org/10.5281/zenodo.22960209);
+(release 0.1.5) is archived at [doi:10.5281/zenodo.22964312](https://doi.org/10.5281/zenodo.22964312);
 [doi:10.5281/zenodo.22916631](https://doi.org/10.5281/zenodo.22916631) always resolves to the latest
 version.
 
