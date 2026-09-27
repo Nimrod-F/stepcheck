@@ -8,7 +8,7 @@
 //   node eval/mine_realbugs.js                       # clone the built-in repo list, mine locally
 //   node eval/mine_realbugs.js --repos owner/a,owner/b
 //   node eval/mine_realbugs.js --discover            # ALSO use GitHub code search to find more repos
-//   flags: --max N (default 200) | --keep (keep clones) | --since YYYY-MM-DD
+//   flags: --max N (default 200) | --keep (keep clones) | --since / --until YYYY-MM-DD | --out DIR
 //
 // TOKEN
 //   Cloning public repos needs NO token. Only --discover calls the GitHub API; set
@@ -23,14 +23,16 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const OUT = path.join(ROOT, 'corpus', 'realbugs');
-const WORK = path.join(__dirname, '.realbugs-work');
-
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
 const opt = (name, def) => { const i = argv.indexOf(name); return i >= 0 && argv[i + 1] ? argv[i + 1] : def; };
 const MAX = parseInt(opt('--max', '200'), 10);
 const SINCE = opt('--since', null);
+// --until pins the history to a date, so a re-run reproduces an earlier mining pass;
+// --out writes the pairs elsewhere than corpus/realbugs/.
+const UNTIL = opt('--until', null);
+const OUT = path.resolve(opt('--out', path.join(ROOT, 'corpus', 'realbugs')));
+const WORK = path.join(__dirname, '.realbugs-work');
 
 const DEFAULT_REPOS = [
   'aws-samples/aws-stepfunctions-examples',
@@ -94,7 +96,8 @@ function mineRepo(repo, pairs, manifest, seen) {
     }
   }
   const since = SINCE ? ['--since', SINCE] : [];
-  const log = trySh(['log', '--no-merges', '--pretty=format:%H%x1f%s', ...since], dir);
+  const until = UNTIL ? ['--until', UNTIL] : [];
+  const log = trySh(['log', '--no-merges', '--pretty=format:%H%x1f%s', ...since, ...until], dir);
   if (!log) return;
   for (const line of log.split('\n')) {
     if (pairs.length >= MAX) return;

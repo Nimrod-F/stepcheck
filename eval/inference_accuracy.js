@@ -7,7 +7,8 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
 const gold = JSON.parse(fs.readFileSync(path.join(ROOT, 'corpus', 'gold-labels.json'))).labels;
 
 function score(field) {

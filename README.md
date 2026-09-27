@@ -23,6 +23,45 @@ back to executable ASL. Because raw ASL omits task semantics, StepCheck pairs so
 *native* checks with a lightweight *annotation* layer whose defaults are *inferred* from
 task names and resource bindings.
 
+## Artifact evaluation: quick start
+
+Every number in the paper maps to a command in [`CLAIMS.md`](CLAIMS.md), and
+`eval/reproduce.js` runs them and prints PASS/FAIL against the paper. The Docker image holds
+the tool, the corpora and every offline baseline at the versions the paper used:
+
+```bash
+docker build -t stepcheck-artifact .                            # 4.6 GB image
+docker run --rm stepcheck-artifact node eval/reproduce.js --tier 1   # ~1 min: tool-side numbers
+docker run --rm stepcheck-artifact node eval/reproduce.js --tier 3   # + Table 1 baselines, re-fetched corpora
+```
+
+Without Docker, tiers 0–1 need only Rust ≥ 1.88, Node ≥ 18 and Python 3 (plus `pm4py` for
+the build-gate study):
+
+```bash
+cargo build --release --locked --manifest-path stepcheck/Cargo.toml
+node eval/reproduce.js --tier 1
+```
+
+| Tier | Reproduces | Needs |
+|---|---|---|
+| 0 | version, tests, the Fig. 1 running example, fixpoint claims | the binary, Node |
+| 1 | Table 1 StepCheck columns, hard mutants, RQ2, RQ3 findings, RQ4 | + Python |
+| 2 | Table 1 baseline columns: statelint, asl-validator, Woflan, BPMN Analyzer 2.0 on all 193 workflows; BProVe on a 6-workflow sample (`--bprove-full` runs all 193, about 6 h) | the Docker image, ~25 min |
+| 3 | the 36 corpus files not redistributed, re-fetched at pinned commits; independent-repository and fix-commit studies | network (GitHub) |
+
+Troubleshooting without Docker: a missing baseline tool yields `SKIP` lines, not failures.
+These environment variables point the harness at local installations: `STEPCHECK_BIN` (a
+StepCheck binary, e.g. from crates.io or npm), `STATELINT_RUBY` / `STATELINT_SCRIPT`,
+`ASL_VALIDATOR_JS`, `BPMN_ANALYZER`, `BPROVE_PARSER` / `BPROVE_MAUDE_MODEL`, and `PYTHON`. On
+Windows, building from a deeply nested directory can fail with linker error LNK1104 (path too
+long); build from a short path such as `C:\ac`.
+
+Not reproducible: the automotive case study (a private module), AWS
+`ValidateStateMachineDefinition` without credentials (its outputs are recorded in
+`eval/validator-panel.json`; `STEPCHECK_AWS=1` re-runs it), and exact timings, which depend on
+the machine.
+
 ## Implementation source hierarchy
 
 ![StepCheck implementation source hierarchy](docs/figure3-source-hierarchy.png)
@@ -36,7 +75,7 @@ task names and resource bindings.
 | `corpus/cncf/` | 66 real CNCF Serverless Workflow examples (second format). `corpus/cncf-typed/` holds the typed order workflow whose declared JSON Schemas let the contract check run natively (no inference). |
 | `corpus/industrial/` | six industrial-topology workflows (65 recursive states) incl. four `aws-samples` Sagas and Serverless Airline Booking `ProcessBooking` — the CI-gate / cost study set. |
 | `corpus/aws-templates/`, `corpus/aws-solutions/` | deployment artifacts for the CloudFormation front end: `aws-samples/serverless-patterns` SAM templates (55 workflows) and AWS Solutions Library machines (26, partly CDK-generated). |
-| `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds the independent-repository set (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. The studies were run over 95 definitions from 16 repositories and 39 fix-commit pairs; the 36 files whose upstream publishes no licence are **not redistributed here** and are re-fetched by `node eval/mine_wild.js` / `node eval/mine_realbugs.js`. See `corpus/PROVENANCE.md` for every source, its licence, and what ships. |
+| `corpus/realbugs/` | mined fix-commit pairs and issue-quoted workflows for the real-defect study; `corpus/wild-external/` holds the independent-repository set (overfitting check) and `corpus/wild-annot/` the declared-tier wild demo. The studies were run over 95 definitions from 16 repositories and 39 fix-commit pairs; the 36 files whose upstream publishes no licence are **not redistributed here**; `node eval/fetch_unredistributed.js` re-fetches them at their pinned upstream commits and checks their hashes. See `corpus/PROVENANCE.md` for every source, its licence, and what ships. |
 | `eval/` | the evaluation harness and results: `SUMMARY.md`, `results.json`, `results-hard-mutants.json` (688 boundary mutants), `results-dataflow.json` (typed-tier data-flow recall), `dataflow-cert.json` (proof-certificate re-check), `scan-asl.json` (per-file in-the-wild diagnostics), `inference_accuracy.json` + `holdout-inference.json` (inference vs gold, full set and hold-out partition), `baseline-statelint.json` + `statelint_baseline.js` (six-class validator baseline), `asl2bpmn/` (workflow-net encoding and the Woflan / BPMN Analyzer / BProVe formal-verifier baselines), `GOLD-LABELLING.md` + `score-human-gold.js` (gold-set protocol and warning precision), `stats.tex`, `fixpoint-stats.json` (fixpoint round/bound utilisation), `scale/scale.csv` (100 → 30,000-state scaling) and `scale/topologies/` (deep `Map` and wide `Parallel` cases), `WILD-EXTERNAL-SUMMARY.md`. |
 | `infra/` | the AWS round-trip: Express, Standard, and live `.waitForTaskToken` callback scripts, the 100-run Express/Standard benchmark (`bench_express_vs_standard.sh`), and captured execution evidence/history. Summaries: `eval/aws-roundtrip-modes.json`, `eval/deploy-runtime-bench.json`. |
 | `docs/` | `techreport.pdf` — the companion technical report (*StepCheck: Sound Static Verification of AWS Step Functions Workflows*: formal development, proofs, baseline encoding, mutation operators and sidecar syntax, cited from the paper) — and figures. |
@@ -54,7 +93,7 @@ npm install -g @nimrod-f/stepcheck
 cargo install stepcheck
 ```
 
-Both publish version 0.1.5. The npm package is a thin wrapper: its postinstall script
+Both publish version 0.1.6. The npm package is a thin wrapper: its postinstall script
 downloads the prebuilt binary for your platform (linux, macOS or Windows; x64 or arm64,
 Node >= 16) and puts it on your PATH as `stepcheck`. The command is `stepcheck` either
 way, so the scope in the package name does not leak into usage. If no prebuilt binary
@@ -124,6 +163,10 @@ $BIN fixpoint-stats ../corpus/asl ../corpus/cncf ../corpus/dsl > ../eval/fixpoin
 node ../eval/asl2bpmn/encode.js ../corpus/asl --limit 30 --out ../eval/asl2bpmn/out --summary ../eval/asl2bpmn-summary.json  # workflow-net encoding for the formal-verifier baseline
 node ../eval/asl2bpmn/run_baselines.js --summary ../eval/asl2bpmn-summary.json --out ../eval/bpmn-baseline.json  # runs/records the formal-verifier baselines
 ```
+
+A CloudFormation/SAM/CDK template may define several state machines: `check`, `infer`, `scan`,
+`eval`, `stats` and the other corpus commands analyse every one of them. `emit` and `mutate` output a
+single ASL document, so they take the first machine unless `--machine <logical id>` names another.
 
 ## Continuous integration & packaging
 
@@ -240,7 +283,7 @@ elsewhere.
 - **Cost (RQ4)**: mean **≈61 µs** / median **≈35 µs** / max **≈1.8 ms** per workflow on the
   193-workflow corpus (eight passes incl. the data-flow fixpoint; single-run wall-clock figures
   in `eval/results.json`, so they vary between runs); industrial set mean
-  **≈91 µs**; AWS Solutions mean **≈0.28 ms**. End-to-end CI-gate latency stays below
+  **≈91 µs**; AWS Solutions mean **≈0.18 ms** per state machine. End-to-end CI-gate latency stays below
   **21 ms** at p95 (CDK templates p50/p95 15.7/20.9 ms). The widened fixpoint (k=12)
   converges on all 262 committed definitions in at most 7 rounds. Scale: a synthetic
   **10,000**-state workflow verifies in ≈**31 ms**, 30,000 states in ≈**142 ms**

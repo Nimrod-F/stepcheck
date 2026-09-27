@@ -43,3 +43,6 @@ Thumbs.db
 # editor backup / temp files
 *.bkp
 .$*
+
+# fresh outputs of eval/reproduce.js
+eval/repro/

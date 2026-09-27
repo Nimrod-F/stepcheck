@@ -12,11 +12,18 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const ASL = path.join(ROOT, 'corpus', 'asl');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
-// Invoke statelint via ruby.exe + the gem's shebang script, with forward-slash
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
+// Invoke statelint via ruby + the gem's shebang script, with forward-slash
 // paths (Windows accepts these and they survive shell quoting cleanly).
-const RUBY = 'C:/Ruby33-x64/bin/ruby.exe';
-const SLSCRIPT = 'C:/Ruby33-x64/bin/statelint';
+// STATELINT_RUBY / STATELINT_SCRIPT override the defaults.
+const WIN = process.platform === 'win32';
+function which(c) {
+  try { return require('child_process').execSync(`${WIN ? 'where' : 'command -v'} ${c}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split(/\r?\n/)[0].trim(); }
+  catch { return c; }
+}
+const RUBY = process.env.STATELINT_RUBY || (WIN ? 'C:/Ruby33-x64/bin/ruby.exe' : which('ruby'));
+const SLSCRIPT = process.env.STATELINT_SCRIPT || (WIN ? 'C:/Ruby33-x64/bin/statelint' : which('statelint'));
 const TMP = path.join(os.tmpdir(), 'sl-mut');
 fs.mkdirSync(TMP, { recursive: true });
 

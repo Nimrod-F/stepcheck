@@ -1,0 +1,20 @@
+# Keep the image to what the Zenodo archive ships: tracked sources only.
+.git
+stepcheck/target
+**/node_modules
+**/__pycache__
+*.zip
+*.pdf
+!docs/techreport.pdf
+paper_ICSOC
+ICSOC_Camera_Ready
+ICSOC_Artifact_Paper
+*.md.bak
+PLAN.md
+ARTIFACT_PAPER_PLAN.md
+icsoc_panel_review_*.md
+stepcheck_*.md
+texput.log
+eval/asl2bpmn/out
+eval/asl2bpmn/tmp_probe
+eval/repro

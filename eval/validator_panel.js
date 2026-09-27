@@ -16,7 +16,7 @@
 // to it (we still require the message to name the fault, never crediting incidental
 // schema nits such as a float IntervalSeconds).
 //
-// Usage:  node eval/validator_panel.js [corpus/asl]
+// Usage:  node eval/validator_panel.js [corpus/asl] [--hard] [--out <file>]
 //   STEPCHECK_AWS=1  also run AWS ValidateStateMachineDefinition (needs credentials;
 //                    the call creates no resources and is free).
 // Output: eval/validator-panel.json
@@ -27,24 +27,37 @@ const os = require('os');
 const { execFileSync, execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const posArg = process.argv.slice(2).find(a => !a.startsWith('--'));
+const argv = process.argv.slice(2);
+const outIdx = argv.indexOf('--out');
+// --out <file> writes the report elsewhere (so a re-run does not replace the recorded one).
+const OUT_ARG = outIdx >= 0 ? path.resolve(argv[outIdx + 1]) : null;
+const posArg = argv.find((a, i) => !a.startsWith('--') && !(outIdx >= 0 && i === outIdx + 1));
 const DIR = posArg ? path.resolve(posArg) : path.join(ROOT, 'corpus', 'asl');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
 // Hard-mutant mode: inject each class's ⊤/coverage-boundary variant with
 // `mutate --hard` and measure whether the schema validators catch it. Skips the
 // in-the-wild pass (A); only the mutation-detection pass (B) is boundary-relevant.
 const HARD = process.env.STEPCHECK_HARD === '1' || process.argv.includes('--hard');
 const OUT_NAME = HARD ? 'validator-panel-hard.json' : 'validator-panel.json';
 
-// --- tool locations (robust on Windows: invoke the real interpreters, not shims) --
-const RUBY = 'C:/Ruby33-x64/bin/ruby.exe';
-const SLSCRIPT = 'C:/Ruby33-x64/bin/statelint';
-const ASLV = path.join(
-  process.env.APPDATA || os.homedir(),
-  'npm', 'node_modules', 'asl-validator', 'dist', 'bin', 'asl-validator.js'
+// --- tool locations (invoke the real interpreters, not shims) ----------------------
+// STATELINT_RUBY / STATELINT_SCRIPT / ASL_VALIDATOR_JS override the defaults, which
+// are the Windows install used for the paper and the global gem/npm installs elsewhere.
+const WIN = process.platform === 'win32';
+function which(c) {
+  try { return execSync(`${WIN ? 'where' : 'command -v'} ${c}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split(/\r?\n/)[0].trim(); }
+  catch { return ''; }
+}
+function npmRoot() { try { return execSync('npm root -g', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } }
+const RUBY = process.env.STATELINT_RUBY || (WIN ? 'C:/Ruby33-x64/bin/ruby.exe' : which('ruby'));
+const SLSCRIPT = process.env.STATELINT_SCRIPT || (WIN ? 'C:/Ruby33-x64/bin/statelint' : which('statelint'));
+const ASLV = process.env.ASL_VALIDATOR_JS || path.join(
+  WIN ? path.join(process.env.APPDATA || os.homedir(), 'npm', 'node_modules') : npmRoot(),
+  'asl-validator', 'dist', 'bin', 'asl-validator.js'
 );
-function have(p) { try { return fs.existsSync(p); } catch { return false; } }
-function haveCmd(c) { try { execSync(`where ${c}`, { stdio: 'ignore' }); return true; } catch { return false; } }
+function have(p) { try { return !!p && fs.existsSync(p); } catch { return false; } }
+function haveCmd(c) { return which(c) !== ''; }
 const tools = {
   statelint: have(RUBY) && have(SLSCRIPT),
   'asl-validator': have(ASLV),
@@ -251,6 +264,7 @@ const report = {
   })),
   note: 'detection credited only when a validator emits a NEW problem (vs the emitted control) that NAMES the injected fault; incidental schema nits (e.g. a float IntervalSeconds) are not credited.',
 };
-fs.writeFileSync(path.join(__dirname, OUT_NAME), JSON.stringify(report, null, 2));
-console.error(`done -> eval/${OUT_NAME}`);
+const OUT_PATH = OUT_ARG || path.join(__dirname, OUT_NAME);
+fs.writeFileSync(OUT_PATH, JSON.stringify(report, null, 2));
+console.error(`done -> ${path.relative(ROOT, OUT_PATH)}`);
 console.log(JSON.stringify({ in_the_wild: report.in_the_wild, mutation_detection: report.mutation_detection }, null, 2));

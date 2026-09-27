@@ -1,0 +1,325 @@
+{
+  "_README": "All 39 fix-commit pairs of the real-defect study (Sec. 4.3). 30 are reproduced exactly by node eval/mine_realbugs.js --repos UBC-CIC/EC2Ensemble,allenheltondev/serverless-ai-fitness,aws-samples/aws-batch-runtime-monitoring,govuk-one-login/data-analytics-platform,manikanta5827/leave-management,nicktodd/video-translation-stepfunctions,sparameswaran/airway-shipment-orchestrator --until 2026-06-22 --out <dir>; replaying them (stepcheck eval-pairs <dir> --infer) flags the same 7 pairs as the study, 6 of them adjudicated genuine. The other 9 pairs came from a GitHub code-search discovery pass (--discover) whose repository list was not recorded; none of them was flagged. Unflagged pairs are value or configuration fixes outside StepCheck's defect classes.",
+  "mined_pairs": 39,
+  "reproducible_pairs": 30,
+  "unrecorded_discovery_pairs": 9,
+  "flagged": 7,
+  "pairs": [
+    {
+      "id": "UBC-CIC-EC2Ensemble-58caf95-state_machine",
+      "repo": "UBC-CIC/EC2Ensemble",
+      "commit": "58caf95db3546909bb16809db47953318cf7d78c",
+      "file": "backend/state_machine/state_machine.asl.json",
+      "subject": "fixed state machine definition, fixed create and update external returning null",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "UBC-CIC-EC2Ensemble-9e26f6f-state_machine",
+      "repo": "UBC-CIC/EC2Ensemble",
+      "commit": "9e26f6ff20bcdd199c6c09ed213519ef3964752c",
+      "file": "backend/state_machine/state_machine.asl.json",
+      "subject": "fixes to delete create and update room, implemented TTL on websocket connections table",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "UBC-CIC-EC2Ensemble-6d93c85-state_machine",
+      "repo": "UBC-CIC/EC2Ensemble",
+      "commit": "6d93c856ee5b9f57917b6d6d79f77d6695c61e67",
+      "file": "backend/state_machine/state_machine.asl.json",
+      "subject": "fixes to runJacktrip",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "UBC-CIC-EC2Ensemble-37a7790-state_machine",
+      "repo": "UBC-CIC/EC2Ensemble",
+      "commit": "37a7790359fe7ed1d28ef3f56e7dd19051942773",
+      "file": "backend/state_machine/state_machine.asl.json",
+      "subject": "fixed message deduplication",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "govuk-one-login-data-analytics-platform-9e7efee-txma_adm_consolidated_schema_pro",
+      "repo": "govuk-one-login/data-analytics-platform",
+      "commit": "9e7efeeb1d5fb7a66c861181338aaeec3475f1f6",
+      "file": "statemachine/txma_adm_consolidated_schema_processing.asl.json",
+      "subject": "add missing role for state function (#1338)",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "govuk-one-login-data-analytics-platform-9e7efee-txma_adm_v3_refresh_processing",
+      "repo": "govuk-one-login/data-analytics-platform",
+      "commit": "9e7efeeb1d5fb7a66c861181338aaeec3475f1f6",
+      "file": "statemachine/txma_adm_v3_refresh_processing.asl.json",
+      "subject": "add missing role for state function (#1338)",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-e2e5bdd-aggregation_kickoff_step_func",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "e2e5bdd6364bc02efc38385709233b6d49e7a26b",
+      "file": "statemachine/aggregation_kickoff_step_function.asl.json",
+      "subject": "Fix aggregation statemachine",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-dd0fee9-aggregation_kickoff_step_func",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "dd0fee9abe029b358854357d59dbdd8929c6ab8f",
+      "file": "statemachine/aggregation_kickoff_step_function.asl.json",
+      "subject": "Fix aggregation statemachine",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-0331d41-business_validation_step_func",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "0331d4166c2bedb44e990a933194fb6c6d40daff",
+      "file": "statemachine/business_validation_step_function.asl.json",
+      "subject": "Persist invalid records into DDB",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-6f1ef2b-sawbprocessing_step_function",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "6f1ef2bae263ea4bd52748f1e99acc1163d3ffda",
+      "file": "statemachine/sawbprocessing_step_function.asl.json",
+      "subject": "fix references",
+      "fixed_codes": [
+        "SC0002"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "shipped"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-97ffd0f-aggregation_kickoff_step_func",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "97ffd0f0ddf31a32480244580daa5019422febf6",
+      "file": "statemachine/aggregation_kickoff_step_function.asl.json",
+      "subject": "fix references",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-97ffd0f-business_validation_step_func",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "97ffd0f0ddf31a32480244580daa5019422febf6",
+      "file": "statemachine/business_validation_step_function.asl.json",
+      "subject": "fix references",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "sparameswaran-airway-shipment-orchestrator-97ffd0f-sawbprocessing_step_function",
+      "repo": "sparameswaran/airway-shipment-orchestrator",
+      "commit": "97ffd0f0ddf31a32480244580daa5019422febf6",
+      "file": "statemachine/sawbprocessing_step_function.asl.json",
+      "subject": "fix references",
+      "fixed_codes": [
+        "SC4001"
+      ],
+      "verdict": "rejected (count artifact)",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-2bab7cb-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "2bab7cb0879f9e6139ee664a98831f63469998f8",
+      "file": "back-end/workflows/build-user-workouts.asl.json",
+      "subject": "fix issue with timeseconds",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-2afc5cc-send-workout-notification",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "2afc5cccbc59c574f9c6caef80f937bb0269fee3",
+      "file": "back-end/workflows/send-workout-notification.asl.json",
+      "subject": "Fix link to home page",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-f2efaaa-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "f2efaaa8e484533669bf9b4a026a1696b201c4e8",
+      "file": "back-end/workflows/build-user-workouts.asl.json",
+      "subject": "fix notifications and ui",
+      "fixed_codes": [
+        "SC1110"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "shipped"
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-f2efaaa-send-workout-notification",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "f2efaaa8e484533669bf9b4a026a1696b201c4e8",
+      "file": "back-end/workflows/send-workout-notification.asl.json",
+      "subject": "fix notifications and ui",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "allenheltondev-serverless-ai-fitness-ec868b6-build-user-workouts",
+      "repo": "allenheltondev/serverless-ai-fitness",
+      "commit": "ec868b6a0cc603b66642f4007c22ca66c992ed14",
+      "file": "back-end/workflows/build-user-workouts.asl.json",
+      "subject": "minor ui updates and fix workout generation",
+      "fixed_codes": [
+        "SC1101"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "shipped"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-123d1d4-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "123d1d4cdebcbdd110d74300c7b8c82da8b58345",
+      "file": "src/BatchJobsStates/JobStatesStateMachineServerless.asl.json",
+      "subject": "Fix critical JSONPath issue in state machine",
+      "fixed_codes": [
+        "SC1101"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "shipped"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-adc7013-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "adc7013b5287b9d42f51ad2aa9b00d79cce71d8a",
+      "file": "src/BatchJobsStates/JobStatesStateMachineServerless.asl.json",
+      "subject": "Enhance MNP child job processing and fix ASG monitoring",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-a2519cb-ECSRunTaskStateMachineServerles",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "a2519cb6998eeabe4b28641322aa10d0fe20ca20",
+      "file": "src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json",
+      "subject": "Fix condition for ECS cluster filtering",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-ad7be9b-ECSInstancesRegistrationStateMa",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "ad7be9be977a870ae9b7d7b94ea02b614215ed90",
+      "file": "src/ECSInstancesRegistration/ECSInstancesRegistrationStateMachineServerless.asl.json",
+      "subject": "Fix json path syntax in filter expression #6",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-ad7be9b-ECSRunTaskStateMachineServerles",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "ad7be9be977a870ae9b7d7b94ea02b614215ed90",
+      "file": "src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json",
+      "subject": "Fix json path syntax in filter expression #6",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-d1071d8-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "d1071d840daa5e5f7defc80b64b03b41be226a4d",
+      "file": "src/BatchJobsStates/JobStatesStateMachineServerless.asl.json",
+      "subject": "Fix use of indices for nested json info retrieval for json path filters",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-d1071d8-ECSInstancesRegistrationStateMa",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "d1071d840daa5e5f7defc80b64b03b41be226a4d",
+      "file": "src/ECSInstancesRegistration/ECSInstancesRegistrationStateMachineServerless.asl.json",
+      "subject": "Fix use of indices for nested json info retrieval for json path filters",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-d1071d8-ECSRunTaskStateMachineServerles",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "d1071d840daa5e5f7defc80b64b03b41be226a4d",
+      "file": "src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json",
+      "subject": "Fix use of indices for nested json info retrieval for json path filters",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "aws-samples-aws-batch-runtime-monitoring-66618af-JobStatesStateMachineServerless",
+      "repo": "aws-samples/aws-batch-runtime-monitoring",
+      "commit": "66618afea5a5b458bcfe7eb54d773cd67975bc04",
+      "file": "src/BatchJobsStates/JobStatesStateMachineServerless.asl.json",
+      "subject": "Fix instance registration retry",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "manikanta5827-leave-management-9672f84-leave-approval-sm",
+      "repo": "manikanta5827/leave-management",
+      "commit": "9672f847c7a5f87da33bd378deedef7f2d0b7978",
+      "file": "step-functions/leave-approval-sm.asl.json",
+      "subject": "update: add timeout configuration to leave approval state machine",
+      "fixed_codes": [
+        "SC6001"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "fetched (unredistributed.json)"
+    },
+    {
+      "id": "manikanta5827-leave-management-9032113-leave-approval-sm",
+      "repo": "manikanta5827/leave-management",
+      "commit": "9032113569be4ea54f0c9eb66a6a3029dac4e711",
+      "file": "step-functions/leave-approval-sm.asl.json",
+      "subject": "fix: use correct function name",
+      "fixed_codes": [],
+      "verdict": "not flagged",
+      "in_artifact": "not kept; re-mine to obtain"
+    },
+    {
+      "id": "nicktodd-video-translation-stepfunctions-d97e248-video-transcode",
+      "repo": "nicktodd/video-translation-stepfunctions",
+      "commit": "d97e248f53c2cabe851f55066a61473fd6fe1791",
+      "file": "statemachine/video-transcode.asl.json",
+      "subject": "Fixed some typos",
+      "fixed_codes": [
+        "SC0003",
+        "SC0004",
+        "SC0005"
+      ],
+      "verdict": "genuine",
+      "in_artifact": "fetched (unredistributed.json)"
+    }
+  ]
+}

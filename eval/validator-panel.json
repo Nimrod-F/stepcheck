@@ -47,9 +47,9 @@
         "any_new_problem": 166
       },
       "asl-validator": {
-        "detected": 156,
-        "recall_pct": 94,
-        "any_new_problem": 156
+        "detected": 149,
+        "recall_pct": 89.8,
+        "any_new_problem": 149
       },
       "aws": {
         "detected": 166,
@@ -106,7 +106,7 @@
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 6
+        "any_new_problem": 5
       },
       "aws": {
         "detected": 0,
@@ -125,7 +125,7 @@
       "asl-validator": {
         "detected": 0,
         "recall_pct": 0,
-        "any_new_problem": 0
+        "any_new_problem": 1
       },
       "aws": {
         "detected": 0,
@@ -153,5 +153,6 @@
       }
     }
   },
-  "note": "detection credited only when a validator emits a NEW problem (vs the emitted control) that NAMES the injected fault; incidental schema nits (e.g. a float IntervalSeconds) are not credited."
+  "note": "detection credited only when a validator emits a NEW problem (vs the emitted control) that NAMES the injected fault; incidental schema nits (e.g. a float IntervalSeconds) are not credited.",
+  "rerun_note": "statelint and asl-validator columns re-measured on 26 Sep 2026 with release 0.1.5 (identical on Windows and Linux); the earlier asl-validator dangling-transition count (156) came from a pre-9 Jul 2026 build. AWS ValidateStateMachineDefinition columns and in_the_wild are from the 14 Jul 2026 run."
 }

@@ -1,0 +1,41 @@
+{
+  "_README": "Fix-commit pairs measured in the real-bug study but not redistributed (upstream publishes no licence). pre = parent of the fix commit, post = the fix commit. Fetch with: node eval/fetch_unredistributed.js",
+  "files": [
+    {
+      "file": "corpus/realbugs/manikanta5827-leave-management-9672f84-leave-approval-sm-pre.json",
+      "repo": "manikanta5827/leave-management",
+      "commit": "059d2cdcf93cccea5e36e19947c3c84f28649df4",
+      "path": "step-functions/leave-approval-sm.asl.json",
+      "side": "pre",
+      "fix_commit": "9672f847c7a5f87da33bd378deedef7f2d0b7978",
+      "sha256": "21929923688ed74e5df4693060b4d2cc99a624ffe731048155c166fe3deeaa87"
+    },
+    {
+      "file": "corpus/realbugs/manikanta5827-leave-management-9672f84-leave-approval-sm-post.json",
+      "repo": "manikanta5827/leave-management",
+      "commit": "9672f847c7a5f87da33bd378deedef7f2d0b7978",
+      "path": "step-functions/leave-approval-sm.asl.json",
+      "side": "post",
+      "fix_commit": "9672f847c7a5f87da33bd378deedef7f2d0b7978",
+      "sha256": "4e26bcf59adfdf5209c009946e09738a39594c1c49afda986c3b58e181d15dba"
+    },
+    {
+      "file": "corpus/realbugs/nicktodd-video-translation-stepfunctions-d97e248-video-transcode-pre.json",
+      "repo": "nicktodd/video-translation-stepfunctions",
+      "commit": "a1cea7ec619f55f06ea0af477c78735668323ce9",
+      "path": "statemachine/video-transcode.asl.json",
+      "side": "pre",
+      "fix_commit": "d97e248f53c2cabe851f55066a61473fd6fe1791",
+      "sha256": "2658e196bead56e7c2225bd4201029424dddf537fa271dcf46677e8b6769124d"
+    },
+    {
+      "file": "corpus/realbugs/nicktodd-video-translation-stepfunctions-d97e248-video-transcode-post.json",
+      "repo": "nicktodd/video-translation-stepfunctions",
+      "commit": "d97e248f53c2cabe851f55066a61473fd6fe1791",
+      "path": "statemachine/video-transcode.asl.json",
+      "side": "post",
+      "fix_commit": "d97e248f53c2cabe851f55066a61473fd6fe1791",
+      "sha256": "fc9184ad2cd346575749fb6da11918ad012216ae2daf2f71394556830c22a2b5"
+    }
+  ]
+}

@@ -147,6 +147,9 @@ enum Cmd {
         /// ⊤ / coverage boundary) instead of the in-region easy variant.
         #[arg(long)]
         hard: bool,
+        /// State machine to mutate in a multi-machine template (logical id; default: the first).
+        #[arg(long)]
+        machine: Option<String>,
     },
     /// Measure how close the data-flow fixpoint stays to its finite-height round
     /// bound `|states|*(|keys|+2)+2` across one or more corpora (evidence for the
@@ -187,6 +190,9 @@ enum Cmd {
         /// Write the emitted ASL here (default: stdout).
         #[arg(long)]
         out: Option<PathBuf>,
+        /// State machine to emit from a multi-machine template (logical id; default: the first).
+        #[arg(long)]
+        machine: Option<String>,
     },
 }
 
@@ -215,11 +221,13 @@ fn main() {
             cmd_dataflow_cert(&dir, annot.as_deref(), infer, result_shapes)
         }
         Cmd::EvalPairs { dir, infer } => cmd_eval_pairs(&dir, infer),
-        Cmd::Mutate { path, kind, seed, out, hard } => cmd_mutate(&path, kind, seed, out.as_deref(), hard),
+        Cmd::Mutate { path, kind, seed, out, hard, machine } => {
+            cmd_mutate(&path, kind, seed, out.as_deref(), hard, machine.as_deref())
+        }
         Cmd::FixpointStats { dirs } => cmd_fixpoint_stats(&dirs),
         Cmd::PathCoverage { dirs } => cmd_path_coverage(&dirs),
         Cmd::Demo { which, sidecar } => cmd_demo(&which, sidecar),
-        Cmd::Emit { path, out } => cmd_emit(&path, out.as_deref()),
+        Cmd::Emit { path, out, machine } => cmd_emit(&path, out.as_deref(), machine.as_deref()),
     };
     match code {
         Ok(c) => std::process::exit(c),
@@ -292,26 +300,42 @@ fn attach_registry_recursive(wf: &mut ir::Workflow, registry: Rc<BTreeMap<String
     }
 }
 
-/// Load a single workflow (the first state machine for a multi-machine template).
-fn load(path: &Path) -> Result<ir::Workflow> {
+/// Load every state machine in a file, with sibling machines linked so child
+/// executions resolve. Every command that walks a corpus analyses all of them.
+fn load_machines(path: &Path) -> Result<Vec<(String, ir::Workflow)>> {
     let mut machines = load_all(path)?;
     attach_linked_children_to_loaded(&mut machines);
-    machines
-        .into_iter()
-        .next()
-        .map(|(_, wf)| wf)
-        .ok_or_else(|| anyhow::anyhow!("no workflow found in {}", path.display()))
+    Ok(machines)
 }
 
-fn load_resolved(path: &Path, annot: Option<&Path>, infer: bool) -> Result<(ir::Workflow, diag::DiagnosticSink)> {
-    let mut wf = load(path)?;
-    let sc = match annot {
-        Some(p) => Some(annot::Sidecar::load(p)?),
-        None => None,
+/// Load one state machine for the commands that output a single ASL document
+/// (`emit`, `mutate`): the one named `machine`, or else the first. When a template
+/// holds several, a note on stderr names them, so none is dropped silently.
+fn load_one(path: &Path, machine: Option<&str>) -> Result<ir::Workflow> {
+    let machines = load_machines(path)?;
+    let labels: Vec<String> = machines.iter().map(|(l, _)| l.clone()).collect();
+    let chosen = match machine {
+        Some(m) => machines.into_iter().find(|(l, _)| l == m).ok_or_else(|| {
+            anyhow::anyhow!("no state machine `{m}` in {}; it holds: {}", path.display(), labels.join(", "))
+        })?,
+        None => {
+            let first = machines
+                .into_iter()
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("no workflow found in {}", path.display()))?;
+            if labels.len() > 1 {
+                eprintln!(
+                    "note: {} holds {} state machines ({}); using `{}` (select one with --machine)",
+                    path.display(),
+                    labels.len(),
+                    labels.join(", "),
+                    first.0
+                );
+            }
+            first
+        }
     };
-    let mut sink = diag::DiagnosticSink::new();
-    annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
-    Ok((wf, sink))
+    Ok(chosen.1)
 }
 
 fn run_pipeline_into(wf: &ir::Workflow, sink: &mut diag::DiagnosticSink, result_shapes: bool) {
@@ -367,31 +391,55 @@ fn cmd_check(
 }
 
 fn cmd_infer(path: &Path, json: bool) -> Result<i32> {
-    let (wf, _) = load_resolved(path, None, true)?;
-    let mut rows = Vec::new();
-    wf.walk_machines(&mut |m| {
-        for (name, st) in &m.states {
-            if st.is_task() {
-                rows.push((name.clone(), st.anno.idempotent, st.anno.persistent, st.anno.effect.clone()));
+    // Every state machine of the file, as `check` reports them.
+    let machines = load_machines(path)?;
+    let multi = machines.len() > 1;
+    let mut json_out = Vec::new();
+    for (label, mut wf) in machines {
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut wf, None, true, &mut sink);
+        let mut rows = Vec::new();
+        wf.walk_machines(&mut |m| {
+            for (name, st) in &m.states {
+                if st.is_task() {
+                    rows.push((name.clone(), st.anno.idempotent, st.anno.persistent, st.anno.effect.clone()));
+                }
+            }
+        });
+        if json {
+            let arr: Vec<_> = rows
+                .iter()
+                .map(|(n, i, p, e)| json!({"state": n, "idempotent": i, "persistent": p, "effect": e}))
+                .collect();
+            json_out.push(json!({ "machine": label, "annotations": arr }));
+        } else {
+            if multi {
+                println!("# state machine: {label}");
+            }
+            println!("# inferred annotations for {}", wf.name);
+            for (name, i, p, e) in &rows {
+                println!("{name:<32} idempotent={i:?} persistent={p:?} effect={e:?}");
             }
         }
-    });
+    }
     if json {
-        let arr: Vec<_> = rows
-            .iter()
-            .map(|(n, i, p, e)| json!({"state": n, "idempotent": i, "persistent": p, "effect": e}))
-            .collect();
-        println!("{}", serde_json::to_string_pretty(&arr)?);
-    } else {
-        println!("# inferred annotations for {}", wf.name);
-        for (name, i, p, e) in &rows {
-            println!("{name:<32} idempotent={i:?} persistent={p:?} effect={e:?}");
+        if multi {
+            println!("{}", serde_json::to_string_pretty(&json_out)?);
+        } else if let Some(one) = json_out.into_iter().next() {
+            println!("{}", serde_json::to_string_pretty(&one["annotations"])?);
         }
     }
     Ok(0)
 }
 
 fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<i32> {
+    let report = scan_report(dir, annot, infer, result_shapes)?;
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(0)
+}
+
+/// The `scan` report for every workflow file under `dir`.
+fn scan_report(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) -> Result<serde_json::Value> {
     let sc = match annot {
         Some(p) => Some(annot::Sidecar::load(p)?),
         None => None,
@@ -401,54 +449,93 @@ fn cmd_scan(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool) 
     let mut total_err = 0usize;
     let mut total_warn = 0usize;
     let mut flagged = 0usize;
+    let mut machine_count = 0usize;
+    let mut flagged_machines = 0usize;
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let mut machines = match load_all(p) {
-            Ok(m) => m,
-            Err(_) => continue,
+        let machines = match load_machines(p) {
+            Ok(m) if !m.is_empty() => m,
+            _ => continue,
         };
-        attach_linked_children_to_loaded(&mut machines);
-        let Some((_, mut wf)) = machines.into_iter().next() else { continue };
-        let mut sink = diag::DiagnosticSink::new();
-        annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
-        run_pipeline_into(&wf, &mut sink, result_shapes);
+        // Every state machine in the file is analysed, as `check` does; a template with
+        // several machines reports their union plus a per-machine breakdown.
+        let multi = machines.len() > 1;
+        let (mut file_err, mut file_warn) = (0usize, 0usize);
         let mut codes: BTreeMap<String, usize> = BTreeMap::new();
-        for d in &sink.diagnostics {
-            *codes.entry(d.code.clone()).or_default() += 1;
-            *code_totals.entry(d.code.clone()).or_default() += 1;
+        let mut diagnostics = Vec::new();
+        let mut per_machine = Vec::new();
+        for (label, mut wf) in machines {
+            let mut sink = diag::DiagnosticSink::new();
+            annot::resolve(&mut wf, sc.as_ref(), infer, &mut sink);
+            run_pipeline_into(&wf, &mut sink, result_shapes);
+            let mut machine_codes: BTreeMap<String, usize> = BTreeMap::new();
+            for d in &sink.diagnostics {
+                *machine_codes.entry(d.code.clone()).or_default() += 1;
+                *codes.entry(d.code.clone()).or_default() += 1;
+                *code_totals.entry(d.code.clone()).or_default() += 1;
+                let mut v = serde_json::to_value(d)?;
+                if multi {
+                    v["machine"] = json!(label);
+                }
+                diagnostics.push(v);
+            }
+            file_err += sink.errors();
+            file_warn += sink.warnings();
+            machine_count += 1;
+            if !sink.diagnostics.is_empty() {
+                flagged_machines += 1;
+            }
+            per_machine.push(json!({
+                "machine": label,
+                "errors": sink.errors(),
+                "warnings": sink.warnings(),
+                "codes": machine_codes,
+            }));
         }
-        total_err += sink.errors();
-        total_warn += sink.warnings();
-        if !sink.diagnostics.is_empty() {
+        total_err += file_err;
+        total_warn += file_warn;
+        if !diagnostics.is_empty() {
             flagged += 1;
         }
-        files.push(json!({
+        let mut row = json!({
             "file": p.file_name().and_then(|s| s.to_str()).unwrap_or(""),
-            "errors": sink.errors(),
-            "warnings": sink.warnings(),
+            "errors": file_err,
+            "warnings": file_warn,
             "codes": codes,
-            "diagnostics": sink.diagnostics,
-        }));
+            "diagnostics": diagnostics,
+        });
+        if multi {
+            row["machines"] = json!(per_machine);
+        }
+        files.push(row);
     }
 
     let report = json!({
         "files": files.len(),
+        "machines": machine_count,
         "flagged_files": flagged,
+        "flagged_machines": flagged_machines,
         "total_errors": total_err,
         "total_warnings": total_warn,
         "code_totals": code_totals,
         "per_file": files,
     });
-    println!("{}", serde_json::to_string_pretty(&report)?);
-    Ok(0)
+    Ok(report)
 }
 
-fn cmd_mutate(path: &Path, kind: mutate::MutationKind, seed: u64, out: Option<&Path>, hard: bool) -> Result<i32> {
-    let wf = load(path)?;
+fn cmd_mutate(
+    path: &Path,
+    kind: mutate::MutationKind,
+    seed: u64,
+    out: Option<&Path>,
+    hard: bool,
+    machine: Option<&str>,
+) -> Result<i32> {
+    let wf = load_one(path, machine)?;
     let mutated = if hard { mutate::mutate_hard(&wf, kind, seed) } else { mutate::mutate(&wf, kind, seed) };
     match mutated {
         Some(mw) => {
@@ -539,6 +626,8 @@ fn cmd_eval(
     let mut baseline_warnings = 0usize;
     let mut flagged = 0usize;
     let mut files = 0usize;
+    let mut machine_count = 0usize;
+    let mut flagged_machines = 0usize;
     let mut total_states = 0usize;
     let mut times_ns: Vec<u128> = Vec::new();
 
@@ -547,67 +636,75 @@ fn cmd_eval(
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let base = match load(p) {
-            Ok(w) => w,
-            Err(_) => continue,
+        let machines = match load_machines(p) {
+            Ok(m) if !m.is_empty() => m,
+            _ => continue,
         };
         files += 1;
-        total_states += base.total_states();
+        let mut file_flagged = false;
+        for (_, base) in machines {
+            machine_count += 1;
+            total_states += base.total_states();
 
-        // typed-tier seed: a closed input record of the fields the workflow uses
-        let strict_fields = if strict_input {
-            let f = mine_top_level_fields(&base);
-            if f.is_empty() { None } else { Some(f) }
-        } else {
-            None
-        };
+            // typed-tier seed: a closed input record of the fields the workflow uses
+            let strict_fields = if strict_input {
+                let f = mine_top_level_fields(&base);
+                if f.is_empty() { None } else { Some(f) }
+            } else {
+                None
+            };
 
-        // baseline (timed)
-        let mut b = base.clone();
-        if let Some(f) = &strict_fields {
-            b.input_fields = Some(f.clone());
-        }
-        let mut bsink = diag::DiagnosticSink::new();
-        annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
-        let t = Instant::now();
-        run_pipeline_into(&b, &mut bsink, result_shapes);
-        times_ns.push(t.elapsed().as_nanos());
+            // baseline (timed)
+            let mut b = base.clone();
+            if let Some(f) = &strict_fields {
+                b.input_fields = Some(f.clone());
+            }
+            let mut bsink = diag::DiagnosticSink::new();
+            annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
+            let t = Instant::now();
+            run_pipeline_into(&b, &mut bsink, result_shapes);
+            times_ns.push(t.elapsed().as_nanos());
 
-        let bcounts = code_counts(&bsink);
-        for (c, n) in &bcounts {
-            *baseline_codes.entry(c.clone()).or_default() += n;
-        }
-        baseline_errors += bsink.errors();
-        baseline_warnings += bsink.warnings();
-        if !bsink.diagnostics.is_empty() {
-            flagged += 1;
-        }
+            let bcounts = code_counts(&bsink);
+            for (c, n) in &bcounts {
+                *baseline_codes.entry(c.clone()).or_default() += n;
+            }
+            baseline_errors += bsink.errors();
+            baseline_warnings += bsink.warnings();
+            if !bsink.diagnostics.is_empty() {
+                flagged_machines += 1;
+                file_flagged = true;
+            }
 
-        // mutation study
-        for &kind in &kinds {
-            let ec = kind.expected_code();
-            if let Some(mut mw) = mutate::mutate(&base, kind, 0) {
-                if let Some(f) = &strict_fields {
-                    mw.input_fields = Some(f.clone());
-                }
-                let mut msink = diag::DiagnosticSink::new();
-                annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
-                run_pipeline_into(&mw, &mut msink, result_shapes);
-                let mcounts = code_counts(&msink);
-                let before = bcounts.get(ec).copied().unwrap_or(0);
-                let after = mcounts.get(ec).copied().unwrap_or(0);
-                *applicable.entry(format!("{kind:?}")).or_default() += 1;
-                if after > before {
-                    *detected.entry(format!("{kind:?}")).or_default() += 1;
-                }
-                // record every code that newly fired on this mutant (confusion row)
-                let row = confusion.entry(format!("{kind:?}")).or_default();
-                for (c, n) in &mcounts {
-                    if *n > bcounts.get(c).copied().unwrap_or(0) {
-                        *row.entry(c.clone()).or_default() += 1;
+            // mutation study
+            for &kind in &kinds {
+                let ec = kind.expected_code();
+                if let Some(mut mw) = mutate::mutate(&base, kind, 0) {
+                    if let Some(f) = &strict_fields {
+                        mw.input_fields = Some(f.clone());
+                    }
+                    let mut msink = diag::DiagnosticSink::new();
+                    annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
+                    run_pipeline_into(&mw, &mut msink, result_shapes);
+                    let mcounts = code_counts(&msink);
+                    let before = bcounts.get(ec).copied().unwrap_or(0);
+                    let after = mcounts.get(ec).copied().unwrap_or(0);
+                    *applicable.entry(format!("{kind:?}")).or_default() += 1;
+                    if after > before {
+                        *detected.entry(format!("{kind:?}")).or_default() += 1;
+                    }
+                    // record every code that newly fired on this mutant (confusion row)
+                    let row = confusion.entry(format!("{kind:?}")).or_default();
+                    for (c, n) in &mcounts {
+                        if *n > bcounts.get(c).copied().unwrap_or(0) {
+                            *row.entry(c.clone()).or_default() += 1;
+                        }
                     }
                 }
             }
+        }
+        if file_flagged {
+            flagged += 1;
         }
     }
 
@@ -635,10 +732,11 @@ fn cmd_eval(
     }
 
     let report = json!({
-        "corpus": { "files": files, "total_states": total_states },
+        "corpus": { "files": files, "machines": machine_count, "total_states": total_states },
         "ablation": { "result_shapes": result_shapes },
         "baseline": {
             "flagged_files": flagged,
+            "flagged_machines": flagged_machines,
             "errors": baseline_errors,
             "warnings": baseline_warnings,
             "code_totals": baseline_codes,
@@ -680,58 +778,62 @@ fn cmd_eval_hard(
     let mut detected_family = BTreeMap::<String, usize>::new();
     let mut confusion = BTreeMap::<String, BTreeMap<String, usize>>::new();
     let mut files = 0usize;
+    let mut machine_count = 0usize;
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let base = match load(p) {
-            Ok(w) => w,
-            Err(_) => continue,
+        let machines = match load_machines(p) {
+            Ok(m) if !m.is_empty() => m,
+            _ => continue,
         };
         files += 1;
+        for (_, base) in machines {
+            machine_count += 1;
 
-        // typed-tier seed: a closed input record of the fields the workflow uses
-        let strict_fields = {
-            let f = mine_top_level_fields(&base);
-            if f.is_empty() { None } else { Some(f) }
-        };
+            // typed-tier seed: a closed input record of the fields the workflow uses
+            let strict_fields = {
+                let f = mine_top_level_fields(&base);
+                if f.is_empty() { None } else { Some(f) }
+            };
 
-        // baseline (unmutated) code counts, so we credit only *fresh* findings
-        let mut b = base.clone();
-        if let Some(f) = &strict_fields {
-            b.input_fields = Some(f.clone());
-        }
-        let mut bsink = diag::DiagnosticSink::new();
-        annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
-        run_pipeline_into(&b, &mut bsink, result_shapes);
-        let bcounts = code_counts(&bsink);
+            // baseline (unmutated) code counts, so we credit only *fresh* findings
+            let mut b = base.clone();
+            if let Some(f) = &strict_fields {
+                b.input_fields = Some(f.clone());
+            }
+            let mut bsink = diag::DiagnosticSink::new();
+            annot::resolve(&mut b, sc.as_ref(), infer, &mut bsink);
+            run_pipeline_into(&b, &mut bsink, result_shapes);
+            let bcounts = code_counts(&bsink);
 
-        for &kind in &kinds {
-            let ec = kind.expected_code();
-            let family = kind.expected_family();
-            if let Some(mut mw) = mutate::mutate_hard(&base, kind, 0) {
-                if let Some(f) = &strict_fields {
-                    mw.input_fields = Some(f.clone());
-                }
-                let mut msink = diag::DiagnosticSink::new();
-                annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
-                run_pipeline_into(&mw, &mut msink, result_shapes);
-                let mcounts = code_counts(&msink);
-                let fresh = |c: &str| mcounts.get(c).copied().unwrap_or(0) > bcounts.get(c).copied().unwrap_or(0);
+            for &kind in &kinds {
+                let ec = kind.expected_code();
+                let family = kind.expected_family();
+                if let Some(mut mw) = mutate::mutate_hard(&base, kind, 0) {
+                    if let Some(f) = &strict_fields {
+                        mw.input_fields = Some(f.clone());
+                    }
+                    let mut msink = diag::DiagnosticSink::new();
+                    annot::resolve(&mut mw, sc.as_ref(), infer, &mut msink);
+                    run_pipeline_into(&mw, &mut msink, result_shapes);
+                    let mcounts = code_counts(&msink);
+                    let fresh = |c: &str| mcounts.get(c).copied().unwrap_or(0) > bcounts.get(c).copied().unwrap_or(0);
 
-                *applicable.entry(format!("{kind:?}")).or_default() += 1;
-                if fresh(ec) {
-                    *detected_expected.entry(format!("{kind:?}")).or_default() += 1;
-                }
-                if family.iter().any(|c| fresh(c)) {
-                    *detected_family.entry(format!("{kind:?}")).or_default() += 1;
-                }
-                let row = confusion.entry(format!("{kind:?}")).or_default();
-                for (c, n) in &mcounts {
-                    if *n > bcounts.get(c).copied().unwrap_or(0) {
-                        *row.entry(c.clone()).or_default() += 1;
+                    *applicable.entry(format!("{kind:?}")).or_default() += 1;
+                    if fresh(ec) {
+                        *detected_expected.entry(format!("{kind:?}")).or_default() += 1;
+                    }
+                    if family.iter().any(|c| fresh(c)) {
+                        *detected_family.entry(format!("{kind:?}")).or_default() += 1;
+                    }
+                    let row = confusion.entry(format!("{kind:?}")).or_default();
+                    for (c, n) in &mcounts {
+                        if *n > bcounts.get(c).copied().unwrap_or(0) {
+                            *row.entry(c.clone()).or_default() += 1;
+                        }
                     }
                 }
             }
@@ -762,7 +864,7 @@ fn cmd_eval_hard(
         "study": "hard_mutants",
         "note": "Each class's boundary variant (mutate_hard): a genuine defect moved to the edge of what the analysis can prove. \
                  recall_family credits any sibling code in the class's analysis family; a ⊤-lift shows as a family miss. Typed tier.",
-        "corpus": { "files": files },
+        "corpus": { "files": files, "machines": machine_count },
         "ablation": { "result_shapes": result_shapes },
         "mutation_study_hard": per_kind,
         "hard_confusion_matrix": confusion,
@@ -771,17 +873,19 @@ fn cmd_eval_hard(
     Ok(0)
 }
 
-/// Diagnostic-code counts for a single workflow file (inference optional).
+/// Diagnostic-code counts for a workflow file, summed over its state machines
+/// (inference optional).
 fn codes_for(p: &Path, infer: bool) -> BTreeMap<String, usize> {
-    match load(p) {
-        Ok(mut w) => {
-            let mut sink = diag::DiagnosticSink::new();
-            annot::resolve(&mut w, None, infer, &mut sink);
-            run_pipeline_into(&w, &mut sink, false);
-            code_counts(&sink)
+    let mut total = BTreeMap::new();
+    for (_, mut w) in load_machines(p).unwrap_or_default() {
+        let mut sink = diag::DiagnosticSink::new();
+        annot::resolve(&mut w, None, infer, &mut sink);
+        run_pipeline_into(&w, &mut sink, false);
+        for (c, n) in code_counts(&sink) {
+            *total.entry(c).or_default() += n;
         }
-        Err(_) => BTreeMap::new(),
     }
+    total
 }
 
 /// Real-bug benchmark over (pre-fix, post-fix) pairs. For each `<id>-pre.json` with
@@ -845,49 +949,54 @@ fn cmd_oracle(dir: &Path, annot: Option<&Path>, infer: bool, result_shapes: bool
     };
     let (mut files, mut findings, mut confirmed, mut present, mut unver, mut nested) =
         (0usize, 0usize, 0usize, 0usize, 0usize, 0usize);
+    let mut machine_count = 0usize;
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let base = match load(p) {
-            Ok(w) => w,
-            Err(_) => continue,
+        let machines = match load_machines(p) {
+            Ok(m) if !m.is_empty() => m,
+            _ => continue,
         };
         files += 1;
-        // typed-tier seed + injected miss so SC1101 actually fires in the wild
-        let fields = mine_top_level_fields(&base);
-        let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
-        if !fields.is_empty() {
-            mw.input_fields = Some(fields);
-        }
-        let mut sink = diag::DiagnosticSink::new();
-        annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
-        run_pipeline_into(&mw, &mut sink, result_shapes);
-        for d in sink.diagnostics.iter().filter(|d| d.code == "SC1101") {
-            findings += 1;
-            if d.state.contains('/') {
-                nested += 1; // oracle handles top-level machines only
-                unver += 1;
-                continue;
+        for (_, base) in machines {
+            machine_count += 1;
+            // typed-tier seed + injected miss so SC1101 actually fires in the wild
+            let fields = mine_top_level_fields(&base);
+            let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
+            if !fields.is_empty() {
+                mw.input_fields = Some(fields);
             }
-            let Some(pref) = extract_read_path(&d.message) else { unver += 1; continue };
-            let verdict = if result_shapes {
-                concrete::check_ref_with_result_shapes(&mw, &d.state, &pref)
-            } else {
-                concrete::check_ref(&mw, &d.state, &pref)
-            };
-            match verdict {
-                concrete::Verdict::ConfirmedAbsent => confirmed += 1,
-                concrete::Verdict::Present => present += 1,
-                concrete::Verdict::Unverifiable => unver += 1,
+            let mut sink = diag::DiagnosticSink::new();
+            annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
+            run_pipeline_into(&mw, &mut sink, result_shapes);
+            for d in sink.diagnostics.iter().filter(|d| d.code == "SC1101") {
+                findings += 1;
+                if d.state.contains('/') {
+                    nested += 1; // oracle handles top-level machines only
+                    unver += 1;
+                    continue;
+                }
+                let Some(pref) = extract_read_path(&d.message) else { unver += 1; continue };
+                let verdict = if result_shapes {
+                    concrete::check_ref_with_result_shapes(&mw, &d.state, &pref)
+                } else {
+                    concrete::check_ref(&mw, &d.state, &pref)
+                };
+                match verdict {
+                    concrete::Verdict::ConfirmedAbsent => confirmed += 1,
+                    concrete::Verdict::Present => present += 1,
+                    concrete::Verdict::Unverifiable => unver += 1,
+                }
             }
         }
     }
 
     let report = json!({
         "files": files,
+        "machines": machine_count,
         "ablation": { "result_shapes": result_shapes },
         "sc1101_findings": findings,
         "oracle": {
@@ -913,6 +1022,7 @@ fn cmd_dataflow_cert(dir: &Path, annot: Option<&Path>, infer: bool, result_shape
         None => None,
     };
     let (mut files, mut findings, mut mismatches) = (0usize, 0usize, 0usize);
+    let mut machine_count = 0usize;
     let mut total = passes::dataflow::CertificateStats::default();
 
     for entry in WalkDir::new(dir).sort_by_file_name().into_iter().filter_map(|e| e.ok()) {
@@ -920,35 +1030,39 @@ fn cmd_dataflow_cert(dir: &Path, annot: Option<&Path>, infer: bool, result_shape
         if !p.is_file() || !is_workflow_file(p) {
             continue;
         }
-        let base = match load(p) {
-            Ok(w) => w,
-            Err(_) => continue,
+        let machines = match load_machines(p) {
+            Ok(m) if !m.is_empty() => m,
+            _ => continue,
         };
         files += 1;
-        let fields = mine_top_level_fields(&base);
-        let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
-        if !fields.is_empty() {
-            mw.input_fields = Some(fields);
+        for (_, base) in machines {
+            machine_count += 1;
+            let fields = mine_top_level_fields(&base);
+            let Some(mut mw) = mutate::mutate(&base, mutate::MutationKind::Dataflow, 0) else { continue };
+            if !fields.is_empty() {
+                mw.input_fields = Some(fields);
+            }
+            let mut sink = diag::DiagnosticSink::new();
+            annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
+            run_pipeline_into(&mw, &mut sink, result_shapes);
+            let sc1101 = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
+            findings += sc1101;
+            let cert = passes::dataflow::certify_sc1101(&mw, result_shapes);
+            if cert.sc1101_reports != sc1101 {
+                mismatches += 1;
+            }
+            total.machines += cert.machines;
+            total.postconditions += cert.postconditions;
+            total.failed_postconditions += cert.failed_postconditions;
+            total.sc1101_reports += cert.sc1101_reports;
+            total.certified_reports += cert.certified_reports;
         }
-        let mut sink = diag::DiagnosticSink::new();
-        annot::resolve(&mut mw, sc.as_ref(), infer, &mut sink);
-        run_pipeline_into(&mw, &mut sink, result_shapes);
-        let sc1101 = sink.diagnostics.iter().filter(|d| d.code == "SC1101").count();
-        findings += sc1101;
-        let cert = passes::dataflow::certify_sc1101(&mw, result_shapes);
-        if cert.sc1101_reports != sc1101 {
-            mismatches += 1;
-        }
-        total.machines += cert.machines;
-        total.postconditions += cert.postconditions;
-        total.failed_postconditions += cert.failed_postconditions;
-        total.sc1101_reports += cert.sc1101_reports;
-        total.certified_reports += cert.certified_reports;
     }
 
     let ok = total.ok() && mismatches == 0;
     let report = json!({
         "files": files,
+        "state_machines": machine_count,
         "ablation": { "result_shapes": result_shapes },
         "sc1101_findings": findings,
         "certificate": {
@@ -969,8 +1083,8 @@ fn cmd_dataflow_cert(dir: &Path, annot: Option<&Path>, infer: bool, result_shape
 /// Round-trip a workflow through the ASL emitter unchanged (the control form for
 /// the multi-validator baseline). Loads via the extension-chosen frontend and
 /// re-emits ASL JSON.
-fn cmd_emit(path: &Path, out: Option<&Path>) -> Result<i32> {
-    let wf = load(path)?;
+fn cmd_emit(path: &Path, out: Option<&Path>, machine: Option<&str>) -> Result<i32> {
+    let wf = load_one(path, machine)?;
     let text = serde_json::to_string_pretty(&asl::emit(&wf))?;
     match out {
         Some(o) => std::fs::write(o, text)?,
@@ -1029,25 +1143,27 @@ fn cmd_fixpoint_stats(dirs: &[PathBuf]) -> Result<i32> {
             if !p.is_file() || !is_workflow_file(p) {
                 continue;
             }
-            let base = match load(p) {
-                Ok(w) => w,
-                Err(_) => continue,
+            let machines = match load_machines(p) {
+                Ok(m) if !m.is_empty() => m,
+                _ => continue,
             };
             files += 1;
-            // native tier: Top-seeded start document
-            let mut n = base.clone();
-            let mut nsink = diag::DiagnosticSink::new();
-            annot::resolve(&mut n, None, false, &mut nsink);
-            run_pipeline_into(&n, &mut nsink, false);
-            // typed tier: closed record of the top-level fields the workflow reads
-            let mut t = base.clone();
-            let f = mine_top_level_fields(&base);
-            if !f.is_empty() {
-                t.input_fields = Some(f);
+            for (_, base) in machines {
+                // native tier: Top-seeded start document
+                let mut n = base.clone();
+                let mut nsink = diag::DiagnosticSink::new();
+                annot::resolve(&mut n, None, false, &mut nsink);
+                run_pipeline_into(&n, &mut nsink, false);
+                // typed tier: closed record of the top-level fields the workflow reads
+                let mut t = base.clone();
+                let f = mine_top_level_fields(&base);
+                if !f.is_empty() {
+                    t.input_fields = Some(f);
+                }
+                let mut tsink = diag::DiagnosticSink::new();
+                annot::resolve(&mut t, None, false, &mut tsink);
+                run_pipeline_into(&t, &mut tsink, false);
             }
-            let mut tsink = diag::DiagnosticSink::new();
-            annot::resolve(&mut t, None, false, &mut tsink);
-            run_pipeline_into(&t, &mut tsink, false);
         }
         let rec = passes::dataflow::fixpoint_record_take();
         per_corpus.push(fixpoint_summary(Some(dir.display().to_string()), files, &rec));
@@ -1075,12 +1191,14 @@ fn cmd_path_coverage(dirs: &[PathBuf]) -> Result<i32> {
             if !p.is_file() || !is_workflow_file(p) {
                 continue;
             }
-            let wf = match load(p) {
-                Ok(w) => w,
-                Err(_) => continue,
+            let machines = match load_machines(p) {
+                Ok(m) if !m.is_empty() => m,
+                _ => continue,
             };
             files += 1;
-            path_coverage(&wf, &mut cov);
+            for (_, wf) in machines {
+                path_coverage(&wf, &mut cov);
+            }
         }
         per_corpus.push(path_coverage_summary(Some(dir.display().to_string()), files, &cov));
         all_files += files;
@@ -1142,6 +1260,7 @@ fn cmd_demo(which: &str, sidecar: bool) -> Result<i32> {
 struct Stats {
     files: usize,
     parse_failures: usize,
+    machines: usize,
     total_states: usize,
     type_counts: BTreeMap<String, usize>,
     feature_files: BTreeMap<String, usize>,
@@ -1208,93 +1327,99 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
             continue;
         }
         st.files += 1;
-        let wf = match load(p) {
-            Ok(w) => w,
+        let machines = match load_machines(p) {
+            Ok(m) => m,
             Err(_) => {
                 st.parse_failures += 1;
                 continue;
             }
         };
-        st.total_states += wf.total_states();
-        st.sizes.push(wf.total_states());
+        // Each state machine of a template is one workflow for these statistics.
+        for (_, wf) in machines {
+            st.machines += 1;
+            st.total_states += wf.total_states();
+            st.sizes.push(wf.total_states());
 
-        let mut local_types: BTreeMap<String, usize> = BTreeMap::new();
-        let mut local_services: BTreeMap<String, usize> = BTreeMap::new();
-        let mut has_retry = false;
-        let mut has_catch = false;
-        let mut has_jsonata = false;
-        let mut has_callback = false;
-        let mut has_unbounded_callback = false;
-        let mut has_distributed_map = false;
-        wf.walk_machines(&mut |m| {
-            for s in m.states.values() {
-                *st.type_counts.entry(s.kind.as_str().to_string()).or_default() += 1;
-                *local_types.entry(s.kind.as_str().to_string()).or_default() += 1;
-                if matches!(s.query_language, ir::QueryLang::JsonAta) {
-                    st.jsonata_states += 1;
-                    has_jsonata = true;
+            let mut local_types: BTreeMap<String, usize> = BTreeMap::new();
+            let mut local_services: BTreeMap<String, usize> = BTreeMap::new();
+            let mut has_retry = false;
+            let mut has_catch = false;
+            let mut has_jsonata = false;
+            let mut has_callback = false;
+            let mut has_unbounded_callback = false;
+            let mut has_distributed_map = false;
+            wf.walk_machines(&mut |m| {
+                for s in m.states.values() {
+                    *st.type_counts.entry(s.kind.as_str().to_string()).or_default() += 1;
+                    *local_types.entry(s.kind.as_str().to_string()).or_default() += 1;
+                    if matches!(s.query_language, ir::QueryLang::JsonAta) {
+                        st.jsonata_states += 1;
+                        has_jsonata = true;
+                    }
+                    if s.distributed_map {
+                        st.distributed_map_states += 1;
+                        has_distributed_map = true;
+                    }
+                    if is_callback_or_activity(s) {
+                        st.callback_tasks += 1;
+                        has_callback = true;
+                    }
+                    if is_unbounded_callback_or_activity(s) {
+                        st.unbounded_callback_tasks += 1;
+                        has_unbounded_callback = true;
+                    }
+                    if let Some(service) = service_target(s) {
+                        *st.service_task_counts.entry(service.to_string()).or_default() += 1;
+                        *local_services.entry(service.to_string()).or_default() += 1;
+                    }
+                    if s.has_retry() {
+                        has_retry = true;
+                    }
+                    if !s.catch.is_empty() {
+                        has_catch = true;
+                    }
                 }
-                if s.distributed_map {
-                    st.distributed_map_states += 1;
-                    has_distributed_map = true;
-                }
-                if is_callback_or_activity(s) {
-                    st.callback_tasks += 1;
-                    has_callback = true;
-                }
-                if is_unbounded_callback_or_activity(s) {
-                    st.unbounded_callback_tasks += 1;
-                    has_unbounded_callback = true;
-                }
-                if let Some(service) = service_target(s) {
-                    *st.service_task_counts.entry(service.to_string()).or_default() += 1;
-                    *local_services.entry(service.to_string()).or_default() += 1;
-                }
-                if s.has_retry() {
-                    has_retry = true;
-                }
-                if !s.catch.is_empty() {
-                    has_catch = true;
-                }
+            });
+            for k in local_types.keys() {
+                *st.feature_files.entry(k.clone()).or_default() += 1;
             }
-        });
-        for k in local_types.keys() {
-            *st.feature_files.entry(k.clone()).or_default() += 1;
-        }
-        for k in local_services.keys() {
-            *st.service_file_counts.entry(k.clone()).or_default() += 1;
-        }
-        if has_retry {
-            st.with_retry += 1;
-        }
-        if has_catch {
-            st.with_catch += 1;
-        }
-        if has_jsonata {
-            st.jsonata_files += 1;
-        }
-        if has_callback {
-            st.callback_files += 1;
-        }
-        if has_unbounded_callback {
-            st.unbounded_callback_files += 1;
-        }
-        if has_distributed_map {
-            st.distributed_map_files += 1;
+            for k in local_services.keys() {
+                *st.service_file_counts.entry(k.clone()).or_default() += 1;
+            }
+            if has_retry {
+                st.with_retry += 1;
+            }
+            if has_catch {
+                st.with_catch += 1;
+            }
+            if has_jsonata {
+                st.jsonata_files += 1;
+            }
+            if has_callback {
+                st.callback_files += 1;
+            }
+            if has_unbounded_callback {
+                st.unbounded_callback_files += 1;
+            }
+            if has_distributed_map {
+                st.distributed_map_files += 1;
+            }
         }
     }
 
     let ok = st.files - st.parse_failures;
+    let machines = st.machines;
     st.sizes.sort_unstable();
     let median = st.sizes.get(st.sizes.len() / 2).copied().unwrap_or(0);
-    let mean = if ok > 0 { st.total_states as f64 / ok as f64 } else { 0.0 };
+    let mean = if machines > 0 { st.total_states as f64 / machines as f64 } else { 0.0 };
     let max = st.sizes.last().copied().unwrap_or(0);
     let min = st.sizes.first().copied().unwrap_or(0);
 
     if tex {
-        print_stats_tex(&st, ok, mean, median, min, max);
+        print_stats_tex(&st, machines, mean, median, min, max);
     } else {
         println!("workflows parsed : {ok}/{} ({} parse failures)", st.files, st.parse_failures);
+        println!("state machines   : {machines}");
         println!("total states     : {}", st.total_states);
         println!("states/workflow  : min {min}, median {median}, mean {mean:.1}, max {max}");
         println!("state-type counts:");
@@ -1320,12 +1445,12 @@ fn cmd_stats(dir: &Path, tex: bool) -> Result<i32> {
     Ok(0)
 }
 
-fn print_stats_tex(st: &Stats, ok: usize, mean: f64, median: usize, min: usize, max: usize) {
+fn print_stats_tex(st: &Stats, machines: usize, mean: f64, median: usize, min: usize, max: usize) {
     println!("% generated by `stepcheck stats --tex`");
     println!("\\begin{{tabular}}{{lr}}");
     println!("\\toprule");
     println!("Property & Value \\\\\n\\midrule");
-    println!("Workflows & {ok} \\\\");
+    println!("Workflows & {machines} \\\\");
     println!("Total states & {} \\\\", st.total_states);
     println!("States per workflow (min/median/mean/max) & {min} / {median} / {mean:.1} / {max} \\\\");
     for k in ["Task", "Choice", "Parallel", "Map", "Wait", "Pass", "Succeed", "Fail"] {

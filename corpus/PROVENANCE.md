@@ -124,7 +124,8 @@ URL and the verbatim reported error.
 | `Thrubit/payment-settlement-workflow` | 3 | **none** |
 | `pssolanki111/pyDelhi_step_functions` | 1 | **none** |
 
-`wild-external/manifest.json` records the repository, branch and path of every file.
+`wild-external/manifest.json` records the repository, branch, path, pinned commit and SHA-256
+of every file.
 
 ## Files whose upstream publishes no licence
 
@@ -134,10 +135,15 @@ means all rights are reserved and we have no redistribution grant: 32 in `wild-e
 `realbugs/` (`manikanta5827/leave-management` and
 `nicktodd/video-translation-stepfunctions`).
 
-These files are therefore **not redistributed in the public artifact**. The manifests keep
-their repository, branch and path, and `eval/mine_wild.js` and `eval/mine_realbugs.js`
-re-fetch them from upstream, so the affected measurements remain reproducible with network
-access. The measurements reported in the paper were computed over the full set as mined.
+These files are therefore **not redistributed in the public artifact**. Each is pinned to
+the upstream commit it was measured at and to the SHA-256 of its content
+(`wild-external/manifest.json`, `realbugs/unredistributed.json`), and
+`node eval/fetch_unredistributed.js` re-fetches exactly those bytes from
+raw.githubusercontent.com (no token needed). A file whose upstream content changed or
+disappeared is reported rather than replaced, so the affected measurements remain
+reproducible with network access. The measurements reported in the paper were computed over
+the full set as mined. (`eval/mine_wild.js` and `eval/mine_realbugs.js` are the original
+miners; re-running them performs a fresh search and may return a different set.)
 
 ## Attribution
 

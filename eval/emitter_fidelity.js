@@ -14,7 +14,8 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
 const DIR = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'corpus', 'asl');
 const LIMIT = process.argv[3] ? +process.argv[3] : Number.MAX_SAFE_INTEGER;
 

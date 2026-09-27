@@ -36,7 +36,11 @@ fix deleted the flagged task — and is not credited). See `realbugs.json`:
 
 Four of the six are in classes no schema validator (`statelint` etc.) can express.
 The other 32 pairs are value/config fixes outside StepCheck's remit (it correctly
-stays silent). Curated pairs kept here; re-run the miner to grow the set. AWS-sample-only
+stays silent). `mined-pairs.json` lists every pair with its repository, commit, file, commit
+subject and verdict: 30 of the 39 come from seven repositories and are reproduced exactly by
+`node eval/mine_realbugs.js --repos <the seven> --until 2026-06-22 --out <dir>` (they include
+all 7 flagged pairs); the remaining 9 came from a `--discover` code search whose repository
+list was not recorded, and none of them was flagged. Curated pairs kept here; re-run the miner to grow the set. AWS-sample-only
 mining yields ~0 (samples are clean) — the semantic catches come from production repos
 surfaced via `--discover`.
 

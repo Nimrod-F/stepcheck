@@ -352,7 +352,8 @@ def main():
     ap.add_argument("--corpus", default=os.path.join(ROOT, "corpus", "asl"))
     ap.add_argument("--include", default=None, help="optional regex over relative input paths")
     ap.add_argument("--limit", type=int, default=30)
-    ap.add_argument("--bin", default=os.path.join(ROOT, "stepcheck", "target", "release", "stepcheck.exe"))
+    ap.add_argument("--bin", default=os.environ.get("STEPCHECK_BIN") or os.path.join(
+        ROOT, "stepcheck", "target", "release", "stepcheck.exe" if os.name == "nt" else "stepcheck"))
     ap.add_argument("--node", default="node")
     ap.add_argument("--encode", default=os.path.join(ROOT, "eval", "asl2bpmn", "encode.js"))
     ap.add_argument("--out", default=None)

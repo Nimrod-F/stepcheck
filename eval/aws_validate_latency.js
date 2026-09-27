@@ -21,7 +21,8 @@ const { performance } = require('perf_hooks');
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_MANIFEST = path.join(ROOT, 'corpus', 'manifest.json');
 const DEFAULT_OUT = path.join(__dirname, 'aws-validate-latency.json');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
 
 function usage() {
   console.error(`Usage:

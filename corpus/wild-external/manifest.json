@@ -4,664 +4,854 @@
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithAllPrimitiveCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithAllPrimitiveCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "70b64c4a135053eb90636cc15cd42b727ec3345aaf0bd077b5af1f56c9d4ae86",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithAndCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithAndCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "c9eb9e797f6064245125651100b4e0d6efe4640556cef9f22a4235c5c9eab4f3",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithComplexCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithComplexCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "fe31fb6b9060712b6b19da280df4e0d2b0e6d44aa613bd7111e8dec66b571922",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithMissingCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithMissingCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "e6f15a025be77e368e1245c6e1f00196f164b61aa7fc5244a9e3b1f373d79983",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithMultipleChoices.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithMultipleChoices.json",
-    "states": 4
+    "states": 4,
+    "sha256": "2317346861e8909080dac57b0345b6a0a7cafeef40bf8f647d2fec5204ee1034",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithNotCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithNotCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "324355d472a9624e0b3cd3113e36b7a742aaf70b6af7611e676ef05bb292cd8b",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithOrCondition.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithOrCondition.json",
-    "states": 3
+    "states": 3,
+    "sha256": "3b1b5ef43a3a7978d11018860c63080069418f445c96bdfc54a3d00d4c7b5a1e",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ChoiceStateWithoutDefault.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ChoiceStateWithoutDefault.json",
-    "states": 3
+    "states": 3,
+    "sha256": "38650105ac41396374a57b953dc4a9453b1182e07e5dc4284b2a686f8dcc2772",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/FailStateMachineWithIntrinsicFunc.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithIntrinsicFunc.json",
-    "states": 1
+    "states": 1,
+    "sha256": "6c56541af0af22e05b6e7dcc3504262e5006ca9f766a334f65826f3294e9583b",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/FailStateMachineWithPath.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithPath.json",
-    "states": 1
+    "states": 1,
+    "sha256": "09ac47450f6b7eec893bf5aa2d81a5e4a3b4c6e488723d6efad62e3a8d453a56",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/FailStateMachineWithPaths.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__FailStateMachineWithPaths.json",
-    "states": 2
+    "states": 2,
+    "sha256": "800a3d6d882d117f1f48ad53b79e7e7c2e9875c5659027e5c70f9c712f816f6f",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ParallelStateWithCatchers.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ParallelStateWithCatchers.json",
-    "states": 3
+    "states": 3,
+    "sha256": "87c16bfc115f6eea27c77d367d79333f54283df553fdd43690163556a7c04ea9",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/ParallelStateWithRetriers.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__ParallelStateWithRetriers.json",
-    "states": 1
+    "states": 1,
+    "sha256": "725a4ebb3c4f8fbedd52ef7d7d1e3f5826f49549fbed412909a3131d2c687513",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/PassStateNullOutputPath.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__PassStateNullOutputPath.json",
-    "states": 1
+    "states": 1,
+    "sha256": "570e52b98c05d956198bc2d9168ac6cb58087495fe62892b621f26b5c6b7d64b",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "vdaron/StatesLanguage",
     "branch": "develop",
     "path": "test/Resources/StateMachines/SimpleChoiceState.json",
     "file": "corpus/wild-external/vdaron__StatesLanguage__test__Resources__StateMachines__SimpleChoiceState.json",
-    "states": 3
+    "states": 3,
+    "sha256": "2c10c2439720fa15a29972d020ebb1edbb67531accd7a5d49797b8d1ada6fd5f",
+    "commit": "29dfeaaf1799e2e70182f0b45f84a06bd185dcac"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/activityflow.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__activityflow.json",
-    "states": 4
+    "states": 4,
+    "sha256": "9a7961853f3d3354f4628af84971ef5c1bff161dcf650f10f075b08615a46156",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/failmap.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__failmap.json",
-    "states": 2
+    "states": 2,
+    "sha256": "5b319e0ade33b36e95730c31ba77161d8c6eeed891e33c1f27068f848423e865",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/map.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__map.json",
-    "states": 1
+    "states": 1,
+    "sha256": "dc8a6c5117b00ebb6c08a14c8ab4375418bae87c8f1414b190823129cdc2b2db",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/resflow.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__resflow.json",
-    "states": 2
+    "states": 2,
+    "sha256": "0baf96427683fa433a366bdc97db6fd8eeb41670c8802f8f08d004bd81818dab",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/task_with_2_step.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__task_with_2_step.json",
-    "states": 2
+    "states": 2,
+    "sha256": "a8772a53a65517ccd41e9b09d7f558335e112587d16e834ad2a62c298c0ab3ce",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/task_with_catch.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__task_with_catch.json",
-    "states": 3
+    "states": 3,
+    "sha256": "0bc6845573faa08660970b29aef384bfcc7b235e5e1e92a16e0215b32b9ba987",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/task_with_choice.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__task_with_choice.json",
-    "states": 4
+    "states": 4,
+    "sha256": "ed135d5bedf85d2f4f0eae825e20356f5dce521f92d5b8e4f1798da8f6060cb3",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "examples/statemachine/testact2.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__examples__statemachine__testact2.json",
-    "states": 2
+    "states": 2,
+    "sha256": "5afb7713fe963e937deee7ba4882f4e47788ac6e0e64f0f2753bfc81fb874a2f",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/task.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__task.json",
-    "states": 3
+    "states": 3,
+    "sha256": "a13f0174303673b90031669ea0d89abc4972738eceeec76c6098b71c4ef89c3a",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/task_pass.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__task_pass.json",
-    "states": 4
+    "states": 4,
+    "sha256": "998e59ecf2ea4308f8dc23ff5a3cf8a4c00d084500c1655c7600ba233a851959",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/unsupported/map_state.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__map_state.json",
-    "states": 1
+    "states": 1,
+    "sha256": "b30b3103c39973e89200859eb3567c5172b74c97570678998211d0064fd96531",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/unsupported/resource_task.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__resource_task.json",
-    "states": 2
+    "states": 2,
+    "sha256": "0baf96427683fa433a366bdc97db6fd8eeb41670c8802f8f08d004bd81818dab",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/unsupported/resource_task2.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__resource_task2.json",
-    "states": 2
+    "states": 2,
+    "sha256": "5afb7713fe963e937deee7ba4882f4e47788ac6e0e64f0f2753bfc81fb874a2f",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/unsupported/task_map_state.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__task_map_state.json",
-    "states": 2
+    "states": 2,
+    "sha256": "5b319e0ade33b36e95730c31ba77161d8c6eeed891e33c1f27068f848423e865",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "skyflow-workflow/skyflow_backend",
     "branch": "main",
     "path": "workflow/parser/stepfunction/examples/unsupported/task_state.json",
     "file": "corpus/wild-external/skyflow-workflow__skyflow_backend__workflow__parser__stepfunction__examples__unsupported__task_state.json",
-    "states": 4
+    "states": 4,
+    "sha256": "7c37eafa324b95afa9d7a0910b8001933187f0d67074f7ce680fa5be03e1f501",
+    "commit": "1f88bb8a255c4054837b23c38e68cb9de975bfb1"
   },
   {
     "repo": "yskszk63/sam-local-asl",
     "branch": "main",
     "path": "example/example.asl.json",
     "file": "corpus/wild-external/yskszk63__sam-local-asl__example__example.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "1ecb1ed7069f1d012f3bead78639e0974fe06b570d2063e438a366191f47a407",
+    "commit": "3ed015879c60d8c7a8f592c84ec0f1fa59287f49"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/calculator-with-input-paths.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__calculator-with-input-paths.json",
-    "states": 3
+    "states": 3,
+    "sha256": "e7fffdab624df5252f706c6072314f02a5f562dda99bb70a7568c655dbe00d80",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/calculator.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__calculator.json",
-    "states": 3
+    "states": 3,
+    "sha256": "da576806becc9e1db602d1255b5c8db848d3cbf06399508540f0606394f805ad",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/choice-state/choice-with-input-path.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__choice-state__choice-with-input-path.json",
-    "states": 3
+    "states": 3,
+    "sha256": "f48e6e86056651346742da6a0708fc4c9278f7f2143e83b0d5c3a04444f42623",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/choice-state/choice.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__choice-state__choice.json",
-    "states": 3
+    "states": 3,
+    "sha256": "88ce2b9761d11a540844ff3bbe167ae9167c6bed82f1394a807537e7679c9713",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/error-code-and-error-object.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__error-code-and-error-object.json",
-    "states": 1
+    "states": 1,
+    "sha256": "b9c48a631f9b086a50b2b537e5aa168fe2230e9a70725f7d122a17c04185c9b5",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/error-code-and-message.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__error-code-and-message.json",
-    "states": 1
+    "states": 1,
+    "sha256": "23fb0e687cb2bbca88e6243e03c3e55855be79a37886117f918f45d022da1684",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/error-exception.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__error-exception.json",
-    "states": 1
+    "states": 1,
+    "sha256": "bc5e4fc43ea58027949343d23020bcec4c9bea303b335baab3761e728890efb8",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/error-http-cant-connect.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__error-http-cant-connect.json",
-    "states": 1
+    "states": 1,
+    "sha256": "4ca0be0e3a825abfc311b0f042d88817fbc9c6486c54529cc5ba8c1aae60f73a",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/error-http-not-found.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__error-http-not-found.json",
-    "states": 1
+    "states": 1,
+    "sha256": "85a55ff32debd287d3214998827f0a3893554350881ab8e263c9d4d368b4798b",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/fail-state/fail-state-machine.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__fail-state__fail-state-machine.json",
-    "states": 1
+    "states": 1,
+    "sha256": "fb808690d463e49aefc6aade77e7f74038e7911bd2df5a919c3e14539bda6e0b",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/form-filling.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__form-filling.json",
-    "states": 3
+    "states": 3,
+    "sha256": "861f90084f13f256bf5c18fd527b79188fce8bece98ca03d6bbda4b23b730673",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/hello-fail-but-live-again.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__hello-fail-but-live-again.json",
-    "states": 3
+    "states": 3,
+    "sha256": "d5093fa7d2a4fe2eceeea06e376e4389b6aec4ceeaef8ea99f898ececd7e63d0",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/hello-then-failure.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__hello-then-failure.json",
-    "states": 2
+    "states": 2,
+    "sha256": "2489989a0b1a2ea2962e3d71a87f8b59c70513c63030cca2ec0a2cb86cfce2b5",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/hello-then-uncaught-failure.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__hello-then-uncaught-failure.json",
-    "states": 3
+    "states": 3,
+    "sha256": "1245d12817f0b42fdf9c941c6ee72eabc0b06280356fb880c5679bc1f5a5947d",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "wmfs/statebox",
     "branch": "master",
     "path": "test/fixtures/state-machines/hello-then-world.json",
     "file": "corpus/wild-external/wmfs__statebox__test__fixtures__state-machines__hello-then-world.json",
-    "states": 2
+    "states": 2,
+    "sha256": "9737bf5b2e07e33c0887279e6d02ec930d19d6795b4d9e847ed96cf920da2678",
+    "commit": "6daa825d2656ace39b9cddb14695b63ffae471f2"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-assign.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-assign.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "b72d9fae600336bf96ea4d24786aeee2e5ed068f8f3a3be6032eaf3003709007",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-dupe-fields.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-dupe-fields.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "340c6fc9974c0eab956884a17cd61b1d381ac0ac4476b304a8756a217b8687c8",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-exercise-ajv-additional-properties.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-exercise-ajv-additional-properties.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "311ac569506119464f43e139e377886bf8ddc1d7a178063050e80364e1d778ba",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-exercise-ajv.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-exercise-ajv.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "dc9d3a3d578e76f10eafe799922b7618a35f1d2405663d6751db41b904e531fc",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-jsonata-path-fields.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-jsonata-path-fields.asl.json",
-    "states": 6
+    "states": 6,
+    "sha256": "c001ca62b2eb1b549ee2a93c46fc3d555a2aefb8204a454ee20ebffda8841628",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-map-distributed.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-map-distributed.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "3ac40e7dc90b2943f1cb846125ba5477ae7936ba9b64402763c0c8cf31a6ff8c",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-map-items.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-map-items.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "df342e9c8e34092c5a672807195534dbac13c90106305760a9fb6d3649797283",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/invalid-payload-template.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__invalid-payload-template.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "c28d8cf42a089e62200e08a5876ebc9855e896e52548812388043f2c6c172830",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-assign.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-assign.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "068610ba75714fe7dfdf2afd3157baf5016824940fefd5fc93d419b89ca58610",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-comments-are-not-parsed.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-comments-are-not-parsed.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "154b41c3801a1cf6b9e26c0424038ee3f03176649a5f4e8d1ed0826add5a5439",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-intrinsic-functions.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-intrinsic-functions.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "7bb83d4d0094f349530c4d7b9da2147f8fcdd2dfb02c669c63245c682b1747d7",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-jsonata.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-jsonata.asl.json",
-    "states": 6
+    "states": 6,
+    "sha256": "8f69cf5225ec5b76c35c0ff7c7398943827e3722617782613fc88e2d15a008cc",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-map-distributed.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-map-distributed.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "b189b4d01a189932f218b16217d956237a0f8bc8cd17ea42571014e10a02eb29",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-map-inline.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-map-inline.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "11ac26d741304be8cc4d96406b7963b91d4845c71547799cb9f46fd771159ae9",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "ChristopheBougere/asl-validator",
     "branch": "main",
     "path": "src/__tests__/definitions/valid-map-items.asl.json",
     "file": "corpus/wild-external/ChristopheBougere__asl-validator__src____tests____definitions__valid-map-items.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "637496575260e61b7104ba9a93587466455845bfaeb278cf2e7fc127805c4f7d",
+    "commit": "49c1aaf00dae29e460de0be905ec459dd5c025ae"
   },
   {
     "repo": "aws-iot-builder-tools/iot-workflow-management-and-execution",
     "branch": "main",
     "path": "workflow-management-and-execution/statemachine/firmware_upgrade.asl.json",
     "file": "corpus/wild-external/aws-iot-builder-tools__iot-workflow-management-and-execution__workflow-management-and-execution__statemachine__firmware_upgrade.asl.json",
-    "states": 14
+    "states": 14,
+    "sha256": "116eb443e70812fb3efb575b85b52d726f777cce0808a3c46e712e8d21927c83",
+    "commit": "012144aed2eee1a622ed2849496a6b291c506243"
   },
   {
     "repo": "mugglmenzel/step-functions-example-workflow",
     "branch": "master",
     "path": "state-machine.json",
     "file": "corpus/wild-external/mugglmenzel__step-functions-example-workflow__state-machine.json",
-    "states": 3
+    "states": 3,
+    "sha256": "a313e7be32f44337983578eef91a5bbcb2650ddd8b9e41cf8f71977f6a518a78",
+    "commit": "1feaadada5a9045c6a875bf3d8e51f65f152dbbd"
   },
   {
     "repo": "pssolanki111/pyDelhi_step_functions",
     "branch": "main",
     "path": "src/state_machines/research_data_pipeline.json",
     "file": "corpus/wild-external/pssolanki111__pyDelhi_step_functions__src__state_machines__research_data_pipeline.json",
-    "states": 6
+    "states": 6,
+    "sha256": "986ed00e625f7393fc4957e7ab4c52f06f7524e39a1166054960cdcadaf16ad6",
+    "commit": "3607c991d9eea8d93887a7258957ab9090b4c9bf"
   },
   {
     "repo": "Thrubit/freight-booking-workflow",
     "branch": "main",
     "path": "statemachines/booking-amendment.asl.json",
     "file": "corpus/wild-external/Thrubit__freight-booking-workflow__statemachines__booking-amendment.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "d3ebad07e3ec094f0b2d70436887099d23014171f8c9a1964ad029ded297c9f1",
+    "commit": "98f98c43eda6d97d79cd86d1d489430c2695cb9e"
   },
   {
     "repo": "Thrubit/freight-booking-workflow",
     "branch": "main",
     "path": "statemachines/bulk-booking-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__freight-booking-workflow__statemachines__bulk-booking-processing.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "7b5751da641583b6b761f242d5500beb836c8cb9a61c34550f97e43d3a0cc824",
+    "commit": "98f98c43eda6d97d79cd86d1d489430c2695cb9e"
   },
   {
     "repo": "Thrubit/freight-booking-workflow",
     "branch": "main",
     "path": "statemachines/express-rate-check.asl.json",
     "file": "corpus/wild-external/Thrubit__freight-booking-workflow__statemachines__express-rate-check.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "1672ad065e47056cf659d479250a9bf5eed5c29e7901db5f4b506fdd2c562849",
+    "commit": "98f98c43eda6d97d79cd86d1d489430c2695cb9e"
   },
   {
     "repo": "Thrubit/freight-booking-workflow",
     "branch": "main",
     "path": "statemachines/freight-booking-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__freight-booking-workflow__statemachines__freight-booking-pipeline.asl.json",
-    "states": 14
+    "states": 14,
+    "sha256": "af8ad931227475cc7568d11518666db265bf96e5b3e156957b29c12fede2ba8d",
+    "commit": "98f98c43eda6d97d79cd86d1d489430c2695cb9e"
   },
   {
     "repo": "Thrubit/credit-card-transaction-workflow",
     "branch": "main",
     "path": "statemachines/credit-card-batch-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__credit-card-transaction-workflow__statemachines__credit-card-batch-processing.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "dcf39cfa790f43eff9d024b00f6a0c9dbd072686fc3d1cb7217d0a43b129de56",
+    "commit": "41d46a64d55b25e3d8697d6e6e6231c2eed69d90"
   },
   {
     "repo": "Thrubit/credit-card-transaction-workflow",
     "branch": "main",
     "path": "statemachines/credit-card-transaction.asl.json",
     "file": "corpus/wild-external/Thrubit__credit-card-transaction-workflow__statemachines__credit-card-transaction.asl.json",
-    "states": 18
+    "states": 18,
+    "sha256": "300852faeb7a8ee943b1e13444592bfda1a479c978e09026e32bf6c158b06e5d",
+    "commit": "41d46a64d55b25e3d8697d6e6e6231c2eed69d90"
   },
   {
     "repo": "Thrubit/credit-card-transaction-workflow",
     "branch": "main",
     "path": "statemachines/express-authorization.asl.json",
     "file": "corpus/wild-external/Thrubit__credit-card-transaction-workflow__statemachines__express-authorization.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "d5d78b5dcc3c493e34a8917d4744a9786b97b9786b173efe7a0ad4d21e29a2e7",
+    "commit": "41d46a64d55b25e3d8697d6e6e6231c2eed69d90"
   },
   {
     "repo": "Thrubit/credit-card-transaction-workflow",
     "branch": "main",
     "path": "statemachines/transaction-reversal.asl.json",
     "file": "corpus/wild-external/Thrubit__credit-card-transaction-workflow__statemachines__transaction-reversal.asl.json",
-    "states": 9
+    "states": 9,
+    "sha256": "5247ee0bf61bb78d129041adeec641df24ef22c4db4ac652efa7d110842fd521",
+    "commit": "41d46a64d55b25e3d8697d6e6e6231c2eed69d90"
   },
   {
     "repo": "Thrubit/payment-settlement-workflow",
     "branch": "main",
     "path": "statemachines/batch-payment-settlement.asl.json",
     "file": "corpus/wild-external/Thrubit__payment-settlement-workflow__statemachines__batch-payment-settlement.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "0607fd10a07eb67c348696fb5ac3dfbd5e61103943ba7e9519439c2eb3f5b3fa",
+    "commit": "5c45b08c3f2827ec0b96132f363a09bea6b361ff"
   },
   {
     "repo": "Thrubit/payment-settlement-workflow",
     "branch": "main",
     "path": "statemachines/express-payment-authorization.asl.json",
     "file": "corpus/wild-external/Thrubit__payment-settlement-workflow__statemachines__express-payment-authorization.asl.json",
-    "states": 12
+    "states": 12,
+    "sha256": "8402cba0408bebfc0d087ef4233b3508ebff24bf7b64cd5068dc6af42bbfc83b",
+    "commit": "5c45b08c3f2827ec0b96132f363a09bea6b361ff"
   },
   {
     "repo": "Thrubit/payment-settlement-workflow",
     "branch": "main",
     "path": "statemachines/payment-settlement-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__payment-settlement-workflow__statemachines__payment-settlement-pipeline.asl.json",
-    "states": 16
+    "states": 16,
+    "sha256": "2018f9added9203b19253fc30b02c9ade000d93002dcb5d47d20d9580c0b7400",
+    "commit": "5c45b08c3f2827ec0b96132f363a09bea6b361ff"
   },
   {
     "repo": "Thrubit/launch-vehicle-manufacturing-workflow",
     "branch": "main",
     "path": "statemachines/bulk-component-inspection.asl.json",
     "file": "corpus/wild-external/Thrubit__launch-vehicle-manufacturing-workflow__statemachines__bulk-component-inspection.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "d90549c1d789e451be3f4d54fbb4d3e36a163f5e2765945b1994cb9b536278a2",
+    "commit": "74262a2a871772fa4db93651dd3199e8343bedf4"
   },
   {
     "repo": "Thrubit/launch-vehicle-manufacturing-workflow",
     "branch": "main",
     "path": "statemachines/express-quality-gate-check.asl.json",
     "file": "corpus/wild-external/Thrubit__launch-vehicle-manufacturing-workflow__statemachines__express-quality-gate-check.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "1ed7c9931035aa892e1e5cd90a832d674bed0804f06f6e2ff28ea7d56b4c6e85",
+    "commit": "74262a2a871772fa4db93651dd3199e8343bedf4"
   },
   {
     "repo": "Thrubit/launch-vehicle-manufacturing-workflow",
     "branch": "main",
     "path": "statemachines/manufacturing-defect-escalation.asl.json",
     "file": "corpus/wild-external/Thrubit__launch-vehicle-manufacturing-workflow__statemachines__manufacturing-defect-escalation.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "cf909d843666041e65a25791e07357bd0fd7494ed951a7cd516851d9a6ced6af",
+    "commit": "74262a2a871772fa4db93651dd3199e8343bedf4"
   },
   {
     "repo": "Thrubit/launch-vehicle-manufacturing-workflow",
     "branch": "main",
     "path": "statemachines/manufacturing-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__launch-vehicle-manufacturing-workflow__statemachines__manufacturing-pipeline.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "5adc1ef4f11ef601aa65bb566418b66c0523a27d168e2e5e666bc7f8427d3fe5",
+    "commit": "74262a2a871772fa4db93651dd3199e8343bedf4"
   },
   {
     "repo": "Thrubit/network-outage-management-workflow",
     "branch": "main",
     "path": "statemachines/bulk-outage-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__network-outage-management-workflow__statemachines__bulk-outage-processing.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "4a9de6b1dbdeb03965b9611c4eff5154e3d27bd452b8835ad12c125b256027af",
+    "commit": "05d843572e7fe7ba62a984fd6d82947853d9ffa3"
   },
   {
     "repo": "Thrubit/network-outage-management-workflow",
     "branch": "main",
     "path": "statemachines/express-outage-triage.asl.json",
     "file": "corpus/wild-external/Thrubit__network-outage-management-workflow__statemachines__express-outage-triage.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "c88ce88dc57b3c839a9e0c7b4534c77972568f5a85d98220c573338693336d9a",
+    "commit": "05d843572e7fe7ba62a984fd6d82947853d9ffa3"
   },
   {
     "repo": "Thrubit/network-outage-management-workflow",
     "branch": "main",
     "path": "statemachines/outage-escalation.asl.json",
     "file": "corpus/wild-external/Thrubit__network-outage-management-workflow__statemachines__outage-escalation.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "1bb8f3c695caa59e469123ab7608634680679918b4abc1a9c9379284b88c0500",
+    "commit": "05d843572e7fe7ba62a984fd6d82947853d9ffa3"
   },
   {
     "repo": "Thrubit/network-outage-management-workflow",
     "branch": "main",
     "path": "statemachines/outage-management-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__network-outage-management-workflow__statemachines__outage-management-pipeline.asl.json",
-    "states": 9
+    "states": 9,
+    "sha256": "79d2649e9509f36c3409c63983794a62464e6e0c9feacca552e27aa77b72cb14",
+    "commit": "05d843572e7fe7ba62a984fd6d82947853d9ffa3"
   },
   {
     "repo": "Thrubit/vehicle-order-fulfillment-workflow",
     "branch": "main",
     "path": "statemachines/bulk-order-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-order-fulfillment-workflow__statemachines__bulk-order-processing.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "ea4cad47a5943e4ce4f7107466536add1bd4536fea3ca8bd0b6f158c1fb08fdc",
+    "commit": "c3cd61574502a345d2adeba0ffc05241ebf66f84"
   },
   {
     "repo": "Thrubit/vehicle-order-fulfillment-workflow",
     "branch": "main",
     "path": "statemachines/express-credit-check.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-order-fulfillment-workflow__statemachines__express-credit-check.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "b1bf135a799655564aef990a9cf2fc2629408f5bbda6d847734d395b40710d1d",
+    "commit": "c3cd61574502a345d2adeba0ffc05241ebf66f84"
   },
   {
     "repo": "Thrubit/vehicle-order-fulfillment-workflow",
     "branch": "main",
     "path": "statemachines/order-cancellation.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-order-fulfillment-workflow__statemachines__order-cancellation.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "c4cf237cd939a68057d38e001aac2022f87faf0ee738a3fd558bce9044f95324",
+    "commit": "c3cd61574502a345d2adeba0ffc05241ebf66f84"
   },
   {
     "repo": "Thrubit/vehicle-order-fulfillment-workflow",
     "branch": "main",
     "path": "statemachines/vehicle-order-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-order-fulfillment-workflow__statemachines__vehicle-order-pipeline.asl.json",
-    "states": 19
+    "states": 19,
+    "sha256": "dd120c921443b0200ffd07913186aa2e94168cdb7897999ad22cd10545829b7c",
+    "commit": "c3cd61574502a345d2adeba0ffc05241ebf66f84"
   },
   {
     "repo": "Thrubit/vehicle-recall-management-workflow",
     "branch": "main",
     "path": "statemachines/bulk-recall-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-recall-management-workflow__statemachines__bulk-recall-processing.asl.json",
-    "states": 1
+    "states": 1,
+    "sha256": "3853d2d97516b923a669fe6d5ae40dc9d0b89d20f70f13e7d1b0ce1c09f4ed80",
+    "commit": "8b1a87f7633f9b1a9454c4b83c8d38476be542d2"
   },
   {
     "repo": "Thrubit/vehicle-recall-management-workflow",
     "branch": "main",
     "path": "statemachines/express-vehicle-check.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-recall-management-workflow__statemachines__express-vehicle-check.asl.json",
-    "states": 9
+    "states": 9,
+    "sha256": "b9cfa7cea64e2e1a5007fc7efef428b07484021ccf5b70701fe659770be6901d",
+    "commit": "8b1a87f7633f9b1a9454c4b83c8d38476be542d2"
   },
   {
     "repo": "Thrubit/vehicle-recall-management-workflow",
     "branch": "main",
     "path": "statemachines/recall-escalation.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-recall-management-workflow__statemachines__recall-escalation.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "6811a3b798ecb39f6035b99994eca22177a60bd29368588f6ee8a015bc465e73",
+    "commit": "8b1a87f7633f9b1a9454c4b83c8d38476be542d2"
   },
   {
     "repo": "Thrubit/vehicle-recall-management-workflow",
     "branch": "main",
     "path": "statemachines/vehicle-recall-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__vehicle-recall-management-workflow__statemachines__vehicle-recall-pipeline.asl.json",
-    "states": 15
+    "states": 15,
+    "sha256": "386fb86b8fa1af965f7b163af9cf49a8a584dc6816e4801cf4d5f2e14857a1f2",
+    "commit": "8b1a87f7633f9b1a9454c4b83c8d38476be542d2"
   },
   {
     "repo": "Thrubit/mission-control-operations-workflow",
     "branch": "main",
     "path": "statemachines/bulk-telemetry-processing.asl.json",
     "file": "corpus/wild-external/Thrubit__mission-control-operations-workflow__statemachines__bulk-telemetry-processing.asl.json",
-    "states": 2
+    "states": 2,
+    "sha256": "88aa27c40fa5b9d275ce0265a79ef5bf1e0adae318f0e0a6573bfc3fdc2cf250",
+    "commit": "0e1bb3346808e56078f280b1b664278ca2dc7770"
   },
   {
     "repo": "Thrubit/mission-control-operations-workflow",
     "branch": "main",
     "path": "statemachines/express-health-status-check.asl.json",
     "file": "corpus/wild-external/Thrubit__mission-control-operations-workflow__statemachines__express-health-status-check.asl.json",
-    "states": 9
+    "states": 9,
+    "sha256": "164fe4ecebdddcb0cb07e50402d45b90085da3c9cf96043a7f603c8a9eaf5efd",
+    "commit": "0e1bb3346808e56078f280b1b664278ca2dc7770"
   },
   {
     "repo": "Thrubit/mission-control-operations-workflow",
     "branch": "main",
     "path": "statemachines/mission-anomaly-escalation.asl.json",
     "file": "corpus/wild-external/Thrubit__mission-control-operations-workflow__statemachines__mission-anomaly-escalation.asl.json",
-    "states": 10
+    "states": 10,
+    "sha256": "777021dd53f3e4e55abde3a216d7824dc88ee485df4d5c40cbb17748bb61989f",
+    "commit": "0e1bb3346808e56078f280b1b664278ca2dc7770"
   },
   {
     "repo": "Thrubit/mission-control-operations-workflow",
     "branch": "main",
     "path": "statemachines/mission-control-pipeline.asl.json",
     "file": "corpus/wild-external/Thrubit__mission-control-operations-workflow__statemachines__mission-control-pipeline.asl.json",
-    "states": 8
+    "states": 8,
+    "sha256": "277a755d4f0567cb9a4f5444f28e100504cea323ac894396575d9348b0eeb314",
+    "commit": "0e1bb3346808e56078f280b1b664278ca2dc7770"
   }
 ]

@@ -136,6 +136,53 @@ fn cfn_json_template_with_dangling_transition_flags_sc0002() {
 }
 
 #[test]
+fn scan_reports_every_machine_of_a_multi_machine_template() {
+    // The defect sits in the SECOND machine: `scan` must analyse every machine, as
+    // `check` does, not only the first one of the template.
+    let src = r#"{"Resources":{
+      "First":{"Type":"AWS::StepFunctions::StateMachine",
+        "Properties":{"DefinitionString":"{ \"StartAt\": \"A\", \"States\": { \"A\": { \"Type\": \"Pass\", \"End\": true } } }"}},
+      "Second":{"Type":"AWS::StepFunctions::StateMachine",
+        "Properties":{"DefinitionString":"{ \"StartAt\": \"B\", \"States\": { \"B\": { \"Type\": \"Pass\", \"Next\": \"Missing\" } } }"}}}}"#;
+    let dir = std::env::temp_dir().join(format!("stepcheck-scan-multi-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("two.template.json"), src).unwrap();
+    let report = crate::scan_report(&dir, None, false, false).unwrap();
+    std::fs::remove_dir_all(&dir).ok();
+    assert_eq!(report["files"], 1);
+    assert_eq!(report["machines"], 2);
+    assert_eq!(report["flagged_machines"], 1);
+    assert!(report["code_totals"]["SC0002"].as_u64().unwrap_or(0) >= 1, "{report:#}");
+    let file = &report["per_file"][0];
+    assert_eq!(file["machines"].as_array().map(|m| m.len()), Some(2));
+    assert!(file["diagnostics"].as_array().unwrap().iter().all(|d| d["machine"] == "Second"), "{report:#}");
+}
+
+#[test]
+fn single_output_commands_select_a_machine_and_multi_machine_counts_sum() {
+    // First machine clean, second with a dangling transition (as in the scan test).
+    let src = r#"{"Resources":{
+      "First":{"Type":"AWS::StepFunctions::StateMachine",
+        "Properties":{"DefinitionString":"{ \"StartAt\": \"A\", \"States\": { \"A\": { \"Type\": \"Pass\", \"End\": true } } }"}},
+      "Second":{"Type":"AWS::StepFunctions::StateMachine",
+        "Properties":{"DefinitionString":"{ \"StartAt\": \"B\", \"States\": { \"B\": { \"Type\": \"Pass\", \"Next\": \"Missing\" } } }"}}}}"#;
+    let dir = std::env::temp_dir().join(format!("stepcheck-select-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("two.template.json");
+    std::fs::write(&file, src).unwrap();
+
+    // emit / mutate: the first machine by default, a named one on request, an error otherwise.
+    assert!(crate::load_one(&file, None).unwrap().states.contains_key("A"));
+    assert!(crate::load_one(&file, Some("Second")).unwrap().states.contains_key("B"));
+    assert!(crate::load_one(&file, Some("Nope")).is_err());
+
+    // eval-pairs sums the codes of every machine, so the second machine's defect counts.
+    let codes = crate::codes_for(&file, false);
+    std::fs::remove_dir_all(&dir).ok();
+    assert!(codes.get("SC0002").copied().unwrap_or(0) >= 1, "{codes:?}");
+}
+
+#[test]
 fn cfn_template_links_child_state_machine_aliases() {
     let src = r#"{"Resources":{
       "Parent":{"Type":"AWS::StepFunctions::StateMachine","Properties":{"DefinitionString":{"Fn::Sub":"{ \"StartAt\": \"Run\", \"States\": { \"Run\": { \"Type\": \"Task\", \"Resource\": \"arn:aws:states:::states:startExecution\", \"Parameters\": { \"StateMachineArn\": \"${Child.Arn}\" }, \"End\": true } } }"}}},

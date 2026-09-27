@@ -21,7 +21,8 @@ import sys, os, io, json, glob, subprocess, statistics, argparse, warnings, temp
 warnings.filterwarnings("ignore")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BIN = os.path.join(ROOT, "stepcheck", "target", "release", "stepcheck.exe")
+BIN = os.environ.get("STEPCHECK_BIN") or os.path.join(
+    ROOT, "stepcheck", "target", "release", "stepcheck.exe" if os.name == "nt" else "stepcheck")
 ENCODE = os.path.join(ROOT, "eval", "asl2bpmn", "encode.js")
 
 _s = sys.stderr; sys.stderr = io.StringIO()
@@ -130,8 +131,15 @@ def counts_of(path):
     except Exception:
         return Counter()
 
-ASLV = os.path.join(os.environ.get("APPDATA", ""), "npm", "node_modules",
-                    "asl-validator", "dist", "bin", "asl-validator.js")
+def _npm_global_root():
+    if os.name == "nt":
+        return os.path.join(os.environ.get("APPDATA", ""), "npm", "node_modules")
+    try:
+        return subprocess.run(["npm", "root", "-g"], capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return ""
+ASLV = os.environ.get("ASL_VALIDATOR_JS") or os.path.join(
+    _npm_global_root(), "asl-validator", "dist", "bin", "asl-validator.js")
 
 def platform_accepts(path):
     """The platform validator a developer actually runs (asl-validator, the same

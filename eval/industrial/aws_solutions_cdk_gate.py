@@ -35,14 +35,17 @@ DEFAULT_PATTERNS = [
 KIND_ORDER = ["retry", "compensation", "temporal", "contract", "structural", "concurrency"]
 LEVELS = [0, 1, 5]
 
-ASLV = os.path.join(
-    os.environ.get("APPDATA", ""),
-    "npm",
-    "node_modules",
-    "asl-validator",
-    "dist",
-    "bin",
-    "asl-validator.js",
+def _npm_global_root():
+    if os.name == "nt":
+        return os.path.join(os.environ.get("APPDATA", ""), "npm", "node_modules")
+    try:
+        return subprocess.run(["npm", "root", "-g"], capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return ""
+
+
+ASLV = os.environ.get("ASL_VALIDATOR_JS") or os.path.join(
+    _npm_global_root(), "asl-validator", "dist", "bin", "asl-validator.js"
 )
 
 
@@ -50,8 +53,9 @@ def default_bin():
     env = os.environ.get("STEPCHECK_BIN")
     if env:
         return env
-    release = os.path.join(ROOT, "stepcheck", "target", "release", "stepcheck.exe")
-    debug = os.path.join(ROOT, "stepcheck", "target", "debug", "stepcheck.exe")
+    exe = "stepcheck.exe" if os.name == "nt" else "stepcheck"
+    release = os.path.join(ROOT, "stepcheck", "target", "release", exe)
+    debug = os.path.join(ROOT, "stepcheck", "target", "debug", exe)
     return release if os.path.exists(release) else debug
 
 

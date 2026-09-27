@@ -1,19 +1,21 @@
-﻿{
+{
   "corpus": {
     "files": 24,
-    "total_states": 385
+    "machines": 26,
+    "total_states": 526
   },
   "ablation": {
     "result_shapes": false
   },
   "baseline": {
     "flagged_files": 12,
+    "flagged_machines": 14,
     "errors": 0,
-    "warnings": 32,
+    "warnings": 36,
     "code_totals": {
-      "SC0007": 3,
+      "SC0007": 5,
       "SC3001": 8,
-      "SC4001": 20,
+      "SC4001": 22,
       "SC6001": 1
     }
   },
@@ -26,8 +28,8 @@
     },
     "Retry": {
       "expected_code": "SC3001",
-      "applicable": 8,
-      "detected": 8,
+      "applicable": 10,
+      "detected": 10,
       "recall": 1.0
     },
     "Compensation": {
@@ -38,8 +40,8 @@
     },
     "Structural": {
       "expected_code": "SC0002",
-      "applicable": 21,
-      "detected": 21,
+      "applicable": 23,
+      "detected": 23,
       "recall": 1.0
     },
     "Concurrency": {
@@ -50,8 +52,8 @@
     },
     "Temporal": {
       "expected_code": "SC6003",
-      "applicable": 23,
-      "detected": 23,
+      "applicable": 25,
+      "detected": 25,
       "recall": 1.0
     }
   },
@@ -63,21 +65,21 @@
       "SC1003": 21
     },
     "Retry": {
-      "SC3001": 8
+      "SC3001": 10
     },
     "Structural": {
-      "SC0002": 21,
-      "SC0003": 18,
-      "SC0005": 14
+      "SC0002": 23,
+      "SC0003": 20,
+      "SC0005": 16
     },
     "Temporal": {
-      "SC6003": 23
+      "SC6003": 25
     }
   },
   "timing_us": {
-    "mean": 279.3041666666667,
-    "median": 118.5,
-    "max": 1579.2,
-    "total_ms": 6.7033
+    "mean": 175.87692307692308,
+    "median": 82.8,
+    "max": 1505.1,
+    "total_ms": 4.5728
   }
 }

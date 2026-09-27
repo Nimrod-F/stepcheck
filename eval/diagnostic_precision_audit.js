@@ -16,7 +16,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const BIN = path.join(ROOT, 'stepcheck', 'target', 'release', 'stepcheck.exe');
+const BIN = process.env.STEPCHECK_BIN || path.join(ROOT, 'stepcheck', 'target', 'release',
+  process.platform === 'win32' ? 'stepcheck.exe' : 'stepcheck');
 const MANIFEST = path.join(ROOT, 'corpus', 'manifest.json');
 const POPULATION = path.join(__dirname, 'diagnostic-precision-population.json');
 

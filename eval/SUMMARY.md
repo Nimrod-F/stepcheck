@@ -167,8 +167,9 @@ no ASL data-flow model, so SC1101 is StepCheck versus out-of-scope, not a BProVe
   `timing_us`; single-run wall-clock figures on the laptop, so they vary between runs).
 - Real industrial set (`corpus/industrial`): mean **91.1 µs**/workflow, median **99.9 µs**,
   max **0.17 ms**, total **0.55 ms** across 6 workflows / 65 recursive states.
-- AWS Solutions corpus (`corpus/aws-solutions`): mean **0.28 ms**/workflow, median **0.12 ms**,
-  max **1.58 ms**, total **6.70 ms** across 24 workflows/artifacts / 385 recursive states.
+- AWS Solutions corpus (`corpus/aws-solutions`): mean **0.18 ms**/state machine, median **0.08 ms**,
+  max **1.51 ms**, total **4.57 ms** across 26 state machines in 24 files / 526 recursive states
+  (`eval/aws-solutions-cost.json`; every machine of a multi-machine template is analysed).
 - End-to-end CI gate latency, process start included: industrial p50/p95 **9.4/11.3 ms**;
   AWS Solutions CDK templates p50/p95 **15.7/20.9 ms**.
 - Runtime overhead on AWS: **0** (verification is entirely ahead-of-deployment).

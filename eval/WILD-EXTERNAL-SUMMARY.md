@@ -1,6 +1,6 @@
 # External-validity mining: independent repositories (beyond aws-samples)
 
-Reproduce: `node eval/mine_wild.js` then
+Reproduce: `node eval/fetch_unredistributed.js` then
 `stepcheck scan corpus/wild-external --infer` and
 `stepcheck path-coverage corpus/asl corpus/cncf corpus/wild-external`.
 
@@ -8,7 +8,7 @@ Reproduce: `node eval/mine_wild.js` then
 - 95 ASL workflows from 16 public repos OUTSIDE the three aws-samples collections.
 - NOTE: 32 of those 95 (the 8 `Thrubit/*` repos and `pssolanki111/pyDelhi_step_functions`) come from
   repositories that publish no licence, so they are NOT redistributed in this artifact; re-fetch them
-  with `node eval/mine_wild.js` before re-running the scan. Findings below were computed over all 95.
+  at their pinned commits with `node eval/fetch_unredistributed.js` before re-running the scan. Findings below were computed over all 95.
   See `corpus/PROVENANCE.md`.
 - 50 domain workflows (13 repos): skyflow_backend, iot firmware mgmt, 8 Thrubit
   domain repos (freight/credit-card/payment/manufacturing/recall/outage/order/mission),

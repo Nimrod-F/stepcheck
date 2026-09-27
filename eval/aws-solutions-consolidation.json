@@ -21,9 +21,9 @@
   },
   "flagged_machines": 14,
   "findings_by_code": {
-    "SC0007": 3,
+    "SC0007": 5,
     "SC3001": 8,
-    "SC4001": 20,
+    "SC4001": 22,
     "SC6001": 1
   },
   "note": "Production AWS Solutions Library workflows, analyzed directly from committed ASL/CloudFormation or from CDK synth artifacts. Media2Cloud uses committed ASL; Control Tower Customizations and Network Orchestration use committed CloudFormation via the CFN front end (multi-machine). Instance Scheduler, Automated Security Response, Distributed Load Testing, and Account Assessment are CDK synth artifacts. Sound/native findings include SC0007 (non-exhaustive Choice) on enterprise orchestrators and SC6001 (unbounded callback) in Automated Security Response; advisory SC3001/SC4001 fire on persistent create/delete/publish/send steps. Distributed Load Testing and Account Assessment are clean true negatives.",
@@ -163,5 +163,6 @@
         "gate_p95_ms": 20.0
       }
     }
-  }
+  },
+  "findings_by_code_note": "Diagnostics summed over all 26 machines (`stepcheck scan corpus/aws-solutions --infer`, release 0.1.6). The earlier values (SC0007 3, SC4001 20) counted only the first machine of the multi-machine Control Tower template; the machine counts (26 analysed, 14 flagged) are unchanged."
 }
