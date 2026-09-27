@@ -14,8 +14,8 @@ version: 0.1.6
 doi: 10.5281/zenodo.22916631
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.22964312
-    description: "Release 0.1.5 (artifact tag icsoc2026-artifact-v4), the version cited in the ICSOC 2026 paper"
+    value: 10.5281/zenodo.22992455
+    description: "Release 0.1.6 (tag v0.1.6), the version cited in the ICSOC 2026 paper"
 date-released: "2026-09-27"
 repository-code: "https://github.com/Nimrod-F/stepcheck"
 keywords:
